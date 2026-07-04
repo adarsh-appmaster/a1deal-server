@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ||'https://a1deal-og-server.onrender.com/api' ||'http://localhost:5002/api',
+  baseURL: import.meta.env.VITE_API_URL  ||'http://localhost:5002/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
