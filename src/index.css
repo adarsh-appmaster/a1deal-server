@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background-color: #f8f9ff;
+    color: #0b1c30;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+  }
+  #root { min-height: 100vh; }
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer text-sm font-medium;
+  }
+  .sidebar-link.active {
+    @apply bg-primary-container text-white;
+  }
+  .btn-primary {
+    @apply bg-primary-container text-white font-semibold px-6 py-3 rounded-lg hover:bg-primary transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-secondary-container text-white font-semibold px-6 py-3 rounded-lg hover:bg-secondary transition-colors;
+  }
+  .btn-ghost {
+    @apply border border-primary-container text-primary-container font-semibold px-6 py-3 rounded-lg hover:bg-surface-container transition-colors;
+  }
+  .card {
+    @apply bg-surface-container-lowest rounded-xl border border-outline-variant shadow-level-2;
+  }
+  .metric-card {
+    @apply card p-5;
+  }
+  .portal-badge {
+    @apply text-xs font-semibold px-3 py-1 rounded-full;
+  }
+}
