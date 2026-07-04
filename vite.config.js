@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://a1deal-og-server.onrender.com',
+        target: 'http://localhost:5002',
         changeOrigin: true,
       },
     },
