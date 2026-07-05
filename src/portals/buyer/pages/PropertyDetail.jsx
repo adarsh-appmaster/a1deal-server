@@ -263,9 +263,11 @@ export default function PropertyDetail() {
   const [showEnquiry, setShowEnquiry]   = useState(false);
   const [enquiryUnit, setEnquiryUnit]   = useState(null);
   const [showLogin, setShowLogin]       = useState(false);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setShowAllPhotos(false);
     api.get(`/unit-properties/public/${id}`)
       .then(r => setProperty(r.data.property))
       .catch(err => { if (err.response?.status === 404) setNotFound(true); })
@@ -340,36 +342,52 @@ export default function PropertyDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Images */}
-            <div className="card overflow-hidden">
-              <div className="relative h-72 bg-surface-container-high flex items-center justify-center overflow-hidden">
-                {property.images?.[0] ? (
-                  <img src={property.images[0]} alt={property.title}
-                    className={`w-full h-full object-cover ${isGuest ? 'blur-lg scale-110' : ''}`} />
-                ) : (
-                  <span className="material-icons-outlined text-8xl text-on-surface-variant/20">apartment</span>
-                )}
-                {isGuest && property.images?.[0] && (
-                  <button type="button" onClick={() => setShowLogin(true)}
-                    className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition">
-                    <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
-                    <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos</span>
-                  </button>
-                )}
-              </div>
-              {property.images?.length > 1 && (
-                <div className="flex gap-2 p-3 overflow-x-auto">
-                  {property.images.slice(1).map((img, i) => (
-                    <div key={i} className="relative w-20 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={img} alt="" className={`w-full h-full object-cover ${isGuest ? 'blur-sm' : ''}`} />
-                      {isGuest && (
-                        <button type="button" onClick={() => setShowLogin(true)}
-                          className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <span className="material-icons-outlined text-white text-sm">lock</span>
-                        </button>
+            {/* Images & video */}
+            <div className="card overflow-hidden p-3">
+              {(property.images?.length || property.video) ? (() => {
+                const images = property.images || [];
+                const VISIBLE_LIMIT = 4;
+                const visibleImages = showAllPhotos ? images : images.slice(0, VISIBLE_LIMIT);
+                const remaining = images.length - VISIBLE_LIMIT;
+                return (
+                  <div className="relative">
+                    <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
+                      {property.video && (
+                        <video src={property.video} controls={!isGuest} className="w-full h-[28rem] object-cover rounded-xl bg-black col-span-2" />
                       )}
+                      {visibleImages.map((img, i) => {
+                        const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
+                        return (
+                          <div key={i} className="relative">
+                            <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-[28rem] object-cover rounded-xl" />
+                            {isLastVisible && !isGuest && (
+                              <button type="button" onClick={() => setShowAllPhotos(true)}
+                                className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg">
+                                +{remaining} more
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                    {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
+                      <button type="button" onClick={() => setShowAllPhotos(false)}
+                        className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+                        Show fewer photos
+                      </button>
+                    )}
+                    {isGuest && (
+                      <button type="button" onClick={() => setShowLogin(true)}
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
+                        <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                        <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div className="h-72 flex items-center justify-center bg-surface-container-high rounded-xl">
+                  <span className="material-icons-outlined text-8xl text-on-surface-variant/20">apartment</span>
                 </div>
               )}
             </div>

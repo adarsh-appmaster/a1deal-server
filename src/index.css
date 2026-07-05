@@ -50,4 +50,11 @@
   .portal-badge {
     @apply text-xs font-semibold px-3 py-1 rounded-full;
   }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

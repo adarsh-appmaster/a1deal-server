@@ -7,7 +7,6 @@ const NAV = [
   { path: '/investor/opportunities', icon: 'trending_up', label: 'Opportunities' },
   { path: '/investor/returns', icon: 'payments', label: 'Returns & ROI' },
   { path: '/investor/mortgage-properties', icon: 'home_work', label: 'Mortgage Properties' },
-  { path: '/investor/loan-transfer', icon: 'swap_horiz', label: 'Loan Transfer' },
   { path: '/investor/documents', icon: 'folder', label: 'Documents' },
 ];
 

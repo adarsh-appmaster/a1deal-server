@@ -23,13 +23,11 @@ import BuyerHome from './portals/buyer/pages/BuyerHome';
 import PropertySearch from './portals/buyer/pages/PropertySearch';
 import PropertyDetail from './portals/buyer/pages/PropertyDetail';
 import MortgageListing from './portals/buyer/pages/MortgageListing';
-import BuyerLoanTransfer from './portals/buyer/pages/BuyerLoanTransfer';
 import UnitPropertyListing from './portals/buyer/pages/UnitPropertyListing';
 import BuilderProfile from './portals/buyer/pages/BuilderProfile';
 import SiteVisitFlow from './portals/buyer/pages/SiteVisitFlow';
 import MyVisits from './portals/buyer/pages/MyVisits';
 import MortgagePropertyDetail from './portals/buyer/pages/MortgagePropertyDetail';
-import LoanTransferPropertyDetail from './portals/buyer/pages/LoanTransferPropertyDetail';
 
 // Developer Portal
 import DeveloperLayout from './portals/developer/DeveloperLayout';
@@ -41,7 +39,6 @@ import InventoryTracking from './portals/developer/pages/InventoryTracking';
 import PartnershipPackages from './portals/developer/pages/PartnershipPackages';
 import DeveloperRegister from './portals/developer/pages/DeveloperRegister';
 import DeveloperMortgageProperties from './portals/developer/pages/DeveloperMortgageProperties';
-import DeveloperLoanTransfer from './portals/developer/pages/DeveloperLoanTransfer';
 
 // Broker Portal
 import BrokerLayout from './portals/broker/BrokerLayout';
@@ -52,7 +49,6 @@ import DealPipeline from './portals/broker/pages/DealPipeline';
 import CommissionTracker from './portals/broker/pages/CommissionTracker';
 import MasterBroker from './portals/broker/pages/MasterBroker';
 import BrokerMortgageProperties from './portals/broker/pages/BrokerMortgageProperties';
-import BrokerLoanTransfer from './portals/broker/pages/BrokerLoanTransfer';
 import BrokerEnquiries from './portals/broker/pages/BrokerEnquiries';
 
 // Admin Portal
@@ -61,7 +57,6 @@ import AdminDashboard from './portals/admin/pages/AdminDashboard';
 import PendingApprovals from './portals/admin/pages/PendingApprovals';
 import MasterBrokerRequests from './portals/admin/pages/MasterBrokerRequests';
 import AdminMortgageProperties from './portals/admin/pages/AdminMortgageProperties';
-import AdminLoanTransfer from './portals/admin/pages/AdminLoanTransfer';
 import CommissionSettings from './portals/admin/pages/CommissionSettings';
 import UserManagement from './portals/admin/pages/UserManagement';
 import RevenueAnalytics from './portals/admin/pages/RevenueAnalytics';
@@ -82,7 +77,6 @@ import TeamLayout from './portals/team/TeamLayout';
 import TeamDashboard from './portals/team/pages/TeamDashboard';
 import LeadManagement from './portals/team/pages/LeadManagement';
 import MasterBrokerReview from './portals/team/pages/MasterBrokerReview';
-import TeamLoanTransfer from './portals/team/pages/TeamLoanTransfer';
 import TeamSiteVisits from './portals/team/pages/TeamSiteVisits';
 
 // Bank Portal
@@ -91,7 +85,6 @@ import BankDashboard from './portals/bank/pages/BankDashboard';
 import MortgageLeads from './portals/bank/pages/MortgageLeads';
 import AuctionProperties from './portals/bank/pages/AuctionProperties';
 import LoanApprovals from './portals/bank/pages/LoanApprovals';
-import BankLoanTransfer from './portals/bank/pages/LoanTransferProperties';
 import BankSiteVisits from './portals/bank/pages/BankSiteVisits';
 
 // Investor Portal
@@ -101,7 +94,6 @@ import Opportunities from './portals/investor/pages/Opportunities';
 import ReturnsROI from './portals/investor/pages/ReturnsROI';
 import MyInvestments from './portals/investor/pages/MyInvestments';
 import InvestorMortgageProperties from './portals/investor/pages/InvestorMortgageProperties';
-import InvestorLoanTransfer from './portals/investor/pages/InvestorLoanTransfer';
 import InvestorDocuments from './portals/investor/pages/InvestorDocuments';
 
 export default function App() {
@@ -137,8 +129,6 @@ export default function App() {
             <Route path="builder/:id" element={<BuilderProfile />} />
             <Route path="mortgage" element={<MortgageListing />} />
             <Route path="mortgage/:id" element={<MortgagePropertyDetail />} />
-            <Route path="loan-transfer" element={<BuyerLoanTransfer />} />
-            <Route path="loan-transfer/:id" element={<LoanTransferPropertyDetail />} />
             <Route path="unit-properties" element={<UnitPropertyListing />} />
             {/* Requires login — booking a site visit */}
             <Route path="visit/:propertyId" element={<PrivateRoute portalRole="buyer"><SiteVisitFlow /></PrivateRoute>} />
@@ -154,7 +144,6 @@ export default function App() {
             <Route path="inventory" element={<InventoryTracking />} />
             <Route path="packages" element={<PartnershipPackages />} />
             <Route path="mortgage-properties" element={<DeveloperMortgageProperties />} />
-            <Route path="loan-transfer" element={<DeveloperLoanTransfer />} />
           </Route>
 
           {/* Broker Portal */}
@@ -166,7 +155,6 @@ export default function App() {
             <Route path="commissions" element={<CommissionTracker />} />
             <Route path="master" element={<MasterBroker />} />
             <Route path="mortgage-properties" element={<BrokerMortgageProperties />} />
-            <Route path="loan-transfer" element={<BrokerLoanTransfer />} />
             <Route path="enquiries" element={<BrokerEnquiries />} />
           </Route>
 
@@ -176,7 +164,6 @@ export default function App() {
             <Route path="pending" element={<PendingApprovals />} />
             <Route path="master-broker" element={<MasterBrokerRequests />} />
             <Route path="mortgage-properties" element={<AdminMortgageProperties />} />
-            <Route path="loan-transfer" element={<AdminLoanTransfer />} />
             <Route path="commission-settings" element={<CommissionSettings />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="revenue" element={<RevenueAnalytics />} />
@@ -198,7 +185,6 @@ export default function App() {
             <Route index element={<TeamDashboard />} />
             <Route path="leads" element={<LeadManagement />} />
             <Route path="master-broker-review" element={<MasterBrokerReview />} />
-            <Route path="loan-transfer" element={<TeamLoanTransfer />} />
             <Route path="site-visits" element={<TeamSiteVisits />} />
           </Route>
 
@@ -209,7 +195,6 @@ export default function App() {
             <Route path="enquiries" element={<MortgageLeads />} />
             <Route path="site-visits" element={<BankSiteVisits />} />
             <Route path="auctions" element={<AuctionProperties />} />
-            <Route path="loan-transfer" element={<BankLoanTransfer />} />
             <Route path="approvals" element={<LoanApprovals />} />
           </Route>
 
@@ -220,7 +205,6 @@ export default function App() {
             <Route path="opportunities" element={<Opportunities />} />
             <Route path="returns" element={<ReturnsROI />} />
             <Route path="mortgage-properties" element={<InvestorMortgageProperties />} />
-            <Route path="loan-transfer" element={<InvestorLoanTransfer />} />
             <Route path="documents" element={<InvestorDocuments />} />
           </Route>
 

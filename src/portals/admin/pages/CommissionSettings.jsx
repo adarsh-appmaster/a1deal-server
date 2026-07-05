@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 
 const TYPE_LABELS = {
-  mortgage:      { label: 'Mortgage Properties',     icon: 'gavel' },
-  loan_transfer: { label: 'Loan Transfer Properties', icon: 'swap_horiz' },
-  unit:          { label: 'Unit Properties',          icon: 'apartment' },
+  mortgage: { label: 'Mortgage Properties', icon: 'gavel' },
+  unit:     { label: 'Unit Properties',     icon: 'apartment' },
 };
-const TYPES = ['mortgage', 'loan_transfer', 'unit'];
+const TYPES = ['mortgage', 'unit'];
 
 const inp = 'w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
 
@@ -194,7 +193,7 @@ export default function CommissionSettings() {
       <div>
         <h1 className="font-montserrat font-bold text-xl text-slate-800">Commission Settings</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          Set broker / master broker commission % for Mortgage, Loan Transfer and Unit properties.
+          Set broker / master broker commission % for Mortgage and Unit properties.
           Add city or pincode overrides for special rates.
         </p>
       </div>

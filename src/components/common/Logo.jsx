@@ -5,8 +5,8 @@ import logoFull from '../../assets/logo-full.png';
 // Desktop (md+): full logo with A1Deal text + tagline
 // Dark theme: wraps in white pill so logo stays readable on dark backgrounds
 
-const iconHeights  = { sm: 'h-8',  md: 'h-11', lg: 'h-14' };
-const fullHeights  = { sm: 'h-12', md: 'h-16', lg: 'h-20' };
+const iconHeights  = { sm: 'h-8',  md: 'h-11', lg: 'h-14', xl: 'h-16' };
+const fullHeights  = { sm: 'h-12', md: 'h-16', lg: 'h-20', xl: 'h-24' };
 
 export default function Logo({ theme = 'light', size = 'md' }) {
   const iconH = iconHeights[size] || iconHeights.md;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import EnquiryModal from './EnquiryModal';
+import ImageSlider from './ImageSlider';
 
 const ROLE_COLORS = {
   buyer:     'bg-violet-100 text-violet-700',
@@ -49,17 +50,22 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
     async function load() {
       setLoading(true);
       try {
-        const [areasRes, propsRes] = await Promise.all([
-          api.get('/mortgage-properties/my-areas'),
-          api.get('/mortgage-properties'),
-        ]);
-        setMyAreas(areasRes.data);
-        setLocalProps(propsRes.data.properties || []);
+        if (user) {
+          const [areasRes, propsRes] = await Promise.all([
+            api.get('/mortgage-properties/my-areas'),
+            api.get('/mortgage-properties'),
+          ]);
+          setMyAreas(areasRes.data);
+          setLocalProps(propsRes.data.properties || []);
+        } else {
+          const propsRes = await api.get('/mortgage-properties/public?limit=50');
+          setLocalProps(propsRes.data.properties || []);
+        }
       } catch { /* empty */ }
       setLoading(false);
     }
     load();
-  }, []);
+  }, [user]);
 
   // Debounced server-side search
   useEffect(() => {
@@ -70,13 +76,16 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
     const timer = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const r = await api.get(`/mortgage-properties?search=${encodeURIComponent(search.trim())}`);
+        const endpoint = user
+          ? `/mortgage-properties?search=${encodeURIComponent(search.trim())}`
+          : `/mortgage-properties/public?search=${encodeURIComponent(search.trim())}`;
+        const r = await api.get(endpoint);
         setSearchProps(r.data.properties || []);
       } catch { /* empty */ }
       setSearchLoading(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, user]);
 
   function handleSearchSubmit(e) {
     e.preventDefault();
@@ -292,13 +301,18 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
 function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, onEnquire }) {
   const navigate = useNavigate();
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-shadow overflow-hidden">
+    <div
+      onClick={() => navigate(`/buyer/mortgage/${p._id}`)}
+      className="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
+    >
       {/* Thumbnail */}
-      <div className="relative h-40 bg-slate-100 flex items-center justify-center">
-        {p.images?.[0]
-          ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
-          : <span className="material-icons-outlined text-slate-300 text-4xl">home_work</span>}
-      </div>
+      <ImageSlider
+        images={p.images || []}
+        alt={p.title}
+        className="h-40"
+        interval={2500}
+        placeholderIcon="home_work"
+      />
       {/* Header */}
       <div className="px-4 pt-4 pb-3" style={{ background: `${portalColor}08` }}>
         <div className="flex items-start justify-between gap-2 mb-1">
@@ -348,16 +362,19 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
 
       {/* Actions */}
       <div className="px-4 pb-4 flex gap-2">
-        <button onClick={onEnquire}
+        <button onClick={e => { e.stopPropagation(); onEnquire(); }}
           className="flex-1 py-2 rounded-xl text-xs font-semibold transition hover:opacity-80"
           style={{ background: `${portalColor}18`, color: portalColor }}>
           Enquire
         </button>
         {canScheduleVisit && (
           <button
-            onClick={() => navigate(`/buyer/visit/${p._id}`, {
-              state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'MortgageProperty' },
-            })}
+            onClick={e => {
+              e.stopPropagation();
+              navigate(`/buyer/visit/${p._id}`, {
+                state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'MortgageProperty' },
+              });
+            }}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border text-xs font-semibold transition hover:opacity-80"
             style={{ borderColor: portalColor, color: portalColor }}>
             <span className="material-icons-outlined text-sm">event</span>

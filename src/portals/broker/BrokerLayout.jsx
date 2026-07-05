@@ -10,7 +10,6 @@ const NAV = [
   { path: '/broker/enquiries', icon: 'contact_support', label: 'Property Enquiries' },
   { path: '/broker/master', icon: 'verified', label: 'Master Broker' },
   { path: '/broker/mortgage-properties', icon: 'home_work', label: 'Mortgage Properties' },
-  { path: '/broker/loan-transfer', icon: 'swap_horiz', label: 'Loan Transfer' },
 ];
 
 export default function BrokerLayout() {

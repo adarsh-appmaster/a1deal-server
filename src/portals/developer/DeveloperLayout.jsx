@@ -8,7 +8,6 @@ const NAV = [
   { path: '/developer/inventory', icon: 'inventory_2', label: 'Inventory' },
   { path: '/developer/packages', icon: 'handshake', label: 'Packages' },
   { path: '/developer/mortgage-properties', icon: 'home_work', label: 'Mortgage Properties' },
-  { path: '/developer/loan-transfer', icon: 'swap_horiz', label: 'Loan Transfer' },
 ];
 
 export default function DeveloperLayout() {

@@ -6,7 +6,6 @@ const NAV = [
   { path: '/team/leads', icon: 'people', label: 'Lead Management' },
   { path: '/team/master-broker-review', icon: 'verified_user', label: 'Broker Reviews' },
   { path: '/team/site-visits', icon: 'event', label: 'Site Visits' },
-  { path: '/team/loan-transfer', icon: 'swap_horiz', label: 'Loan Transfer' },
 ];
 
 export default function TeamLayout() {

@@ -8,10 +8,10 @@ export default {
         'primary-container': '#6236ff',
         'on-primary': '#ffffff',
         'on-primary-container': '#e3dbff',
-        secondary: '#b52330',
-        'secondary-container': '#ff5a5f',
+        secondary: '#d6198f',
+        'secondary-container': '#ff4fa6',
         'on-secondary': '#ffffff',
-        'on-secondary-container': '#60000e',
+        'on-secondary-container': '#5c0033',
         surface: '#f8f9ff',
         'surface-dim': '#cbdbf5',
         'surface-bright': '#f8f9ff',
@@ -49,6 +49,31 @@ export default {
       boxShadow: {
         'level-2': '0px 4px 12px rgba(26,29,43,0.08)',
         'level-3': '0px 12px 32px rgba(26,29,43,0.15)',
+      },
+      keyframes: {
+        blink: {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.25 },
+        },
+        sparkle: {
+          '0%, 100%': {
+            opacity: 0.3, transform: 'scale(0.6) rotate(0deg)',
+            filter: 'brightness(1) drop-shadow(0 0 0px #ffd54f)',
+          },
+          '50%': {
+            opacity: 1, transform: 'scale(1.3) rotate(90deg)',
+            filter: 'brightness(1.8) drop-shadow(0 0 6px #ffd54f)',
+          },
+        },
+        marquee: {
+          '0%':   { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+      },
+      animation: {
+        blink: 'blink 1.2s ease-in-out infinite',
+        sparkle: 'sparkle 1.4s ease-in-out infinite',
+        marquee: 'marquee 28s linear infinite',
       },
     },
   },

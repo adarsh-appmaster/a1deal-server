@@ -6,7 +6,6 @@ const NAV = [
   { path: '/bank/enquiries', icon: 'inbox', label: 'Enquiries' },
   { path: '/bank/site-visits', icon: 'event', label: 'Site Visits' },
   { path: '/bank/auctions', icon: 'gavel', label: 'Auction Properties' },
-  { path: '/bank/loan-transfer', icon: 'sync_alt', label: 'Loan Transfer' },
   { path: '/bank/approvals', icon: 'fact_check', label: 'Loan Approvals' },
 ];
 

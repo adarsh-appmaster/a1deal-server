@@ -138,7 +138,7 @@ export default function AdminPropertyEnquiries() {
     setBookPrice(selected.bookedPrice != null ? String(selected.bookedPrice) : '');
     setPropertyUnits([]);
     setShowBookModal(true);
-    // Only fetch units for UnitProperty — mortgage/loan transfer have no unit split
+    // Only fetch units for UnitProperty — mortgage has no unit split
     if (selected.propertyId && selected.propertyModel === 'UnitProperty') {
       try {
         const { data } = await api.get(`/unit-properties/${selected.propertyId}`);
@@ -248,12 +248,8 @@ export default function AdminPropertyEnquiries() {
                       {e.propertyTitle && <p className="text-xs text-[#4900e5] truncate max-w-[140px]" title={e.propertyTitle}>{e.propertyTitle}</p>}
                       {e.propertyModel && (
                         <span className={`mt-0.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded
-                          ${e.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]'
-                          : e.propertyModel === 'MortgageProperty' ? 'bg-amber-100 text-amber-700'
-                          : 'bg-emerald-100 text-emerald-700'}`}>
-                          {e.propertyModel === 'UnitProperty' ? 'Unit'
-                           : e.propertyModel === 'MortgageProperty' ? 'Mortgage'
-                           : 'Loan Transfer'}
+                          ${e.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]' : 'bg-amber-100 text-amber-700'}`}>
+                          {e.propertyModel === 'UnitProperty' ? 'Unit' : 'Mortgage'}
                         </span>
                       )}
                     </td>
@@ -408,7 +404,6 @@ export default function AdminPropertyEnquiries() {
                 className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-bold hover:bg-[#3700b3] transition disabled:opacity-60">
                 {bookSaving ? 'Saving…'
                  : selected.propertyModel === 'MortgageProperty' ? 'Confirm Sale'
-                 : selected.propertyModel === 'LoanTransferProperty' ? 'Confirm Transfer'
                  : 'Confirm Booking'}
               </button>
             </div>
@@ -441,12 +436,8 @@ export default function AdminPropertyEnquiries() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {selected.propertyModel && (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                        ${selected.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]'
-                        : selected.propertyModel === 'MortgageProperty' ? 'bg-amber-100 text-amber-700'
-                        : 'bg-emerald-100 text-emerald-700'}`}>
-                        {selected.propertyModel === 'UnitProperty' ? 'Unit Property'
-                         : selected.propertyModel === 'MortgageProperty' ? 'Mortgage / Bank Repo'
-                         : 'Loan Transfer'}
+                        ${selected.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]' : 'bg-amber-100 text-amber-700'}`}>
+                        {selected.propertyModel === 'UnitProperty' ? 'Unit Property' : 'Mortgage / Bank Repo'}
                       </span>
                     )}
                   </div>

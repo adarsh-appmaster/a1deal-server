@@ -10,7 +10,6 @@ const NAV = [
   { path: '/admin/enquiries', icon: 'contact_support', label: 'Property Enquiries' },
   { path: '/admin/site-visits', icon: 'event', label: 'Site Visits' },
   { path: '/admin/leads', icon: 'person_search', label: 'Lead Management' },
-  { path: '/admin/loan-transfer', icon: 'swap_horiz', label: 'Loan Transfer' },
   { path: '/admin/commission-settings', icon: 'percent', label: 'Commission Settings' },
   { path: '/admin/users', icon: 'manage_accounts', label: 'User Management' },
   { path: '/admin/revenue', icon: 'analytics', label: 'Revenue Analytics' },

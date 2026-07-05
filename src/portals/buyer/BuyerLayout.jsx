@@ -27,9 +27,8 @@ export default function BuyerLayout() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-on-surface-variant">
             <Link to="/buyer" className="hover:text-primary transition-colors">Home</Link>
             <Link to="/buyer/search" className="hover:text-primary transition-colors">Search</Link>
-            <Link to="/buyer/mortgage" className="hover:text-primary transition-colors">Mortgages</Link>
-            <Link to="/buyer/loan-transfer" className="hover:text-primary transition-colors">Loan Transfer</Link>
-            <Link to="/buyer/unit-properties" className="hover:text-primary transition-colors">Unit Properties</Link>
+            <Link to="/buyer/mortgage" className="hover:text-primary transition-colors">Property Deals</Link>
+            <Link to="/buyer/unit-properties" className="hover:text-primary transition-colors">Property Partners</Link>
             {user && <Link to="/buyer/visits" className="hover:text-primary transition-colors">My Visits</Link>}
           </nav>
 
@@ -81,9 +80,8 @@ export default function BuyerLayout() {
             {[
               { to: '/buyer', label: 'Home' },
               { to: '/buyer/search', label: 'Search' },
-              { to: '/buyer/mortgage', label: 'Mortgages' },
-              { to: '/buyer/loan-transfer', label: 'Loan Transfer' },
-              { to: '/buyer/unit-properties', label: 'Unit Properties' },
+              { to: '/buyer/mortgage', label: 'Property Deals' },
+              { to: '/buyer/unit-properties', label: 'Property Partners' },
               ...(user ? [{ to: '/buyer/visits', label: 'My Visits' }] : []),
             ].map(l => (
               <Link
@@ -118,7 +116,7 @@ export default function BuyerLayout() {
             <Logo variant="full" theme="dark" size="sm" />
             <div className="flex flex-wrap gap-6 text-xs text-white/50">
               <Link to="/buyer" className="hover:text-white">Home</Link>
-              <Link to="/buyer/mortgage" className="hover:text-white">Mortgages</Link>
+              <Link to="/buyer/mortgage" className="hover:text-white">Property Deals</Link>
             </div>
           </div>
           <p className="text-white/30 text-xs mt-6">© 2026 A1 Deal. All rights reserved.</p>

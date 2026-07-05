@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EnquiryModal from '../../../components/common/EnquiryModal';
+import AutoScrollRow from '../../../components/common/AutoScrollRow';
+import ImageSlider from '../../../components/common/ImageSlider';
+import { getStartingPrice } from '../../../utils/pricing';
 import api from '../../../api/axios';
 
 const FEATURED = [
@@ -24,14 +27,13 @@ export default function BuyerHome() {
   const [searchTab, setSearchTab] = useState('buy');
   const [query, setQuery] = useState('');
   const [showEnquiry, setShowEnquiry] = useState(false);
+  const [enquireProperty, setEnquireProperty] = useState(null);
 
   const [mortgageProps, setMortgageProps] = useState([]);
-  const [loanTransferProps, setLoanTransferProps] = useState([]);
   const [unitProps, setUnitProps] = useState([]);
 
   useEffect(() => {
     api.get('/mortgage-properties/public?limit=3').then(r => setMortgageProps(r.data.properties || [])).catch(() => {});
-    api.get('/loan-transfer/public?limit=3').then(r => setLoanTransferProps(r.data.properties || [])).catch(() => {});
     api.get('/unit-properties/public?limit=3').then(r => setUnitProps(r.data.properties || [])).catch(() => {});
   }, []);
 
@@ -111,10 +113,10 @@ export default function BuyerHome() {
             View All
           </button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURED.map(p => (
+        <AutoScrollRow
+          items={FEATURED}
+          renderItem={p => (
             <div
-              key={p.id}
               onClick={() => navigate(`/buyer/property/${p.id}`)}
               className="card overflow-hidden cursor-pointer hover:shadow-level-3 hover:-translate-y-1 transition-all duration-200"
             >
@@ -135,8 +137,8 @@ export default function BuyerHome() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        />
       </section>
 
       {/* Unit Properties */}
@@ -144,35 +146,65 @@ export default function BuyerHome() {
         <section className="max-w-container mx-auto px-6 py-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Unit Properties</h2>
-              <p className="text-on-surface-variant text-sm mt-1">Towers, villas, plots — select listings include an investment plan</p>
+              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Property Partners</h2>
+              <p className="animate-blink font-semibold text-secondary text-sm mt-1 flex items-center gap-1">
+                <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-base" style={{ animationDelay: '0ms' }}>auto_awesome</span>
+                Be a Partner in Premium Properties
+                <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-base" style={{ animationDelay: '400ms' }}>auto_awesome</span>
+              </p>
             </div>
             <button onClick={() => navigate('/buyer/unit-properties')} className="btn-ghost text-sm py-2 px-4">View All</button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {unitProps.map(p => (
-              <div key={p._id} className="card overflow-hidden relative">
+          <AutoScrollRow
+            items={unitProps}
+            renderItem={p => (
+              <div
+                onClick={() => navigate(`/buyer/property/${p._id}`)}
+                className="card overflow-hidden relative cursor-pointer hover:shadow-level-3 hover:-translate-y-1 transition-all duration-200"
+              >
                 {p.investmentPlan?.enabled && (
                   <span className="absolute top-3 left-3 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white z-10">
                     Investment Plan
                   </span>
                 )}
-                <div className="relative h-40 bg-surface-container flex items-center justify-center">
-                  {p.images?.[0]
-                    ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
-                    : <span className="material-icons-outlined text-on-surface-variant/30 text-4xl">apartment</span>}
-                </div>
+                <ImageSlider
+                  images={p.images || []}
+                  alt={p.title}
+                  className="h-40"
+                  interval={2500}
+                  placeholderIcon="apartment"
+                />
                 <div className="p-4">
                   <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
                   <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.title}</h3>
-                  <p className="text-primary-container font-bold text-lg mb-1">₹{Number(p.price).toLocaleString('en-IN')}</p>
+                  <p className="text-primary-container font-bold text-lg mb-1">Units starting ₹{Number(getStartingPrice(p)).toLocaleString('en-IN')}</p>
                   {p.investmentPlan?.enabled && (
                     <p className="text-xs text-emerald-700">{p.investmentPlan.returnRatePct}% p.a. · {p.investmentPlan.durationYears} yr</p>
                   )}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={e => { e.stopPropagation(); setEnquireProperty({ ...p, _model: 'UnitProperty' }); }}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition"
+                    >
+                      Enquire
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/buyer/visit/${p._id}`, {
+                          state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'UnitProperty' },
+                        });
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-primary text-primary text-xs font-semibold hover:bg-primary/5 transition"
+                    >
+                      <span className="material-icons-outlined text-sm">event</span>
+                      Schedule Visit
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          />
         </section>
       )}
 
@@ -181,58 +213,58 @@ export default function BuyerHome() {
         <section className="max-w-container mx-auto px-6 py-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Mortgage / Bank Auction Properties</h2>
-              <p className="text-on-surface-variant text-sm mt-1">Bank-repossessed listings at below-market prices</p>
+              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Property Deals</h2>
+              <p className="animate-blink font-semibold text-secondary text-sm mt-1 flex items-center gap-1">
+                <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-base" style={{ animationDelay: '0ms' }}>auto_awesome</span>
+                Save 30–40% Compared to Market Prices
+                <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-base" style={{ animationDelay: '400ms' }}>auto_awesome</span>
+              </p>
             </div>
             <button onClick={() => navigate('/buyer/mortgage')} className="btn-ghost text-sm py-2 px-4">View All</button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {mortgageProps.map(p => (
-              <div key={p._id} className="card overflow-hidden">
-                <div className="relative h-40 bg-surface-container flex items-center justify-center">
-                  {p.images?.[0]
-                    ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
-                    : <span className="material-icons-outlined text-on-surface-variant/30 text-4xl">account_balance</span>}
-                </div>
+          <AutoScrollRow
+            items={mortgageProps}
+            renderItem={p => (
+              <div
+                onClick={() => navigate(`/buyer/mortgage/${p._id}`)}
+                className="card overflow-hidden cursor-pointer hover:shadow-level-3 hover:-translate-y-1 transition-all duration-200"
+              >
+                <ImageSlider
+                  images={p.images || []}
+                  alt={p.title}
+                  className="h-40"
+                  interval={2500}
+                  placeholderIcon="account_balance"
+                />
                 <div className="p-4">
                   <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.type} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
                   <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.title}</h3>
                   <p className="text-primary-container font-bold text-lg mb-1">₹{Number(p.price).toLocaleString('en-IN')}</p>
                   {p.bankName && <p className="text-xs text-on-surface-variant">{p.bankName}</p>}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={e => { e.stopPropagation(); setEnquireProperty({ ...p, _model: 'MortgageProperty' }); }}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition"
+                    >
+                      Enquire
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/buyer/visit/${p._id}`, {
+                          state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'MortgageProperty' },
+                        });
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-primary text-primary text-xs font-semibold hover:bg-primary/5 transition"
+                    >
+                      <span className="material-icons-outlined text-sm">event</span>
+                      Schedule Visit
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Loan Transfer Properties */}
-      {loanTransferProps.length > 0 && (
-        <section className="max-w-container mx-auto px-6 py-12">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Loan Transfer Properties</h2>
-              <p className="text-on-surface-variant text-sm mt-1">Take over an existing home loan — faster approvals</p>
-            </div>
-            <button onClick={() => navigate('/buyer/loan-transfer')} className="btn-ghost text-sm py-2 px-4">View All</button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {loanTransferProps.map(p => (
-              <div key={p._id} className="card overflow-hidden">
-                <div className="relative h-40 bg-surface-container flex items-center justify-center">
-                  {p.images?.[0]
-                    ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
-                    : <span className="material-icons-outlined text-on-surface-variant/30 text-4xl">sync_alt</span>}
-                </div>
-                <div className="p-4">
-                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
-                  <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.title}</h3>
-                  <p className="text-primary-container font-bold text-lg mb-1">₹{Number(p.askingPrice).toLocaleString('en-IN')}</p>
-                  {p.loanBank && <p className="text-xs text-on-surface-variant">{p.loanBank}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
+            )}
+          />
         </section>
       )}
 
@@ -254,6 +286,7 @@ export default function BuyerHome() {
       </section>
 
       {showEnquiry && <EnquiryModal onClose={() => setShowEnquiry(false)} />}
+      {enquireProperty && <EnquiryModal property={enquireProperty} onClose={() => setEnquireProperty(null)} />}
     </div>
   );
 }

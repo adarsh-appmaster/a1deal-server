@@ -4,14 +4,12 @@ import api from '../../api/axios';
 const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white transition';
 
 const ACTION_LABEL = {
-  UnitProperty:        'Book Unit',
-  MortgageProperty:    'Mark as Sold',
-  LoanTransferProperty:'Mark as Transferred',
+  UnitProperty:     'Book Unit',
+  MortgageProperty: 'Mark as Sold',
 };
 const DONE_LABEL = {
-  UnitProperty:        'Booked',
-  MortgageProperty:    'Sold',
-  LoanTransferProperty:'Transferred',
+  UnitProperty:     'Booked',
+  MortgageProperty: 'Sold',
 };
 
 /**

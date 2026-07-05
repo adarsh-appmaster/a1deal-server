@@ -40,7 +40,7 @@ export default function BankSiteVisits() {
     <div>
       <div className="mb-6">
         <h1 className="font-montserrat font-bold text-2xl text-on-surface">Site Visits</h1>
-        <p className="text-on-surface-variant text-sm mt-1">Buyer visit schedules for your mortgage/loan-transfer properties</p>
+        <p className="text-on-surface-variant text-sm mt-1">Buyer visit schedules for your mortgage properties</p>
       </div>
 
       {/* KPIs */}

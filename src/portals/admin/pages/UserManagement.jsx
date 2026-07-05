@@ -442,7 +442,7 @@ export default function UserManagement() {
               ) : (
                 <form onSubmit={handleCreateBanker} className="space-y-4">
                   <p className="text-xs text-slate-500 bg-slate-50 rounded-xl p-3">
-                    A temporary password will be auto-generated and emailed to the banker. They can add Mortgage and Loan Transfer properties once logged in.
+                    A temporary password will be auto-generated and emailed to the banker. They can add Mortgage properties once logged in.
                   </p>
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Full Name *</label>

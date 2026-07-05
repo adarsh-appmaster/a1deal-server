@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
+import AutoScrollRow from './AutoScrollRow';
+import ImageSlider from './ImageSlider';
 import { searchLocations } from '../../data/indiaLocations';
+import { HOW_IT_WORKS_ART } from '../../data/howItWorksArt';
+import { getStartingPrice } from '../../utils/pricing';
 import api from '../../api/axios';
 
 const ROLES = [
@@ -37,17 +41,22 @@ const ROLES = [
   },
 ];
 
-const STATS = [
-  { value: '12,400+', label: 'Active Listings' },
-  { value: '42',      label: 'Cities Covered' },
-  { value: '320+',    label: 'Verified Developers' },
-  { value: '₹2,000 Cr+', label: 'Transactions Closed' },
-];
-
 const HOW_IT_WORKS = [
-  { step: '01', icon: 'person_add', title: 'Create Your Account', desc: 'Sign up as a buyer, broker, developer, or investor in under 2 minutes.' },
-  { step: '02', icon: 'search',     title: 'Discover Opportunities', desc: 'Browse verified listings, mortgage properties, and investment projects near you.' },
-  { step: '03', icon: 'handshake',  title: 'Close the Deal', desc: 'Connect directly with sellers, brokers, and developers — all on one platform.' },
+  {
+    step: '01', icon: 'person_add', title: 'Create Your Account',
+    desc: 'Sign up as a buyer, broker, developer, or investor in under 2 minutes.',
+    images: HOW_IT_WORKS_ART.createAccount,
+  },
+  {
+    step: '02', icon: 'search', title: 'Discover Opportunities',
+    desc: 'Browse verified listings, mortgage properties, and investment projects near you.',
+    images: HOW_IT_WORKS_ART.discover,
+  },
+  {
+    step: '03', icon: 'handshake', title: 'Close the Deal',
+    desc: 'Connect directly with sellers, brokers, and developers — all on one platform.',
+    images: HOW_IT_WORKS_ART.closeDeal,
+  },
 ];
 
 const FEATURES = [
@@ -69,22 +78,19 @@ const INTERNAL = [
 function usePublicProperties() {
   const [units,     setUnits]     = useState([]);
   const [mortgages, setMortgages] = useState([]);
-  const [loans,     setLoans]     = useState([]);
   const [loading,   setLoading]   = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get('/unit-properties/public?limit=6'),
       api.get('/mortgage-properties/public?limit=6'),
-      api.get('/loan-transfer/public?limit=6'),
-    ]).then(([u, m, l]) => {
+    ]).then(([u, m]) => {
       setUnits(u.data.properties     || []);
       setMortgages(m.data.properties || []);
-      setLoans(l.data.properties     || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  return { units, mortgages, loans, loading };
+  return { units, mortgages, loading };
 }
 
 function formatPrice(n) {
@@ -94,21 +100,24 @@ function formatPrice(n) {
   return `₹${n.toLocaleString('en-IN')}`;
 }
 
-function PropCard({ title, city, price, type, beds, image, tag, tagColor, onClick }) {
+function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tagColor, onClick }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group text-left bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
+      className="group text-left bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
     >
       <div className="relative h-44 bg-slate-100 overflow-hidden">
-        {image
-          ? <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          : <div className="w-full h-full flex items-center justify-center">
-              <span className="material-icons-outlined text-5xl text-slate-300">home</span>
-            </div>
-        }
-        <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${tagColor}`}>{tag}</span>
+        <ImageSlider
+          images={images || []}
+          alt={title}
+          className="h-44"
+          interval={2500}
+          placeholderIcon="home"
+        />
+        <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10 ${tagColor}`}>{tag}</span>
       </div>
       <div className="p-4">
         <p className="font-semibold text-[#0F172A] text-sm leading-snug line-clamp-1">{title}</p>
@@ -116,7 +125,9 @@ function PropCard({ title, city, price, type, beds, image, tag, tagColor, onClic
           <span className="material-icons-outlined text-xs">location_on</span>{city || '—'}
         </p>
         <div className="flex items-center justify-between mt-3">
-          <p className="font-montserrat font-bold text-[#4900e5] text-sm">{formatPrice(price)}</p>
+          <p className="font-montserrat font-bold text-[#4900e5] text-sm">
+            {priceLabel ? `${priceLabel} ${formatPrice(price)}` : formatPrice(price)}
+          </p>
           {beds != null && (
             <span className="text-xs text-slate-400 flex items-center gap-1">
               <span className="material-icons-outlined text-xs">bed</span>{beds} BHK
@@ -127,18 +138,27 @@ function PropCard({ title, city, price, type, beds, image, tag, tagColor, onClic
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
-function PropertySection({ title, icon, items, loading, navigate, baseRoute }) {
+function PropertySection({ title, tagline, icon, items, loading, navigate, baseRoute }) {
   if (!loading && items.length === 0) return null;
   return (
     <div className="mb-12">
       <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <span className="material-icons-outlined text-xl text-[#4900e5]">{icon}</span>
-          <h3 className="font-montserrat font-bold text-lg text-[#0F172A]">{title}</h3>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="material-icons-outlined text-xl text-[#4900e5]">{icon}</span>
+            <h3 className="font-montserrat font-bold text-lg text-[#0F172A]">{title}</h3>
+          </div>
+          {tagline && (
+            <p className="animate-blink font-semibold text-[#d6198f] text-xs mt-1 ml-7 flex items-center gap-1">
+              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-sm" style={{ animationDelay: '0ms' }}>auto_awesome</span>
+              {tagline}
+              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-sm" style={{ animationDelay: '400ms' }}>auto_awesome</span>
+            </p>
+          )}
         </div>
         <button
           onClick={() => navigate('/signup')}
@@ -154,11 +174,14 @@ function PropertySection({ title, icon, items, loading, navigate, baseRoute }) {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.slice(0, 6).map(p => (
-            <PropCard key={p._id} {...p} onClick={() => navigate(p.path || '/signup')} />
-          ))}
-        </div>
+        <AutoScrollRow
+          items={items.slice(0, 6)}
+          cardWidth="w-64"
+          gap="gap-4"
+          renderItem={p => (
+            <PropCard {...p} onClick={() => navigate(p.path || '/signup')} />
+          )}
+        />
       )}
     </div>
   );
@@ -238,12 +261,12 @@ function CitySearchBar({ onSearch }) {
 
 export default function PortalSelector() {
   const navigate = useNavigate();
-  const { units, mortgages, loans, loading } = usePublicProperties();
+  const { units, mortgages, loading } = usePublicProperties();
 
   const unitItems = units.map(p => ({
     _id: p._id, title: p.title, city: p.city,
-    price: p.price, beds: p.bedrooms ?? null,
-    image: p.images?.[0] || null,
+    price: getStartingPrice(p), priceLabel: 'Units starting', beds: p.bedrooms ?? null,
+    images: p.images || [],
     tag: p.propertyType || 'Property', tagColor: 'bg-[#4900e5]/10 text-[#4900e5]',
     path: `/buyer/property/${p._id}`,
   }));
@@ -251,18 +274,10 @@ export default function PortalSelector() {
   const mortgageItems = mortgages.map(p => ({
     _id: p._id, title: p.title, city: p.city,
     price: p.price, beds: p.bedrooms ?? null,
-    image: p.images?.[0] || null,
+    images: p.images || [],
     tag: p.type || 'Mortgage', tagColor: 'bg-amber-100 text-amber-700',
     type: p.bankName || null,
     path: `/buyer/mortgage/${p._id}`,
-  }));
-
-  const loanItems = loans.map(p => ({
-    _id: p._id, title: p.title, city: p.city,
-    price: p.askingPrice, beds: p.bedrooms ?? null,
-    image: p.images?.[0] || null,
-    tag: p.propertyType || 'Loan Transfer', tagColor: 'bg-emerald-100 text-emerald-700',
-    path: `/buyer/loan-transfer/${p._id}`,
   }));
 
   function handleSearch(city) {
@@ -274,7 +289,7 @@ export default function PortalSelector() {
 
       {/* ── Header ── */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 bg-white/90 backdrop-blur border-b border-slate-100">
-        <Logo variant="full" size="md" />
+        <Logo variant="full" size="xl" />
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/login')}
             className="px-5 py-2 rounded-full border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
@@ -314,43 +329,26 @@ export default function PortalSelector() {
         </div>
       </section>
 
-      {/* ── Stats strip ── */}
-      <section className="bg-[#4900e5] py-8 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-white">
-          {STATS.map(s => (
-            <div key={s.label}>
-              <p className="font-montserrat font-bold text-2xl md:text-3xl">{s.value}</p>
-              <p className="text-white/70 text-sm mt-1">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── Property Listings ── */}
-      {(loading || unitItems.length > 0 || mortgageItems.length > 0 || loanItems.length > 0) && (
+      {(loading || unitItems.length > 0 || mortgageItems.length > 0) && (
         <section className="max-w-6xl mx-auto w-full px-4 py-16">
           <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Live on the Platform</p>
           <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
             Featured Properties
           </h2>
           <PropertySection
-            title="Unit Properties"
+            title="Property Partners"
+            tagline="Be a Partner in Premium Properties"
             icon="apartment"
             items={unitItems}
             loading={loading}
             navigate={navigate}
           />
           <PropertySection
-            title="Mortgage / Bank Repo"
+            title="Property Deals"
+            tagline="Save 30–40% Compared to Market Prices"
             icon="account_balance"
             items={mortgageItems}
-            loading={loading}
-            navigate={navigate}
-          />
-          <PropertySection
-            title="Loan Transfer Properties"
-            icon="swap_horiz"
-            items={loanItems}
             loading={loading}
             navigate={navigate}
           />
@@ -393,17 +391,23 @@ export default function PortalSelector() {
             How A1 Deal Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {HOW_IT_WORKS.map((h, i) => (
-              <div key={h.step} className="relative text-center">
-                {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-slate-200 z-0" />
-                )}
-                <div className="relative z-10 w-16 h-16 mx-auto rounded-2xl bg-[#4900e5]/10 flex items-center justify-center mb-4">
-                  <span className="material-icons-outlined text-2xl text-[#4900e5]">{h.icon}</span>
+            {HOW_IT_WORKS.map(h => (
+              <div key={h.step} className="bg-white rounded-2xl border border-slate-100 overflow-hidden text-center shadow-sm">
+                <ImageSlider
+                  images={h.images}
+                  alt={h.title}
+                  className="h-40"
+                  interval={2500}
+                  placeholderIcon={h.icon}
+                />
+                <div className="p-5">
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-[#4900e5]/10 flex items-center justify-center mb-3 -mt-10 relative z-10 border-4 border-white">
+                    <span className="material-icons-outlined text-xl text-[#4900e5]">{h.icon}</span>
+                  </div>
+                  <span className="text-xs font-bold text-[#4900e5] tracking-widest">{h.step}</span>
+                  <h3 className="font-montserrat font-bold text-base text-[#0F172A] mt-1 mb-2">{h.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{h.desc}</p>
                 </div>
-                <span className="text-xs font-bold text-[#4900e5] tracking-widest">{h.step}</span>
-                <h3 className="font-montserrat font-bold text-base text-[#0F172A] mt-1 mb-2">{h.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{h.desc}</p>
               </div>
             ))}
           </div>

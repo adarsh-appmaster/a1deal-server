@@ -77,9 +77,11 @@ export default function MortgagePropertyDetail() {
   const [notFound, setNotFound]       = useState(false);
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [showLogin, setShowLogin]     = useState(false);
+  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   useEffect(() => {
     setLoading(true);
+    setShowAllPhotos(false);
     api.get(`/mortgage-properties/public/${id}`)
       .then(r => setProperty(r.data.property))
       .catch(err => { if (err.response?.status === 404) setNotFound(true); })
@@ -107,7 +109,7 @@ export default function MortgagePropertyDetail() {
         <p className="text-slate-500 mb-6">This listing may have been removed or is no longer available.</p>
         <button onClick={() => navigate('/buyer/mortgage')}
           className="px-5 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">
-          Back to Mortgage Properties
+          Back to Property Deals
         </button>
       </div>
     );
@@ -137,19 +139,68 @@ export default function MortgagePropertyDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Hero */}
-            <div className="rounded-2xl overflow-hidden border border-slate-100 bg-gradient-to-br from-amber-50 to-white">
-              <div className="relative h-56 flex items-center justify-center bg-gradient-to-br from-amber-100/60 to-white">
-                {property.images?.[0]
-                  ? <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover" />
-                  : <span className="material-icons-outlined text-8xl text-amber-300">account_balance</span>}
-                <span className={`absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-500'}`}>
+            {/* Media gallery — every photo and the video shown at once, no slider */}
+            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-500'}`}>
                   {STATUS_LABEL[property.status] || property.status}
                 </span>
-                <span className="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 capitalize">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 capitalize">
                   {property.type?.replace(/_/g, ' ') || 'Bank Repo'}
                 </span>
               </div>
+              {(property.images?.length || property.video) ? (() => {
+                const images = property.images || [];
+                const VISIBLE_LIMIT = 4;
+                const visibleImages = showAllPhotos ? images : images.slice(0, VISIBLE_LIMIT);
+                const remaining = images.length - VISIBLE_LIMIT;
+                return (
+                  <div className="relative">
+                    <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
+                      {property.video && (
+                        <video src={property.video} controls={!isGuest} className="w-full h-[28rem] object-cover rounded-xl bg-black col-span-2" />
+                      )}
+                      {visibleImages.map((img, i) => {
+                        const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
+                        return (
+                          <div key={i} className="relative">
+                            <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-[28rem] object-cover rounded-xl" />
+                            {isLastVisible && !isGuest && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAllPhotos(true)}
+                                className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg"
+                              >
+                                +{remaining} more
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllPhotos(false)}
+                        className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        Show fewer photos
+                      </button>
+                    )}
+                    {isGuest && (
+                      <button type="button" onClick={() => setShowLogin(true)}
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
+                        <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                        <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div className="h-[28rem] flex items-center justify-center bg-surface-container-high rounded-xl">
+                  <span className="material-icons-outlined text-6xl text-on-surface-variant/20">account_balance</span>
+                </div>
+              )}
             </div>
 
             {/* Details card */}
