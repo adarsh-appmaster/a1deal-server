@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import AutoScrollRow from './AutoScrollRow';
 import ImageSlider from './ImageSlider';
+import ShareWhatsappButton from './ShareWhatsappButton';
 import { searchLocations } from '../../data/indiaLocations';
 import { HOW_IT_WORKS_ART } from '../../data/howItWorksArt';
 import { getStartingPrice } from '../../utils/pricing';
@@ -100,7 +101,7 @@ function formatPrice(n) {
   return `₹${n.toLocaleString('en-IN')}`;
 }
 
-function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tagColor, onClick }) {
+function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tagColor, path, onClick }) {
   return (
     <div
       role="button"
@@ -116,6 +117,7 @@ function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tag
           className="h-44"
           interval={2500}
           placeholderIcon="home"
+          overlay={path ? <ShareWhatsappButton property={{ title, city, price }} path={path} iconOnly className="absolute bottom-2 right-2" /> : null}
         />
         <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10 ${tagColor}`}>{tag}</span>
       </div>

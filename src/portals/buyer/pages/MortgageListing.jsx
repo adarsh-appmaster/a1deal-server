@@ -14,7 +14,7 @@ export default function MortgageListing() {
       <div className="mb-5">
         <WhatsAppGroupCard type="mortgage" />
       </div>
-      <MortgageHub portalColor="#4900e5" />
+      <MortgageHub portalColor="#4900e5" scheduleVisitEnabled />
     </div>
   );
 }

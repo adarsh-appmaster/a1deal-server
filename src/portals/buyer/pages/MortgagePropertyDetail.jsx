@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import EnquiryModal from '../../../components/common/EnquiryModal';
+import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 
 const STATUS_COLOR = {
   available:     'bg-emerald-100 text-emerald-800',
@@ -301,6 +302,7 @@ export default function MortgagePropertyDetail() {
                 <span className="material-icons-outlined text-sm">event</span>
                 Schedule Site Visit
               </button>
+              <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} className="w-full" />
               {isGuest && (
                 <button onClick={() => setShowLogin(true)}
                   className="w-full py-2.5 px-4 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">

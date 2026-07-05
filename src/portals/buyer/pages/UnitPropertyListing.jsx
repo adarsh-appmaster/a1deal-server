@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../../api/axios';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ImageSlider from '../../../components/common/ImageSlider';
+import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 
 const STATUS_COLORS = {
   available:          'bg-emerald-100 text-emerald-700',
@@ -76,14 +77,14 @@ export default function UnitPropertyListing() {
       ) : properties.length === 0 ? (
         <div className="text-center py-16 text-slate-400">No unit properties found.</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(p => (
             <div key={p._id} onClick={() => navigate(`/buyer/property/${p._id}`)}
               className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
               <ImageSlider
                 images={p.images || []}
                 alt={p.title}
-                className="h-40"
+                className="h-56"
                 interval={2500}
                 placeholderIcon="apartment"
                 overlay={
@@ -99,10 +100,10 @@ export default function UnitPropertyListing() {
                   </>
                 }
               />
-              <div className="p-4 space-y-2">
+              <div className="p-5 space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
-                <h3 className="font-montserrat font-bold text-slate-800">{p.title}</h3>
-                <p className="text-[#4900e5] font-bold text-lg">₹{Number(p.price).toLocaleString('en-IN')}</p>
+                <h3 className="font-montserrat font-bold text-slate-800 text-lg">{p.title}</h3>
+                <p className="text-[#4900e5] font-bold text-xl">₹{Number(p.price).toLocaleString('en-IN')}</p>
                 {p.investmentPlan?.enabled && (
                   <p className="text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1 inline-block">
                     Est. {p.investmentPlan.returnRatePct}% p.a. return over {p.investmentPlan.durationYears} yr
@@ -124,6 +125,7 @@ export default function UnitPropertyListing() {
                     <span className="material-icons-outlined text-sm">event</span>
                     Schedule Visit
                   </button>
+                  <ShareWhatsappButton property={p} path={`/buyer/property/${p._id}`} iconOnly className="flex-shrink-0" />
                 </div>
               </div>
             </div>

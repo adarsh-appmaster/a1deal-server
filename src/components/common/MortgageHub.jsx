@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import EnquiryModal from './EnquiryModal';
 import ImageSlider from './ImageSlider';
+import ShareWhatsappButton from './ShareWhatsappButton';
 
 const ROLE_COLORS = {
   buyer:     'bg-violet-100 text-violet-700',
@@ -31,7 +32,10 @@ function propertyMatchesArea(prop, area) {
   return false;
 }
 
-export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = false }) {
+const SUGGESTION_MIN_CHARS = 3;
+
+export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = false, scheduleVisitEnabled }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [myAreas, setMyAreas]           = useState({ homeArea: null, additionalAreas: [] });
   const [localProps, setLocalProps]     = useState([]);
@@ -39,12 +43,15 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
   const [loading, setLoading]           = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState(new Set(['__all__']));
-  const [search, setSearch]             = useState('');
   const [inputVal, setInputVal]         = useState('');
   const [enquireProperty, setEnquireProperty] = useState(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchBoxRef = useRef(null);
 
-  const properties = searchProps !== null ? searchProps : localProps;
-  const isSearchMode = searchProps !== null;
+  const trimmedQuery = inputVal.trim();
+  const isSearchMode = trimmedQuery.length >= SUGGESTION_MIN_CHARS;
+  const properties = isSearchMode ? (searchProps || []) : localProps;
+  const suggestions = isSearchMode ? (searchProps || []).slice(0, 6) : [];
 
   useEffect(() => {
     async function load() {
@@ -67,9 +74,9 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
     load();
   }, [user]);
 
-  // Debounced server-side search
+  // Debounced server-side search — fires automatically as the user types (3+ chars)
   useEffect(() => {
-    if (!search.trim()) {
+    if (trimmedQuery.length < SUGGESTION_MIN_CHARS) {
       setSearchProps(null);
       return;
     }
@@ -77,25 +84,41 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
       setSearchLoading(true);
       try {
         const endpoint = user
-          ? `/mortgage-properties?search=${encodeURIComponent(search.trim())}`
-          : `/mortgage-properties/public?search=${encodeURIComponent(search.trim())}`;
+          ? `/mortgage-properties?search=${encodeURIComponent(trimmedQuery)}`
+          : `/mortgage-properties/public?search=${encodeURIComponent(trimmedQuery)}`;
         const r = await api.get(endpoint);
         setSearchProps(r.data.properties || []);
-      } catch { /* empty */ }
+      } catch { setSearchProps([]); }
       setSearchLoading(false);
-    }, 400);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [search, user]);
+  }, [trimmedQuery, user]);
+
+  // Close the suggestion dropdown when clicking outside the search box
+  useEffect(() => {
+    function onDocClick(e) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   function handleSearchSubmit(e) {
     e.preventDefault();
-    setSearch(inputVal);
+    setShowSuggestions(false);
   }
 
   function clearSearch() {
     setInputVal('');
-    setSearch('');
     setSearchProps(null);
+    setShowSuggestions(false);
+  }
+
+  function pickSuggestion(p) {
+    setShowSuggestions(false);
+    navigate(`/buyer/mortgage/${p._id}`);
   }
 
   // Build chip list: All + home + additional
@@ -161,7 +184,7 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
 
   const hasMultipleAreas = chips.length > 2; // All + at least 2 real areas
 
-  if (loading || searchLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
         <span className="material-icons-outlined text-3xl animate-spin" style={{ color: portalColor }}>progress_activity</span>
@@ -206,23 +229,74 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
 
       {/* Search bar */}
       <form onSubmit={handleSearchSubmit} className="flex gap-2">
-        <div className="relative flex-1">
+        <div className="relative flex-1" ref={searchBoxRef}>
           <span className="material-icons-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
           <input
             type="text"
-            placeholder="Search by city, area, pincode, bank, title…"
+            placeholder="Type 3+ letters to search city, area, pincode or bank…"
             value={inputVal}
-            onChange={e => setInputVal(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white"
+            onChange={e => { setInputVal(e.target.value); setShowSuggestions(true); }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={e => { if (e.key === 'Escape') setShowSuggestions(false); }}
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white"
             style={{ '--tw-ring-color': portalColor + '40' }}
           />
+          {searchLoading && (
+            <span className="material-icons-outlined absolute right-3 top-1/2 -translate-y-1/2 text-sm animate-spin"
+              style={{ color: portalColor }}>progress_activity</span>
+          )}
+
+          {/* Autosuggestion dropdown — appears at 3+ chars */}
+          {showSuggestions && isSearchMode && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-slate-100 shadow-lg z-20 overflow-hidden">
+              {searchLoading && suggestions.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-slate-400 flex items-center gap-2">
+                  <span className="material-icons-outlined text-sm animate-spin" style={{ color: portalColor }}>progress_activity</span>
+                  Searching…
+                </div>
+              ) : suggestions.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-slate-400">No matches for "{trimmedQuery}"</div>
+              ) : (
+                <>
+                  {suggestions.map(p => (
+                    <button
+                      key={p._id}
+                      type="button"
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => pickSuggestion(p)}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-50 last:border-b-0 transition"
+                    >
+                      <span className="material-icons-outlined text-lg text-slate-300 flex-shrink-0">home_work</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{p.title}</p>
+                        <p className="text-xs text-slate-400 truncate">
+                          {[p.area, p.city].filter(Boolean).join(', ')}
+                          {p.bankName ? ` · ${p.bankName}` : ''}
+                        </p>
+                      </div>
+                      {p.price != null && (
+                        <span className="text-xs font-semibold text-slate-600 flex-shrink-0">
+                          ₹{Number(p.price).toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  {(searchProps?.length || 0) > suggestions.length && (
+                    <div className="px-3 py-2 text-xs text-slate-400 bg-slate-50 border-t border-slate-100">
+                      +{(searchProps.length - suggestions.length)} more result{searchProps.length - suggestions.length !== 1 ? 's' : ''} shown below
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
         <button type="submit"
           className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition hover:opacity-90"
           style={{ background: portalColor }}>
           Search
         </button>
-        {isSearchMode && (
+        {inputVal !== '' && (
           <button type="button" onClick={clearSearch}
             className="px-3 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm transition">
             <span className="material-icons-outlined text-sm">close</span>
@@ -236,7 +310,7 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
           style={{ background: portalColor + '0d', borderColor: portalColor + '33' }}>
           <span className="material-icons-outlined text-sm" style={{ color: portalColor }}>travel_explore</span>
           <span className="text-slate-700">
-            Searching all cities for <span className="font-semibold" style={{ color: portalColor }}>"{search}"</span>
+            Searching all cities for <span className="font-semibold" style={{ color: portalColor }}>"{inputVal}"</span>
             {searchLoading ? ' — searching…' : ` — ${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
           </span>
           <button onClick={clearSearch} className="ml-auto text-xs text-slate-400 hover:text-slate-700 underline">
@@ -278,10 +352,10 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
               <h3 className="font-montserrat font-bold text-sm text-slate-700">{city}</h3>
               <span className="text-xs text-slate-400">· {props.length} listing{props.length > 1 ? 's' : ''}</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {props.map(p => (
                 <PropertyCard key={p._id} prop={p} portalColor={portalColor} showRoleBadges={showRoleBadges}
-                  canScheduleVisit={!user || user.role === 'buyer'} onEnquire={() => setEnquireProperty(p)} />
+                  canScheduleVisit={scheduleVisitEnabled ?? (!user || user.role === 'buyer')} onEnquire={() => setEnquireProperty(p)} />
               ))}
             </div>
           </div>
@@ -309,12 +383,12 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
       <ImageSlider
         images={p.images || []}
         alt={p.title}
-        className="h-40"
+        className="h-56"
         interval={2500}
         placeholderIcon="home_work"
       />
       {/* Header */}
-      <div className="px-4 pt-4 pb-3" style={{ background: `${portalColor}08` }}>
+      <div className="px-5 pt-5 pb-3" style={{ background: `${portalColor}08` }}>
         <div className="flex items-start justify-between gap-2 mb-1">
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold capitalize"
             style={{ background: `${portalColor}18`, color: portalColor }}>
@@ -326,12 +400,12 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
             </span>
           )}
         </div>
-        <p className="font-montserrat font-bold text-sm text-slate-800 leading-tight">{p.title}</p>
+        <p className="font-montserrat font-bold text-base text-slate-800 leading-tight">{p.title}</p>
         <p className="text-xs text-slate-400 mt-0.5">{p.bankName || 'Bank Listed'}</p>
       </div>
 
       {/* Details */}
-      <div className="px-4 pt-3 pb-4 space-y-1.5">
+      <div className="px-5 pt-3 pb-4 space-y-1.5">
         <p className="flex items-center gap-1.5 text-xs text-slate-600">
           <span className="material-icons-outlined text-xs text-slate-400">location_on</span>
           {[p.area, p.city, p.pincode].filter(Boolean).join(', ')}
@@ -351,7 +425,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
 
       {/* Role badges — shown to admin */}
       {showRoleBadges && p.visibleTo?.length > 0 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-1">
+        <div className="px-5 pb-2 flex flex-wrap gap-1">
           {p.visibleTo.map(role => (
             <span key={role} className={`text-xs px-1.5 py-0.5 rounded-full font-semibold capitalize ${ROLE_COLORS[role] || 'bg-slate-100 text-slate-600'}`}>
               {role}
@@ -361,7 +435,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
       )}
 
       {/* Actions */}
-      <div className="px-4 pb-4 flex gap-2">
+      <div className="px-5 pb-5 flex gap-2">
         <button onClick={e => { e.stopPropagation(); onEnquire(); }}
           className="flex-1 py-2 rounded-xl text-xs font-semibold transition hover:opacity-80"
           style={{ background: `${portalColor}18`, color: portalColor }}>
@@ -381,6 +455,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
             Schedule Visit
           </button>
         )}
+        <ShareWhatsappButton property={p} path={`/buyer/mortgage/${p._id}`} iconOnly className="flex-shrink-0" />
       </div>
     </div>
   );

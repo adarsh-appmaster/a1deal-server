@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import EnquiryModal from '../../../components/common/EnquiryModal';
+import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 
 const STATUS_COLOR = {
   available:         'bg-emerald-100 text-emerald-800',
@@ -506,6 +507,7 @@ export default function PropertyDetail() {
                 className="w-full py-2.5 px-4 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition flex items-center justify-center gap-2">
                 Enquire About This Property
               </button>
+              <ShareWhatsappButton property={property} path={`/buyer/property/${id}`} className="w-full" />
               <button onClick={() => navigate('/buyer/mortgage')}
                 className="w-full text-center py-2.5 px-4 rounded-xl bg-surface-container text-on-surface font-semibold text-sm hover:bg-surface-container-high transition-colors">
                 Check EMI / Mortgage

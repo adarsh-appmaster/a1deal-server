@@ -3,17 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import AutoScrollRow from '../../../components/common/AutoScrollRow';
 import ImageSlider from '../../../components/common/ImageSlider';
+import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 import { getStartingPrice } from '../../../utils/pricing';
 import api from '../../../api/axios';
-
-const FEATURED = [
-  { id: 1, name: 'Skyline Residences', location: 'Bandra West, Mumbai', price: '₹2.4 Cr', beds: 3, baths: 2, sqft: '1,450', type: 'Apartment', status: 'Ready to Move', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA8iJsDAKW6bT3a3lPuS3HhJlk_5v3oXs_lGkfZsZipz3e5g7S9ZW_5KfNm9gR6Z3Mc-csFjy6oKFP2AMvxqCqKyKMlF4fvz7JZ2g=w400' },
-  { id: 2, name: 'Green Valley Villas', location: 'Whitefield, Bangalore', price: '₹3.8 Cr', beds: 4, baths: 3, sqft: '2,200', type: 'Villa', status: 'Under Construction', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCBNIRHKpJNzv3dJgT_6dYyV3KxRN3ZiQX5b8EhBDTLH9Vd3y5JnRH8jSp6LjXb-jMaKjMKLjSnHq45_hC_lBv7V_M_rMl5kN3lQ=w400' },
-  { id: 3, name: 'Horizon Towers', location: 'Powai, Mumbai', price: '₹1.8 Cr', beds: 2, baths: 2, sqft: '1,100', type: 'Apartment', status: 'Ready to Move', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBnKXjGJj0GIlbqI4aHY2v_YVzPjdg_VY5n_5V6mfh5_7k_V9kFn5ZhkHTGqAT14kF6fVD_9hhGJBWEtEuqsK7RKYKFe3CYp0t9xA=w400' },
-  { id: 4, name: 'Prestige Grand', location: 'Jubilee Hills, Hyderabad', price: '₹5.2 Cr', beds: 5, baths: 4, sqft: '3,500', type: 'Penthouse', status: 'Ready to Move', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDf5iCTdqH09Cn_s3B8GYLQM-1pMWkIBJb_M5_j7mFjvhj7d7fvU6yL-p6yLfaA_GQzwNqClv_pPBrDvL_0GfpNZA3yElxJExkpw=w400' },
-  { id: 5, name: 'The Palms', location: 'Koregaon Park, Pune', price: '₹1.2 Cr', beds: 2, baths: 1, sqft: '850', type: 'Studio', status: 'New Launch', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKE-9G6h7Vf4dR3kSLzY3L5JfqBiJ0cTVuJbFqMv9qDlBgCJzGbJzSbCuJHHkKKnJcr_5bxHu_h5rrBBpHJLSKnGkTm6WlF-kQ=w400' },
-  { id: 6, name: 'Marina Bay Heights', location: 'OMR, Chennai', price: '₹95 L', beds: 2, baths: 2, sqft: '1,050', type: 'Apartment', status: 'Under Construction', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCR4Mm9HyXk3d7Tl4LcKuCZi3Yiml2nHSU1TcMdqt7k7TK7WMhZf6BmX_OWKl7jA_OJjqiQBEiW8Z3Wt_3tSy_k3Jl7vHLIVvUA=w400' },
-];
 
 const STATS = [
   { label: 'Active Listings', value: '12,400+', icon: 'apartment' },
@@ -24,22 +16,23 @@ const STATS = [
 
 export default function BuyerHome() {
   const navigate = useNavigate();
-  const [searchTab, setSearchTab] = useState('buy');
   const [query, setQuery] = useState('');
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [enquireProperty, setEnquireProperty] = useState(null);
 
   const [mortgageProps, setMortgageProps] = useState([]);
   const [unitProps, setUnitProps] = useState([]);
+  const [featuredProps, setFeaturedProps] = useState([]);
 
   useEffect(() => {
     api.get('/mortgage-properties/public?limit=3').then(r => setMortgageProps(r.data.properties || [])).catch(() => {});
     api.get('/unit-properties/public?limit=3').then(r => setUnitProps(r.data.properties || [])).catch(() => {});
+    api.get('/unit-properties/public?featured=true&limit=6').then(r => setFeaturedProps(r.data.properties || [])).catch(() => {});
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    navigate(`/buyer/search?q=${encodeURIComponent(query)}&type=${searchTab}`);
+    navigate(`/buyer/search?q=${encodeURIComponent(query)}&type=buy`);
   };
 
   return (
@@ -57,17 +50,6 @@ export default function BuyerHome() {
 
           {/* Search Box */}
           <div className="glass-card rounded-2xl p-2 max-w-2xl mx-auto">
-            <div className="flex flex-wrap gap-1 mb-3 px-2 pt-2">
-              {['Buy','Mortgage'].map(t => (
-                <button
-                  key={t}
-                  onClick={() => setSearchTab(t.toLowerCase())}
-                  className={`px-3 py-1.5 rounded-full text-sm font-semibold capitalize transition-colors ${searchTab === t.toLowerCase() ? 'bg-primary text-white' : 'text-on-surface-variant hover:bg-surface-container'}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
             <form onSubmit={handleSearch} className="flex gap-2 p-1">
               <div className="flex-1 relative">
                 <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
@@ -103,43 +85,64 @@ export default function BuyerHome() {
       </section>
 
       {/* Featured Properties */}
-      <section className="max-w-container mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="font-montserrat font-bold text-2xl text-on-surface">Featured Properties</h2>
-            <p className="text-on-surface-variant text-sm mt-1">Handpicked premium listings</p>
+      {featuredProps.length > 0 && (
+        <section className="max-w-container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Featured Properties</h2>
+              <p className="text-on-surface-variant text-sm mt-1">Handpicked premium listings</p>
+            </div>
+            <button onClick={() => navigate('/buyer/search')} className="btn-ghost text-sm py-2 px-4">
+              View All
+            </button>
           </div>
-          <button onClick={() => navigate('/buyer/search')} className="btn-ghost text-sm py-2 px-4">
-            View All
-          </button>
-        </div>
-        <AutoScrollRow
-          items={FEATURED}
-          renderItem={p => (
-            <div
-              onClick={() => navigate(`/buyer/property/${p.id}`)}
-              className="card overflow-hidden cursor-pointer hover:shadow-level-3 hover:-translate-y-1 transition-all duration-200"
-            >
-              <div className="relative h-48 overflow-hidden bg-surface-container">
-                <img src={p.img} alt={p.name} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} />
-                <span className={`absolute top-3 right-3 portal-badge text-xs ${p.status === 'Ready to Move' ? 'bg-emerald-100 text-emerald-800' : p.status === 'New Launch' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
-                  {p.status}
-                </span>
-              </div>
-              <div className="p-4">
-                <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.type} · {p.location}</p>
-                <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.name}</h3>
-                <p className="text-primary-container font-bold text-lg mb-3">{p.price}</p>
-                <div className="flex items-center gap-4 text-xs text-on-surface-variant">
-                  <span className="flex items-center gap-1"><span className="material-icons-outlined text-sm">bed</span>{p.beds} Beds</span>
-                  <span className="flex items-center gap-1"><span className="material-icons-outlined text-sm">bathroom</span>{p.baths} Baths</span>
-                  <span className="flex items-center gap-1"><span className="material-icons-outlined text-sm">square_foot</span>{p.sqft} sq.ft</span>
+          <AutoScrollRow
+            items={featuredProps}
+            cardWidth="w-80"
+            renderItem={p => (
+              <div
+                onClick={() => navigate(`/buyer/property/${p._id}`)}
+                className="card overflow-hidden cursor-pointer hover:shadow-level-3 hover:-translate-y-1 transition-all duration-200"
+              >
+                <ImageSlider
+                  images={p.images || []}
+                  alt={p.title}
+                  className="h-52"
+                  interval={2500}
+                  placeholderIcon="apartment"
+                  overlay={<ShareWhatsappButton property={p} path={`/buyer/property/${p._id}`} iconOnly className="absolute bottom-3 right-3" />}
+                />
+                <div className="p-4">
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
+                  <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.title}</h3>
+                  <p className="text-primary-container font-bold text-lg mb-3">Units starting ₹{Number(getStartingPrice(p)).toLocaleString('en-IN')}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={e => { e.stopPropagation(); setEnquireProperty({ ...p, _model: 'UnitProperty' }); }}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition"
+                    >
+                      Enquire
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/buyer/visit/${p._id}`, {
+                          state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'UnitProperty' },
+                        });
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-primary text-primary text-xs font-semibold hover:bg-primary/5 transition"
+                    >
+                      <span className="material-icons-outlined text-sm">event</span>
+                      Schedule Visit
+                    </button>
+                    <ShareWhatsappButton property={p} path={`/buyer/property/${p._id}`} iconOnly className="flex-shrink-0" />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        />
-      </section>
+            )}
+          />
+        </section>
+      )}
 
       {/* Unit Properties */}
       {unitProps.length > 0 && (
@@ -157,6 +160,7 @@ export default function BuyerHome() {
           </div>
           <AutoScrollRow
             items={unitProps}
+            cardWidth="w-80"
             renderItem={p => (
               <div
                 onClick={() => navigate(`/buyer/property/${p._id}`)}
@@ -170,7 +174,7 @@ export default function BuyerHome() {
                 <ImageSlider
                   images={p.images || []}
                   alt={p.title}
-                  className="h-40"
+                  className="h-52"
                   interval={2500}
                   placeholderIcon="apartment"
                 />
@@ -200,6 +204,7 @@ export default function BuyerHome() {
                       <span className="material-icons-outlined text-sm">event</span>
                       Schedule Visit
                     </button>
+                    <ShareWhatsappButton property={p} path={`/buyer/property/${p._id}`} iconOnly className="flex-shrink-0" />
                   </div>
                 </div>
               </div>
@@ -224,6 +229,7 @@ export default function BuyerHome() {
           </div>
           <AutoScrollRow
             items={mortgageProps}
+            cardWidth="w-80"
             renderItem={p => (
               <div
                 onClick={() => navigate(`/buyer/mortgage/${p._id}`)}
@@ -232,7 +238,7 @@ export default function BuyerHome() {
                 <ImageSlider
                   images={p.images || []}
                   alt={p.title}
-                  className="h-40"
+                  className="h-52"
                   interval={2500}
                   placeholderIcon="account_balance"
                 />
@@ -260,6 +266,7 @@ export default function BuyerHome() {
                       <span className="material-icons-outlined text-sm">event</span>
                       Schedule Visit
                     </button>
+                    <ShareWhatsappButton property={p} path={`/buyer/mortgage/${p._id}`} iconOnly className="flex-shrink-0" />
                   </div>
                 </div>
               </div>
