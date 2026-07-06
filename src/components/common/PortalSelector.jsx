@@ -21,14 +21,14 @@ const ROLES = [
     id: 'broker',
     label: 'Broker',
     icon: 'handshake',
-    color: 'bg-rose-100 text-rose-600',
+    color: 'bg-[#d6198f]/10 text-[#d6198f]',
     description: 'Access exclusive listings and manage high-value leads.',
   },
   {
     id: 'developer',
     label: 'Developer',
     icon: 'apartment',
-    color: 'bg-sky-100 text-sky-700',
+    color: 'bg-[#6236ff]/10 text-[#6236ff]',
     description: 'List projects, manage inventory, and track partnerships.',
     badge: 'Admin Approval',
   },
@@ -36,7 +36,7 @@ const ROLES = [
     id: 'investor',
     label: 'Investor',
     icon: 'trending_up',
-    color: 'bg-emerald-100 text-emerald-700',
+    color: 'bg-[#ff4fa6]/10 text-[#ff4fa6]',
     description: 'Track portfolio ROI and discover high-yield opportunities.',
     badge: 'Admin Approval',
   },
@@ -110,33 +110,33 @@ function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tag
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
       className="group text-left bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
     >
-      <div className="relative h-44 bg-slate-100 overflow-hidden">
+      <div className="relative h-64 bg-slate-100 overflow-hidden">
         <ImageSlider
           images={images || []}
           alt={title}
-          className="h-44"
+          className="h-64"
           interval={2500}
           placeholderIcon="home"
           overlay={path ? <ShareWhatsappButton property={{ title, city, price }} path={path} iconOnly className="absolute bottom-2 right-2" /> : null}
         />
         <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10 ${tagColor}`}>{tag}</span>
       </div>
-      <div className="p-4">
-        <p className="font-semibold text-[#0F172A] text-sm leading-snug line-clamp-1">{title}</p>
-        <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-          <span className="material-icons-outlined text-xs">location_on</span>{city || '—'}
+      <div className="p-6">
+        <p className="font-semibold text-[#0F172A] text-lg leading-snug line-clamp-1">{title}</p>
+        <p className="text-sm text-slate-400 mt-1 flex items-center gap-1">
+          <span className="material-icons-outlined text-sm">location_on</span>{city || '—'}
         </p>
-        <div className="flex items-center justify-between mt-3">
-          <p className="font-montserrat font-bold text-[#4900e5] text-sm">
+        <div className="flex items-center justify-between mt-4">
+          <p className="font-montserrat font-bold text-[#4900e5] text-lg">
             {priceLabel ? `${priceLabel} ${formatPrice(price)}` : formatPrice(price)}
           </p>
           {beds != null && (
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              <span className="material-icons-outlined text-xs">bed</span>{beds} BHK
+            <span className="text-sm text-slate-400 flex items-center gap-1">
+              <span className="material-icons-outlined text-sm">bed</span>{beds} BHK
             </span>
           )}
           {type && !beds && (
-            <span className="text-xs text-slate-400 capitalize">{type}</span>
+            <span className="text-sm text-slate-400 capitalize">{type}</span>
           )}
         </div>
       </div>
@@ -151,14 +151,14 @@ function PropertySection({ title, tagline, icon, items, loading, navigate, baseR
       <div className="flex items-center justify-between mb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="material-icons-outlined text-xl text-[#4900e5]">{icon}</span>
-            <h3 className="font-montserrat font-bold text-lg text-[#0F172A]">{title}</h3>
+            <span className="material-icons-outlined text-2xl text-[#4900e5]">{icon}</span>
+            <h3 className="font-montserrat font-bold text-2xl text-[#0F172A]">{title}</h3>
           </div>
           {tagline && (
-            <p className="animate-blink font-semibold text-[#d6198f] text-xs mt-1 ml-7 flex items-center gap-1">
-              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-sm" style={{ animationDelay: '0ms' }}>auto_awesome</span>
+            <p className="animate-blink font-semibold text-[#d6198f] text-base mt-1.5 ml-9 flex items-center gap-1.5">
+              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-lg" style={{ animationDelay: '0ms' }}>auto_awesome</span>
               {tagline}
-              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-sm" style={{ animationDelay: '400ms' }}>auto_awesome</span>
+              <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-lg" style={{ animationDelay: '400ms' }}>auto_awesome</span>
             </p>
           )}
         </div>
@@ -178,8 +178,8 @@ function PropertySection({ title, tagline, icon, items, loading, navigate, baseR
       ) : (
         <AutoScrollRow
           items={items.slice(0, 6)}
-          cardWidth="w-64"
-          gap="gap-4"
+          cardWidth="w-[26rem]"
+          gap="gap-6"
           renderItem={p => (
             <PropCard {...p} onClick={() => navigate(p.path || '/signup')} />
           )}
@@ -224,7 +224,7 @@ function CitySearchBar({ onSearch }) {
   }, []);
 
   return (
-    <div ref={wrapRef} className="relative max-w-xl mx-auto mb-8">
+    <div ref={wrapRef} className="relative max-w-xl mx-auto mb-2">
       <form onSubmit={handleSubmit}
         className="flex items-center bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 overflow-hidden">
         <span className="material-icons-outlined text-slate-400 pl-4">location_on</span>
@@ -305,7 +305,7 @@ export default function PortalSelector() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-[#f5f3ff] via-white to-[#fdf2f2] py-16 md:py-24 px-4 text-center">
+      <section className="bg-gradient-to-br from-[#f5f3ff] via-white to-[#fdf2f2] pt-16 md:pt-24 pb-6 md:pb-8 px-4 text-center">
         <span className="inline-block px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold tracking-widest uppercase mb-5">
           India's Premier Real Estate Ecosystem
         </span>
@@ -314,27 +314,16 @@ export default function PortalSelector() {
           <span className="text-[#4900e5]">Every Deal.</span>
         </h1>
         <p className="text-slate-500 text-base md:text-xl max-w-xl mx-auto mb-10">
-          Buy, sell, invest, or broker — A1 Deal connects every player in India's real estate market.
+          Buy, sell, invest, or broker — <span className="text-[#d6198f] font-semibold">A1 Deal</span> connects every player in India's real estate market.
         </p>
 
         <CitySearchBar onSearch={handleSearch} />
-
-        <div className="flex items-center justify-center gap-3 flex-wrap">
-          <button onClick={() => navigate('/signup')}
-            className="px-8 py-3 rounded-full bg-[#4900e5] text-white font-bold text-sm md:text-base hover:bg-[#6236ff] transition shadow-lg shadow-[#4900e5]/30">
-            Get Started Free
-          </button>
-          <button onClick={() => navigate('/login')}
-            className="px-8 py-3 rounded-full border-2 border-slate-200 text-slate-700 font-bold text-sm md:text-base hover:border-[#4900e5] hover:text-[#4900e5] transition">
-            Sign In
-          </button>
-        </div>
       </section>
 
       {/* ── Property Listings ── */}
       {(loading || unitItems.length > 0 || mortgageItems.length > 0) && (
-        <section className="max-w-6xl mx-auto w-full px-4 py-16">
-          <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Live on the Platform</p>
+        <section className="max-w-6xl mx-auto w-full px-4 pt-4 pb-16">
+          <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Live on the Platform</p>
           <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
             Featured Properties
           </h2>
@@ -359,26 +348,26 @@ export default function PortalSelector() {
 
       {/* ── Who are you? ── */}
       <section className="max-w-5xl mx-auto w-full px-4 py-16">
-        <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Join as</p>
+        <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Join as</p>
         <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-10">
           What best describes you?
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {ROLES.map(r => (
             <button key={r.id} onClick={() => navigate(`/signup?role=${r.id}`)}
-              className="group text-left bg-white rounded-2xl p-5 border border-slate-100 hover:border-[#4900e5]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4900e5]">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${r.color}`}>
-                <span className="material-icons-outlined text-xl">{r.icon}</span>
+              className="group text-left bg-white rounded-2xl p-7 border border-slate-100 hover:border-[#d6198f]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4900e5]">
+              <div className={`w-20 h-20 rounded-xl flex items-center justify-center mb-4 ${r.color}`}>
+                <span className="material-icons-outlined text-4xl">{r.icon}</span>
               </div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-montserrat font-bold text-base text-[#0F172A]">{r.label}</h3>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-montserrat font-bold text-xl text-[#0F172A]">{r.label}</h3>
                 {r.badge && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{r.badge}</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700">{r.badge}</span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">{r.description}</p>
-              <div className="mt-3 flex items-center gap-1 text-[#4900e5] text-xs font-semibold opacity-0 group-hover:opacity-100 transition">
-                Get started <span className="material-icons-outlined text-sm">arrow_forward</span>
+              <p className="text-sm text-slate-500 leading-relaxed">{r.description}</p>
+              <div className="mt-4 flex items-center gap-1 text-[#4900e5] text-sm font-semibold opacity-0 group-hover:opacity-100 transition">
+                Get started <span className="material-icons-outlined text-base">arrow_forward</span>
               </div>
             </button>
           ))}
@@ -388,7 +377,7 @@ export default function PortalSelector() {
       {/* ── How it works ── */}
       <section className="bg-slate-50 py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Simple Process</p>
+          <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Simple Process</p>
           <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
             How A1 Deal Works
           </h2>
@@ -418,19 +407,19 @@ export default function PortalSelector() {
 
       {/* ── Features ── */}
       <section className="max-w-5xl mx-auto w-full px-4 py-16">
-        <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Why A1 Deal</p>
+        <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Why A1 Deal</p>
         <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
           Everything You Need, In One Place
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map(f => (
-            <div key={f.title} className="flex gap-4 p-5 rounded-2xl border border-slate-100 bg-white hover:shadow-lg transition-shadow">
-              <div className="w-11 h-11 rounded-xl bg-[#4900e5]/10 flex items-center justify-center flex-shrink-0">
-                <span className="material-icons-outlined text-xl text-[#4900e5]">{f.icon}</span>
+            <div key={f.title} className="flex gap-5 p-6 rounded-2xl border border-slate-100 bg-white hover:shadow-lg transition-shadow">
+              <div className="w-20 h-20 rounded-xl bg-[#4900e5]/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-icons-outlined text-4xl text-[#4900e5]">{f.icon}</span>
               </div>
               <div>
-                <h3 className="font-semibold text-[#0F172A] text-sm mb-1">{f.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                <h3 className="font-semibold text-[#0F172A] text-base mb-1">{f.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
               </div>
             </div>
           ))}
@@ -460,7 +449,7 @@ export default function PortalSelector() {
       {/* ── Footer ── */}
       <footer className="bg-[#0F172A] border-t border-white/10 py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <Logo variant="full" theme="dark" size="sm" />
+          <Logo variant="full" theme="dark" size="md" />
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-white/40">
             <button onClick={() => navigate('/signup')} className="hover:text-white transition">Buy Property</button>

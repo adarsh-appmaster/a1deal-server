@@ -1,22 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import AutoScrollRow from '../../../components/common/AutoScrollRow';
 import ImageSlider from '../../../components/common/ImageSlider';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 import { getStartingPrice } from '../../../utils/pricing';
+import { searchLocations } from '../../../data/indiaLocations';
 import api from '../../../api/axios';
-
-const STATS = [
-  { label: 'Active Listings', value: '12,400+', icon: 'apartment' },
-  { label: 'Cities Covered', value: '42', icon: 'location_city' },
-  { label: 'Deals Closed', value: '8,700+', icon: 'handshake' },
-  { label: 'Verified Developers', value: '320+', icon: 'verified' },
-];
 
 export default function BuyerHome() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchWrapRef = useRef(null);
   const [showEnquiry, setShowEnquiry] = useState(false);
   const [enquireProperty, setEnquireProperty] = useState(null);
 
@@ -30,15 +27,60 @@ export default function BuyerHome() {
     api.get('/unit-properties/public?featured=true&limit=6').then(r => setFeaturedProps(r.data.properties || [])).catch(() => {});
   }, []);
 
+  // Autosuggest: fires once 3+ characters are typed, matching city/pincode/project name
+  useEffect(() => {
+    if (query.trim().length < 3) { setSuggestions([]); return; }
+    const timer = setTimeout(async () => {
+      const cityMatches = searchLocations(query).slice(0, 4).map(s => ({
+        type: 'city', label: s.label, sub: s.state,
+      }));
+      let projectMatches = [];
+      try {
+        const [unitsRes, mortgageRes] = await Promise.all([
+          api.get(`/unit-properties/public?search=${encodeURIComponent(query.trim())}&limit=4`),
+          api.get(`/mortgage-properties/public?search=${encodeURIComponent(query.trim())}&limit=4`),
+        ]);
+        projectMatches = [
+          ...(unitsRes.data.properties || []).map(p => ({
+            type: 'project', label: p.title, sub: [p.city, p.area].filter(Boolean).join(', '),
+            path: `/buyer/property/${p._id}`,
+          })),
+          ...(mortgageRes.data.properties || []).map(p => ({
+            type: 'project', label: p.title, sub: [p.city, p.area].filter(Boolean).join(', '),
+            path: `/buyer/mortgage/${p._id}`,
+          })),
+        ];
+      } catch { /* empty */ }
+      setSuggestions([...cityMatches, ...projectMatches]);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    function close(e) {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setShowSuggestions(false);
+    }
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
   const handleSearch = (e) => {
     e.preventDefault();
+    setShowSuggestions(false);
     navigate(`/buyer/search?q=${encodeURIComponent(query)}&type=buy`);
   };
+
+  function pickSuggestion(s) {
+    setShowSuggestions(false);
+    if (s.type === 'project') { navigate(s.path); return; }
+    setQuery(s.label);
+    navigate(`/buyer/search?q=${encodeURIComponent(s.label)}&type=buy`);
+  }
 
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-[#1a1d2b] via-[#2d1b69] to-[#4900e5] py-12 md:py-20 px-4 md:px-6 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-[#1a1d2b] via-[#2d1b69] to-[#4900e5] py-12 md:py-20 px-4 md:px-6">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.03%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40" />
         <div className="relative max-w-3xl mx-auto text-center">
           <span className="inline-block portal-badge bg-white/10 text-white mb-4 text-xs">India's Premier Real Estate Marketplace</span>
@@ -49,38 +91,42 @@ export default function BuyerHome() {
           <p className="text-white/70 text-lg mb-8">Discover 12,000+ verified properties across 42 cities</p>
 
           {/* Search Box */}
-          <div className="glass-card rounded-2xl p-2 max-w-2xl mx-auto">
+          <div ref={searchWrapRef} className="glass-card rounded-2xl p-2 max-w-2xl mx-auto relative">
             <form onSubmit={handleSearch} className="flex gap-2 p-1">
               <div className="flex-1 relative">
                 <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
                 <input
                   type="text"
-                  placeholder="Search by city, locality, or project..."
+                  placeholder="Search by city, pincode, or project..."
                   value={query}
-                  onChange={e => setQuery(e.target.value)}
+                  onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
+                  onFocus={() => query.trim().length >= 3 && setShowSuggestions(true)}
+                  autoComplete="off"
                   className="w-full pl-10 pr-4 py-3 rounded-xl border border-outline-variant bg-white text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <button type="submit" className="btn-primary rounded-xl px-6">Search</button>
             </form>
-          </div>
-        </div>
-      </section>
 
-      {/* Stats */}
-      <section className="bg-surface-container-lowest border-b border-outline-variant">
-        <div className="max-w-container mx-auto px-6 py-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {STATS.map(s => (
-            <div key={s.label} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="material-icons-outlined text-primary text-xl">{s.icon}</span>
-              </div>
-              <div>
-                <p className="font-montserrat font-bold text-xl text-on-surface">{s.value}</p>
-                <p className="text-xs text-on-surface-variant">{s.label}</p>
-              </div>
-            </div>
-          ))}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute z-50 top-full mt-1 left-1 right-1 bg-white border border-outline-variant rounded-xl shadow-xl overflow-hidden text-left">
+                {suggestions.map((s, i) => (
+                  <li key={i}>
+                    <button type="button" onMouseDown={() => pickSuggestion(s)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-primary/5 flex items-center gap-3 text-sm">
+                      <span className="material-icons-outlined text-sm text-on-surface-variant flex-shrink-0">
+                        {s.type === 'project' ? 'home_work' : 'location_on'}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="text-on-surface font-medium block truncate">{s.label}</span>
+                        {s.sub && <span className="text-on-surface-variant text-xs block truncate">{s.sub}</span>}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </section>
 

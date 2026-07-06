@@ -4,6 +4,14 @@ import api from '../../../api/axios';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ImageSlider from '../../../components/common/ImageSlider';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
+import { getStartingPrice } from '../../../utils/pricing';
+
+function formatPrice(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
+  if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+}
 
 const STATUS_COLORS = {
   available:          'bg-emerald-100 text-emerald-700',
@@ -103,7 +111,7 @@ export default function UnitPropertyListing() {
               <div className="p-5 space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
                 <h3 className="font-montserrat font-bold text-slate-800 text-lg">{p.title}</h3>
-                <p className="text-[#4900e5] font-bold text-xl">₹{Number(p.price).toLocaleString('en-IN')}</p>
+                <p className="text-[#4900e5] font-bold text-xl">Units starting {formatPrice(getStartingPrice(p))}</p>
                 {p.investmentPlan?.enabled && (
                   <p className="text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1 inline-block">
                     Est. {p.investmentPlan.returnRatePct}% p.a. return over {p.investmentPlan.durationYears} yr

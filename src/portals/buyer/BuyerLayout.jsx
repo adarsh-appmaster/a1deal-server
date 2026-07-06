@@ -18,9 +18,9 @@ export default function BuyerLayout() {
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Navbar */}
       <header className="bg-white border-b border-outline-variant sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center">
-            <Logo variant="compact" size="sm" />
+            <Logo variant="compact" size="md" />
           </button>
 
           {/* Desktop nav */}
