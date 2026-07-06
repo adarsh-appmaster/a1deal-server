@@ -4,6 +4,7 @@ import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
+import ImageSlider from '../../../components/common/ImageSlider';
 
 const STATUS_COLOR = {
   available:     'bg-emerald-100 text-emerald-800',
@@ -21,6 +22,11 @@ function formatPrice(n) {
   if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)} Cr`;
   if (n >= 100000)   return `₹${(n / 100000).toFixed(1)} L`;
   return `₹${n.toLocaleString('en-IN')}`;
+}
+
+function typeLabel(p) {
+  if (!p?.type) return '';
+  return p.type === 'other' ? (p.customType || 'Other') : p.type.replace(/_/g, ' ');
 }
 
 function LockedField({ placeholder, onUnlock }) {
@@ -120,7 +126,7 @@ export default function MortgagePropertyDetail() {
 
   return (
     <>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 pb-24 sm:pb-8">
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#4900e5] mb-6 transition-colors">
           <span className="material-icons-outlined text-sm">arrow_back</span>Back
@@ -141,13 +147,13 @@ export default function MortgagePropertyDetail() {
           {/* Main */}
           <div className="lg:col-span-2 space-y-6">
             {/* Media gallery — every photo and the video shown at once, no slider */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-3">
+            <div className="rounded-2xl border border-slate-100 bg-white p-3 overflow-hidden">
               <div className="flex items-center gap-2 mb-3">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-500'}`}>
                   {STATUS_LABEL[property.status] || property.status}
                 </span>
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 capitalize">
-                  {property.type?.replace(/_/g, ' ') || 'Bank Repo'}
+                  {typeLabel(property) || 'Bank Repo'}
                 </span>
               </div>
               {(property.images?.length || property.video) ? (() => {
@@ -156,49 +162,70 @@ export default function MortgagePropertyDetail() {
                 const visibleImages = showAllPhotos ? images : images.slice(0, VISIBLE_LIMIT);
                 const remaining = images.length - VISIBLE_LIMIT;
                 return (
-                  <div className="relative">
-                    <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
-                      {property.video && (
-                        <video src={property.video} controls={!isGuest} className="w-full h-[28rem] object-cover rounded-xl bg-black col-span-2" />
-                      )}
-                      {visibleImages.map((img, i) => {
-                        const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
-                        return (
-                          <div key={i} className="relative">
-                            <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-[28rem] object-cover rounded-xl" />
-                            {isLastVisible && !isGuest && (
-                              <button
-                                type="button"
-                                onClick={() => setShowAllPhotos(true)}
-                                className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg"
-                              >
-                                +{remaining} more
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                  <>
+                    {/* Mobile: swipeable slider (video appended as last slide) */}
+                    <div className="sm:hidden -mx-3 -mb-3">
+                      <ImageSlider
+                        images={images}
+                        video={property.video}
+                        alt={property.title}
+                        className="h-72"
+                        imgClassName={isGuest ? 'blur-lg scale-110' : ''}
+                        overlay={isGuest ? (
+                          <button type="button" onClick={() => setShowLogin(true)}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10">
+                            <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                            <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                          </button>
+                        ) : null}
+                      />
                     </div>
-                    {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllPhotos(false)}
-                        className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
-                      >
-                        Show fewer photos
-                      </button>
-                    )}
-                    {isGuest && (
-                      <button type="button" onClick={() => setShowLogin(true)}
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
-                        <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
-                        <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
-                      </button>
-                    )}
-                  </div>
+
+                    {/* Tablet/desktop: full grid gallery, everything visible at once */}
+                    <div className="relative hidden sm:block">
+                      <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
+                        {property.video && (
+                          <video src={property.video} controls={!isGuest} className="w-full h-80 lg:h-[28rem] object-cover rounded-xl bg-black col-span-2" />
+                        )}
+                        {visibleImages.map((img, i) => {
+                          const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
+                          return (
+                            <div key={i} className="relative">
+                              <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-80 lg:h-[28rem] object-cover rounded-xl" />
+                              {isLastVisible && !isGuest && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAllPhotos(true)}
+                                  className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg"
+                                >
+                                  +{remaining} more
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllPhotos(false)}
+                          className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                        >
+                          Show fewer photos
+                        </button>
+                      )}
+                      {isGuest && (
+                        <button type="button" onClick={() => setShowLogin(true)}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
+                          <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                          <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
                 );
               })() : (
-                <div className="h-[28rem] flex items-center justify-center bg-surface-container-high rounded-xl">
+                <div className="h-64 sm:h-80 lg:h-[28rem] flex items-center justify-center bg-surface-container-high rounded-xl">
                   <span className="material-icons-outlined text-6xl text-on-surface-variant/20">account_balance</span>
                 </div>
               )}
@@ -239,7 +266,7 @@ export default function MortgagePropertyDetail() {
                   property.bedrooms  > 0 && { icon: 'bed',         label: 'Bedrooms', val: `${property.bedrooms} BHK` },
                   property.area_sqft > 0 && { icon: 'square_foot', label: 'Area',     val: `${property.area_sqft.toLocaleString()} sqft` },
                   property.bankName       && { icon: 'account_balance', label: 'Bank', val: property.bankName },
-                  property.type           && { icon: 'home_work',   label: 'Type',     val: property.type?.replace(/_/g, ' ') },
+                  property.type           && { icon: 'home_work',   label: 'Type',     val: typeLabel(property) },
                 ].filter(Boolean).map(d => (
                   <div key={d.label} className="text-center">
                     <span className="material-icons-outlined text-[#4900e5] text-xl">{d.icon}</span>
@@ -316,7 +343,7 @@ export default function MortgagePropertyDetail() {
             <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
               <h3 className="font-montserrat font-semibold text-slate-800 mb-3 text-sm">Property Info</h3>
               {[
-                property.type        && { label: 'Type',      value: property.type?.replace(/_/g, ' '), locked: false },
+                property.type        && { label: 'Type',      value: typeLabel(property), locked: false },
                 property.status      && { label: 'Status',    value: STATUS_LABEL[property.status] || property.status, locked: false },
                 property.auctionDate && { label: 'Auction',   value: new Date(property.auctionDate).toLocaleDateString('en-IN'), locked: false },
                 property.pincode     && { label: 'Pincode',   value: property.pincode, locked: isGuest },
@@ -332,6 +359,24 @@ export default function MortgagePropertyDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Sticky mobile CTA bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-3 py-2.5 flex items-center gap-2">
+        <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} iconOnly className="flex-shrink-0" />
+        <button
+          onClick={() => setShowEnquiry(true)}
+          className="flex-1 py-2.5 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+          Enquire
+        </button>
+        <button
+          onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
+            state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
+          })}
+          className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-1.5">
+          {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
+          Schedule Visit
+        </button>
       </div>
 
       {showLogin && <LoginPrompt onClose={() => setShowLogin(false)} />}

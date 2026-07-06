@@ -4,6 +4,7 @@ import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
+import ImageSlider from '../../../components/common/ImageSlider';
 
 const STATUS_COLOR = {
   available:         'bg-emerald-100 text-emerald-800',
@@ -320,7 +321,7 @@ export default function PropertyDetail() {
 
   return (
     <>
-      <div className="max-w-container mx-auto px-6 py-8">
+      <div className="max-w-container mx-auto px-6 py-8 pb-24 sm:pb-8">
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary mb-6 transition-colors">
           <span className="material-icons-outlined text-sm">arrow_back</span>Back to Search
@@ -351,40 +352,61 @@ export default function PropertyDetail() {
                 const visibleImages = showAllPhotos ? images : images.slice(0, VISIBLE_LIMIT);
                 const remaining = images.length - VISIBLE_LIMIT;
                 return (
-                  <div className="relative">
-                    <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
-                      {property.video && (
-                        <video src={property.video} controls={!isGuest} className="w-full h-[28rem] object-cover rounded-xl bg-black col-span-2" />
-                      )}
-                      {visibleImages.map((img, i) => {
-                        const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
-                        return (
-                          <div key={i} className="relative">
-                            <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-[28rem] object-cover rounded-xl" />
-                            {isLastVisible && !isGuest && (
-                              <button type="button" onClick={() => setShowAllPhotos(true)}
-                                className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg">
-                                +{remaining} more
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                  <>
+                    {/* Mobile: swipeable slider (video appended as last slide) */}
+                    <div className="sm:hidden -m-3">
+                      <ImageSlider
+                        images={images}
+                        video={property.video}
+                        alt={property.title}
+                        className="h-72"
+                        imgClassName={isGuest ? 'blur-lg scale-110' : ''}
+                        overlay={isGuest ? (
+                          <button type="button" onClick={() => setShowLogin(true)}
+                            className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10">
+                            <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                            <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                          </button>
+                        ) : null}
+                      />
                     </div>
-                    {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
-                      <button type="button" onClick={() => setShowAllPhotos(false)}
-                        className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
-                        Show fewer photos
-                      </button>
-                    )}
-                    {isGuest && (
-                      <button type="button" onClick={() => setShowLogin(true)}
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
-                        <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
-                        <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
-                      </button>
-                    )}
-                  </div>
+
+                    {/* Tablet/desktop: full grid gallery, everything visible at once */}
+                    <div className="relative hidden sm:block">
+                      <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
+                        {property.video && (
+                          <video src={property.video} controls={!isGuest} className="w-full h-80 lg:h-[28rem] object-cover rounded-xl bg-black col-span-2" />
+                        )}
+                        {visibleImages.map((img, i) => {
+                          const isLastVisible = !showAllPhotos && remaining > 0 && i === visibleImages.length - 1;
+                          return (
+                            <div key={i} className="relative">
+                              <img src={img} alt={`${property.title} photo ${i + 1}`} className="w-full h-80 lg:h-[28rem] object-cover rounded-xl" />
+                              {isLastVisible && !isGuest && (
+                                <button type="button" onClick={() => setShowAllPhotos(true)}
+                                  className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 hover:bg-black/60 transition rounded-xl text-white font-bold text-lg">
+                                  +{remaining} more
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {!isGuest && showAllPhotos && images.length > VISIBLE_LIMIT && (
+                        <button type="button" onClick={() => setShowAllPhotos(false)}
+                          className="mt-3 w-full py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+                          Show fewer photos
+                        </button>
+                      )}
+                      {isGuest && (
+                        <button type="button" onClick={() => setShowLogin(true)}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 hover:bg-black/40 transition z-10 rounded-xl">
+                          <span className="material-icons-outlined text-white text-4xl drop-shadow">lock</span>
+                          <span className="text-white text-sm font-semibold drop-shadow">Sign in to view photos & video</span>
+                        </button>
+                      )}
+                    </div>
+                  </>
                 );
               })() : (
                 <div className="h-72 flex items-center justify-center bg-surface-container-high rounded-xl">
@@ -557,6 +579,24 @@ export default function PropertyDetail() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Sticky mobile CTA bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-3 py-2.5 flex items-center gap-2">
+        <ShareWhatsappButton property={property} path={`/buyer/property/${id}`} iconOnly className="flex-shrink-0" />
+        <button
+          onClick={() => { setEnquiryUnit(null); setShowEnquiry(true); }}
+          className="flex-1 py-2.5 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+          Enquire
+        </button>
+        <button
+          onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
+            state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'UnitProperty' },
+          }))}
+          className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-1.5">
+          {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
+          Schedule Visit
+        </button>
       </div>
 
       {showLogin && <LoginPrompt onClose={() => setShowLogin(false)} />}

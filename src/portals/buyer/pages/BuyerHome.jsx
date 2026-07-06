@@ -289,7 +289,7 @@ export default function BuyerHome() {
                   placeholderIcon="account_balance"
                 />
                 <div className="p-4">
-                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.type} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
+                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">{p.type === 'other' ? (p.customType || 'Other') : p.type} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
                   <h3 className="font-montserrat font-bold text-on-surface mb-2">{p.title}</h3>
                   <p className="text-primary-container font-bold text-lg mb-1">₹{Number(p.price).toLocaleString('en-IN')}</p>
                   {p.bankName && <p className="text-xs text-on-surface-variant">{p.bankName}</p>}

@@ -7,8 +7,7 @@ import { Pagination } from '../../../components/common/Pagination';
 import { SearchFilter } from '../../../components/common/SearchFilter';
 import MediaUploader from '../../../components/common/MediaUploader';
 import BookPropertyModal from '../../../components/common/BookPropertyModal';
-
-const TYPES = ['flat', 'villa', 'plot', 'commercial', 'other'];
+import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
 const VISIBLE_TO_OPTS = [
   { key: 'guest',     label: 'Public (Guests)' },
   { key: 'buyer',     label: 'Buyers' },
@@ -26,7 +25,7 @@ const ROLE_COLORS = {
 
 const EMPTY_FORM = {
   title: '', description: '', city: '', area: '', pincode: '', address: '',
-  type: 'flat', bedrooms: '', area_sqft: '', price: '',
+  type: 'flat', customType: '', bedrooms: '', area_sqft: '', price: '',
   bankName: '', auctionDate: '', contactPhone: '',
   status: 'available',
   visibleTo: ['broker', 'developer', 'investor'],
@@ -99,7 +98,15 @@ function PropertiesTab() {
     setLoading(false);
   }
 
-  function handleChange(e) { setForm(f => ({ ...f, [e.target.name]: e.target.value })); }
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm(f => {
+      const next = { ...f, [name]: value };
+      if (name === 'type' && !showMortgageField(value, 'bedrooms')) next.bedrooms = '';
+      if (name === 'type' && value !== 'other') next.customType = '';
+      return next;
+    });
+  }
 
   function toggleVisible(key) {
     setForm(f => ({
@@ -124,7 +131,7 @@ function PropertiesTab() {
     setForm({
       title: p.title || '', description: p.description || '',
       city: p.city || '', area: p.area || '', pincode: p.pincode || '', address: p.address || '',
-      type: p.type || 'flat', bedrooms: p.bedrooms ?? '', area_sqft: p.area_sqft ?? '',
+      type: p.type || 'flat', customType: p.customType || '', bedrooms: p.bedrooms ?? '', area_sqft: p.area_sqft ?? '',
       price: p.price || '', bankName: p.bankName || '',
       auctionDate: p.auctionDate ? new Date(p.auctionDate).toISOString().split('T')[0] : '',
       contactPhone: p.contactPhone || '',
@@ -307,7 +314,7 @@ function PropertiesTab() {
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-500'}`}>
                     {(p.status || '').replace('_', ' ')}
                   </span>
-                  <span className="px-2 py-0.5 bg-[#4900e5]/10 text-[#4900e5] rounded-full text-xs font-semibold capitalize">{p.type}</span>
+                  <span className="px-2 py-0.5 bg-[#4900e5]/10 text-[#4900e5] rounded-full text-xs font-semibold capitalize">{mortgageTypeLabel(p)}</span>
                 </div>
               </div>
               <div className="text-sm text-slate-500 space-y-1">
@@ -525,9 +532,15 @@ function PropertiesTab() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Type</label>
                   <select name="type" value={form.type} onChange={handleChange} className={inp}>
-                    {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                   </select>
                 </div>
+                {form.type === 'other' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Custom Type *</label>
+                    <input name="customType" required value={form.customType} onChange={handleChange} placeholder="e.g. Duplex" className={inp} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Status</label>
                   <select name="status" value={form.status} onChange={handleChange} className={inp}>
@@ -553,10 +566,12 @@ function PropertiesTab() {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Contact Phone</label>
                   <input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="+91 98765 43210" className={inp} />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Bedrooms</label>
-                  <input name="bedrooms" type="number" value={form.bedrooms} onChange={handleChange} placeholder="3" className={inp} />
-                </div>
+                {showMortgageField(form.type, 'bedrooms') && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Bedrooms</label>
+                    <input name="bedrooms" type="number" value={form.bedrooms} onChange={handleChange} placeholder="3" className={inp} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Area (sqft)</label>
                   <input name="area_sqft" type="number" value={form.area_sqft} onChange={handleChange} placeholder="1100" className={inp} />
@@ -915,7 +930,7 @@ function PendingReviewTab({ onApproved }) {
                     <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <span className="material-icons-outlined text-sm">pending</span> Pending Review
                     </span>
-                    <span className="text-xs text-slate-400 capitalize">{p.type}</span>
+                    <span className="text-xs text-slate-400 capitalize">{mortgageTypeLabel(p)}</span>
                   </div>
                   <p className="font-montserrat font-bold text-slate-800">{p.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">

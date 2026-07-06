@@ -25,7 +25,10 @@ export default function MediaUploader({
   const [uploading, setUploading] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [error, setError] = useState('');
+  const [dragActive, setDragActive] = useState(false);
+  const [videoDragActive, setVideoDragActive] = useState(false);
   const imgInputRef = useRef(null);
   const vidInputRef = useRef(null);
 
@@ -67,9 +70,14 @@ export default function MediaUploader({
 
   const uploadVideo = useCallback(async (file) => {
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Video must be under 10 MB.');
+      if (vidInputRef.current) vidInputRef.current.value = '';
+      return;
+    }
     setError('');
     setUploadingVideo(true);
-    setProgress(0);
+    setVideoProgress(0);
     try {
       const fd = new FormData();
       fd.append('video', file);
@@ -78,7 +86,7 @@ export default function MediaUploader({
       const { data } = await api.post('/upload/video', fd, {
         headers: { 'Content-Type': undefined },  // let axios set boundary automatically
         onUploadProgress: (e) => {
-          setProgress(Math.round((e.loaded * 100) / e.total));
+          setVideoProgress(Math.round((e.loaded * 100) / e.total));
         },
       });
 
@@ -87,7 +95,7 @@ export default function MediaUploader({
       setError(err.response?.data?.message || 'Video upload failed.');
     } finally {
       setUploadingVideo(false);
-      setProgress(0);
+      setVideoProgress(0);
       if (vidInputRef.current) vidInputRef.current.value = '';
     }
   }, [onVideo, folder]);
@@ -101,47 +109,99 @@ export default function MediaUploader({
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
+    setDragActive(false);
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
     if (files.length) uploadImages(files);
   }, [uploadImages]);
 
-  const onDragOver = (e) => e.preventDefault();
+  const onVideoDrop = useCallback((e) => {
+    e.preventDefault();
+    setVideoDragActive(false);
+    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith('video/'));
+    if (file) uploadVideo(file);
+  }, [uploadVideo]);
+
+  const canAddMore = images.length < maxImages;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Image section */}
       <div>
-        <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
-          Property Images {images.length > 0 && `(${images.length}/${maxImages})`}
-        </label>
-
-        {/* Drop zone */}
-        <div
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onClick={() => !uploading && imgInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition
-            ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-indigo-500'}
-            border-slate-600 bg-slate-800/50`}
-        >
-          {uploading ? (
-            <div className="space-y-2">
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <div
-                  className="bg-indigo-500 h-2 rounded-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-400">Uploading… {progress}%</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-1 py-2">
-              <span className="material-icons-outlined text-slate-500 text-3xl">add_photo_alternate</span>
-              <p className="text-sm text-slate-400">Click or drag images here</p>
-              <p className="text-xs text-slate-600">JPG, PNG, WEBP · up to 10 MB each · max {maxImages}</p>
-            </div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            Property Images
+          </label>
+          {images.length > 0 && (
+            <span className="text-xs text-slate-400 font-medium">{images.length}/{maxImages}</span>
           )}
         </div>
+
+        {/* Image thumbnails + add tile */}
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2">
+            {images.map((url, idx) => (
+              <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                <img src={url} alt={`Property photo ${idx + 1}`} className="w-full h-full object-cover" />
+                {idx === 0 && (
+                  <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold bg-[#4900e5] text-white px-1.5 py-0.5 rounded-md">
+                    Cover
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  aria-label="Remove photo"
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-rose-600 flex items-center justify-center
+                             text-white transition opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                  <span className="material-icons-outlined text-sm">close</span>
+                </button>
+              </div>
+            ))}
+            {canAddMore && !uploading && (
+              <button
+                type="button"
+                onClick={() => imgInputRef.current?.click()}
+                className="aspect-square rounded-xl border-2 border-dashed border-slate-200 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5
+                           flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#4900e5] transition"
+              >
+                <span className="material-icons-outlined text-2xl">add</span>
+                <span className="text-xs font-semibold">Add more</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Drop zone — only shown before the first upload; afterwards "Add more" tile above handles it */}
+        {(images.length === 0 || uploading) && (
+          <div
+            onDrop={onDrop}
+            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+            onDragLeave={() => setDragActive(false)}
+            onClick={() => !uploading && imgInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-6 text-center transition
+              ${uploading ? 'cursor-not-allowed bg-slate-50 border-slate-200' :
+                dragActive ? 'cursor-pointer border-[#4900e5] bg-[#4900e5]/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5'}`}
+          >
+            {uploading ? (
+              <div className="space-y-2 max-w-xs mx-auto">
+                <p className="text-sm font-semibold text-slate-600">Uploading photos…</p>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div className="bg-[#4900e5] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                </div>
+                <p className="text-xs text-slate-400">{progress}%</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="material-icons-outlined text-[#4900e5]/60 text-4xl">add_photo_alternate</span>
+                <p className="text-sm font-semibold text-slate-600">
+                  <span className="text-[#4900e5]">Click to upload</span> or drag photos here
+                </p>
+                <p className="text-xs text-slate-400">JPG, PNG, WEBP · up to 10 MB each · max {maxImages}</p>
+              </div>
+            )}
+          </div>
+        )}
         <input
           ref={imgInputRef}
           type="file"
@@ -152,69 +212,49 @@ export default function MediaUploader({
         />
       </div>
 
-      {/* Image thumbnails */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          {images.map((url, idx) => (
-            <div key={idx} className="relative group aspect-video rounded-lg overflow-hidden bg-slate-700">
-              <img src={url} alt={`img-${idx}`} className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage(idx)}
-                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 flex items-center justify-center
-                           opacity-0 group-hover:opacity-100 transition text-white text-xs"
-              >
-                <span className="material-icons-outlined text-sm">close</span>
-              </button>
-              {idx === 0 && (
-                <span className="absolute bottom-1 left-1 text-xs bg-indigo-600/80 text-white px-1.5 py-0.5 rounded">
-                  Cover
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Video section */}
       {showVideo && (
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
-            Property Video (optional)
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Property Video <span className="text-slate-400 normal-case font-normal">(optional)</span>
           </label>
           {video ? (
-            <div className="relative rounded-xl overflow-hidden bg-slate-800 border border-slate-700">
-              <video src={video} controls className="w-full max-h-40 object-cover" />
+            <div className="relative rounded-xl overflow-hidden bg-black border border-slate-200">
+              <video src={video} controls className="w-full max-h-56 object-contain bg-black" />
               <button
                 type="button"
                 onClick={removeVideo}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-600/90 flex items-center justify-center text-white"
+                aria-label="Remove video"
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 hover:bg-rose-600 flex items-center justify-center text-white transition"
               >
-                <span className="material-icons-outlined text-sm">close</span>
+                <span className="material-icons-outlined text-base">close</span>
               </button>
             </div>
           ) : (
             <div
+              onDrop={onVideoDrop}
+              onDragOver={e => { e.preventDefault(); setVideoDragActive(true); }}
+              onDragLeave={() => setVideoDragActive(false)}
               onClick={() => !uploadingVideo && vidInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition
-                ${uploadingVideo ? 'opacity-50 cursor-not-allowed' : 'hover:border-indigo-500'}
-                border-slate-600 bg-slate-800/50`}
+              className={`border-2 border-dashed rounded-xl p-6 text-center transition
+                ${uploadingVideo ? 'cursor-not-allowed bg-slate-50 border-slate-200' :
+                  videoDragActive ? 'cursor-pointer border-[#4900e5] bg-[#4900e5]/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5'}`}
             >
               {uploadingVideo ? (
-                <div className="space-y-2">
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div
-                      className="bg-indigo-500 h-2 rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
+                <div className="space-y-2 max-w-xs mx-auto">
+                  <p className="text-sm font-semibold text-slate-600">Uploading video…</p>
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="bg-[#4900e5] h-2 rounded-full transition-all" style={{ width: `${videoProgress}%` }} />
                   </div>
-                  <p className="text-xs text-slate-400">Uploading video… {progress}%</p>
+                  <p className="text-xs text-slate-400">{videoProgress}%</p>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-1 py-2">
-                  <span className="material-icons-outlined text-slate-500 text-3xl">videocam</span>
-                  <p className="text-sm text-slate-400">Click to upload video</p>
-                  <p className="text-xs text-slate-600">MP4, MOV, WEBM · up to 100 MB</p>
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="material-icons-outlined text-[#4900e5]/60 text-4xl">videocam</span>
+                  <p className="text-sm font-semibold text-slate-600">
+                    <span className="text-[#4900e5]">Click to upload</span> or drag a video here
+                  </p>
+                  <p className="text-xs text-slate-400">MP4, MOV, WEBM · up to 10 MB</p>
                 </div>
               )}
             </div>
@@ -230,10 +270,10 @@ export default function MediaUploader({
       )}
 
       {error && (
-        <p className="text-xs text-rose-400 flex items-center gap-1">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-xs font-semibold">
           <span className="material-icons-outlined text-sm">error_outline</span>
           {error}
-        </p>
+        </div>
       )}
     </div>
   );

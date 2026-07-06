@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../../api/axios';
 import MediaUploader from '../../../components/common/MediaUploader';
-
-const TYPES = ['flat', 'villa', 'plot', 'commercial', 'other'];
+import { searchLocations } from '../../../data/indiaLocations';
+import { getPincodeEntryForCity, expandPincodesForCity, RAJASTHAN_CITY_NAMES } from '../../../data/rajasthanPincodes';
+import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
 const VISIBLE_OPTS = [
   { key: 'buyer',     label: 'Buyers',     color: 'bg-violet-100 text-violet-700' },
   { key: 'broker',    label: 'Brokers',    color: 'bg-rose-100 text-rose-600' },
@@ -18,13 +19,13 @@ const STATUS_STYLE = {
 
 const EMPTY_FORM = {
   title: '', description: '', city: '', area: '', pincode: '',
-  type: 'flat', bedrooms: '', area_sqft: '', price: '',
+  type: 'flat', customType: '', bedrooms: '', area_sqft: '', price: '',
   bankName: '', auctionDate: '', contactPhone: '',
   status: 'available',
   visibleTo: ['buyer', 'broker', 'developer', 'investor'],
 };
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/30';
+const inp = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/30';
 const LIMIT = 9;
 
 function fmt(n) {
@@ -48,6 +49,24 @@ export default function AuctionProperties() {
   const [formVideo, setFormVideo]   = useState('');
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState('');
+
+  // City autosuggest
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const cityWrapRef = useRef(null);
+
+  // Pincode autosuggest — derived from the current city, filtered by what's typed so far
+  const [showPincodeSuggestions, setShowPincodeSuggestions] = useState(false);
+  const pincodeWrapRef = useRef(null);
+
+  useEffect(() => {
+    function close(e) {
+      if (cityWrapRef.current && !cityWrapRef.current.contains(e.target)) setShowCitySuggestions(false);
+      if (pincodeWrapRef.current && !pincodeWrapRef.current.contains(e.target)) setShowPincodeSuggestions(false);
+    }
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
 
   const fetchProps = useCallback(async (p = 1) => {
     setLoading(true);
@@ -86,7 +105,7 @@ export default function AuctionProperties() {
     setForm({
       title: p.title || '', description: p.description || '',
       city: p.city || '', area: p.area || '', pincode: p.pincode || '',
-      type: p.type || 'flat', bedrooms: p.bedrooms ?? '', area_sqft: p.area_sqft ?? '',
+      type: p.type || 'flat', customType: p.customType || '', bedrooms: p.bedrooms ?? '', area_sqft: p.area_sqft ?? '',
       price: p.price || '', bankName: p.bankName || '',
       auctionDate: p.auctionDate ? new Date(p.auctionDate).toISOString().split('T')[0] : '',
       contactPhone: p.contactPhone || '',
@@ -100,7 +119,50 @@ export default function AuctionProperties() {
     setShowForm(true);
   }
 
-  function handleChange(e) { setForm(f => ({ ...f, [e.target.name]: e.target.value })); }
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm(f => {
+      const next = { ...f, [name]: value };
+      if (name === 'type' && !showMortgageField(value, 'bedrooms')) next.bedrooms = '';
+      if (name === 'type' && value !== 'other') next.customType = '';
+      return next;
+    });
+  }
+
+  function handleCityChange(e) {
+    const v = e.target.value;
+    setForm(f => ({ ...f, city: v }));
+    const matches = v.trim().length >= 2
+      ? searchLocations(v).filter(s => s.state === 'Rajasthan' && RAJASTHAN_CITY_NAMES.has(s.label.toLowerCase())).slice(0, 6)
+      : [];
+    setCitySuggestions(matches);
+    setShowCitySuggestions(true);
+  }
+
+  function pickCity(loc) {
+    setForm(f => ({ ...f, city: loc.label, pincode: '' }));
+    setShowCitySuggestions(false);
+    setShowPincodeSuggestions(false);
+  }
+
+  function handlePincodeChange(e) {
+    const v = e.target.value;
+    setForm(f => ({ ...f, pincode: v }));
+    setShowPincodeSuggestions(v.trim().length >= 3);
+  }
+
+  function pickPincode(pin) {
+    setForm(f => ({ ...f, pincode: pin }));
+    setShowPincodeSuggestions(false);
+  }
+
+  const pincodeSuggestions = (() => {
+    const typed = form.pincode.trim();
+    if (typed.length < 3) return [];
+    const all = expandPincodesForCity(form.city);
+    return all.filter(p => p.startsWith(typed));
+  })();
+
   function toggleVisible(key) {
     setForm(f => ({
       ...f,
@@ -202,7 +264,7 @@ export default function AuctionProperties() {
                     {a.status === 'under_auction' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse mr-1 align-middle" />}
                     {st.label}
                   </span>
-                  <span className="text-xs text-on-surface-variant capitalize">{a.type}</span>
+                  <span className="text-xs text-on-surface-variant capitalize">{mortgageTypeLabel(a)}</span>
                 </div>
 
                 <div>
@@ -301,17 +363,17 @@ export default function AuctionProperties() {
       {/* Add / Edit Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-4 sm:px-6 py-4 flex items-center justify-between z-10">
               <h2 className="font-montserrat font-bold text-lg text-slate-800">
                 {editId ? 'Edit Listing' : 'Add Auction Property'}
               </h2>
-              <button onClick={() => setShowForm(false)}>
+              <button onClick={() => setShowForm(false)} className="p-1 -mr-1">
                 <span className="material-icons-outlined text-slate-400">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               {msg && (
                 <div className="p-3 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">{msg}</div>
               )}
@@ -321,24 +383,66 @@ export default function AuctionProperties() {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Title *</label>
                   <input name="title" required value={form.title} onChange={handleChange} placeholder="e.g. 3BHK Flat – HDFC Bank Repo, Andheri" className={inp} />
                 </div>
-                <div>
+                <div ref={cityWrapRef} className="relative">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">City *</label>
-                  <input name="city" required value={form.city} onChange={handleChange} placeholder="Mumbai" className={inp} />
+                  <input name="city" required value={form.city} onChange={handleCityChange}
+                    onFocus={() => citySuggestions.length > 0 && setShowCitySuggestions(true)}
+                    autoComplete="off" placeholder="Jaipur" className={inp} />
+                  {showCitySuggestions && citySuggestions.length > 0 && (
+                    <ul className="absolute z-20 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                      {citySuggestions.map((s, i) => (
+                        <li key={i}>
+                          <button type="button" onMouseDown={() => pickCity(s)}
+                            className="w-full text-left px-3 py-2.5 hover:bg-[#0f4c81]/5 flex items-center gap-2 text-sm">
+                            <span className="material-icons-outlined text-sm text-slate-400">location_on</span>
+                            <span className="text-slate-800 font-medium">{s.label}</span>
+                            <span className="text-slate-400 text-xs ml-auto">{s.state}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Area</label>
                   <input name="area" value={form.area} onChange={handleChange} placeholder="Andheri West" className={inp} />
                 </div>
-                <div>
+                <div ref={pincodeWrapRef} className="relative">
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Pincode</label>
-                  <input name="pincode" value={form.pincode} onChange={handleChange} placeholder="400058" className={inp} />
+                  <input name="pincode" value={form.pincode} onChange={handlePincodeChange}
+                    onFocus={() => form.pincode.trim().length >= 3 && setShowPincodeSuggestions(true)}
+                    autoComplete="off" placeholder="302001" inputMode="numeric" className={inp} />
+                  {showPincodeSuggestions && pincodeSuggestions.length > 0 && (
+                    <ul className="absolute z-20 top-full mt-1 w-full max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl">
+                      {pincodeSuggestions.map(pin => (
+                        <li key={pin}>
+                          <button type="button" onMouseDown={() => pickPincode(pin)}
+                            className="w-full text-left px-3 py-2 hover:bg-[#0f4c81]/5 text-sm text-slate-800 font-medium">
+                            {pin}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {getPincodeEntryForCity(form.city) && (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Valid range{getPincodeEntryForCity(form.city).pincodes.length > 1 ? 's' : ''} for {form.city}: {getPincodeEntryForCity(form.city).pincodes.join(', ')}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Type</label>
                   <select name="type" value={form.type} onChange={handleChange} className={inp}>
-                    {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
                   </select>
                 </div>
+                {form.type === 'other' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Custom Type *</label>
+                    <input name="customType" required value={form.customType} onChange={handleChange}
+                      placeholder="e.g. Duplex" className={inp} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Status</label>
                   <select name="status" value={form.status} onChange={handleChange} className={inp}>
@@ -364,10 +468,12 @@ export default function AuctionProperties() {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Contact Phone</label>
                   <input name="contactPhone" value={form.contactPhone} onChange={handleChange} placeholder="9988776655" className={inp} />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Bedrooms</label>
-                  <input name="bedrooms" type="number" value={form.bedrooms} onChange={handleChange} placeholder="3" className={inp} />
-                </div>
+                {showMortgageField(form.type, 'bedrooms') && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Bedrooms</label>
+                    <input name="bedrooms" type="number" value={form.bedrooms} onChange={handleChange} placeholder="3" className={inp} />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Area (sqft)</label>
                   <input name="area_sqft" type="number" value={form.area_sqft} onChange={handleChange} placeholder="1100" className={inp} />
@@ -395,18 +501,20 @@ export default function AuctionProperties() {
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Visible To</label>
                 <div className="flex flex-wrap gap-3">
                   {VISIBLE_OPTS.map(o => (
-                    <label key={o.key} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="accent-[#0f4c81]" />
+                    <label key={o.key} className="flex items-center gap-2 py-1.5 cursor-pointer">
+                      <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="w-4 h-4 accent-[#0f4c81]" />
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${form.visibleTo.includes(o.key) ? o.color : 'text-slate-400'}`}>{o.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <button type="submit" disabled={saving}
-                className="w-full py-3 rounded-xl bg-[#0f4c81] text-white font-bold text-sm hover:bg-[#1565c0] transition disabled:opacity-60">
-                {saving ? 'Saving…' : editId ? 'Update Listing' : 'Add Listing'}
-              </button>
+              <div className="sticky bottom-0 bg-white pt-3 -mx-4 sm:-mx-6 px-4 sm:px-6 -mb-4 sm:-mb-6 pb-4 sm:pb-6 border-t border-slate-100">
+                <button type="submit" disabled={saving}
+                  className="w-full py-3 rounded-xl bg-[#0f4c81] text-white font-bold text-sm hover:bg-[#1565c0] transition disabled:opacity-60">
+                  {saving ? 'Saving…' : editId ? 'Update Listing' : 'Add Listing'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

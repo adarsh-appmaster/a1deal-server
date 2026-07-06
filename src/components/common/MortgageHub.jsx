@@ -392,7 +392,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
         <div className="flex items-start justify-between gap-2 mb-1">
           <span className="px-2 py-0.5 rounded-full text-xs font-semibold capitalize"
             style={{ background: `${portalColor}18`, color: portalColor }}>
-            {p.type}
+            {p.type === 'other' ? (p.customType || 'Other') : p.type?.replace(/_/g, ' ')}
           </span>
           {p.auctionDate && (
             <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
