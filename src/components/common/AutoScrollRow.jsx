@@ -39,7 +39,7 @@ export default function AutoScrollRow({ items, renderItem, cardWidth = 'w-72', g
         type="button"
         aria-label="Scroll left"
         onClick={() => slide(-1)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-9 h-9 rounded-full bg-white shadow-level-2 border border-outline-variant text-on-surface-variant hover:text-primary flex items-center justify-center"
+        className="absolute left-1 md:left-0 top-1/2 -translate-y-1/2 md:-translate-x-3 z-10 w-9 h-9 rounded-full bg-white/95 shadow-level-2 border border-outline-variant text-on-surface-variant hover:text-primary flex items-center justify-center"
       >
         <span className="material-icons-outlined text-lg">chevron_left</span>
       </button>
@@ -59,7 +59,7 @@ export default function AutoScrollRow({ items, renderItem, cardWidth = 'w-72', g
         type="button"
         aria-label="Scroll right"
         onClick={() => slide(1)}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-9 h-9 rounded-full bg-white shadow-level-2 border border-outline-variant text-on-surface-variant hover:text-primary flex items-center justify-center"
+        className="absolute right-1 md:right-0 top-1/2 -translate-y-1/2 md:translate-x-3 z-10 w-9 h-9 rounded-full bg-white/95 shadow-level-2 border border-outline-variant text-on-surface-variant hover:text-primary flex items-center justify-center"
       >
         <span className="material-icons-outlined text-lg">chevron_right</span>
       </button>

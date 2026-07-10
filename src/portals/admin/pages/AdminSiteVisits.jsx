@@ -165,10 +165,10 @@ export default function AdminSiteVisits() {
         <input
           value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search name, phone, property, pass code…"
-          className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a]"
+          className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary"
         />
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a] bg-white">
+          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary bg-white">
           <option value="all">All Statuses</option>
           {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
@@ -240,7 +240,7 @@ export default function AdminSiteVisits() {
                     </td>
                     <td className="px-4 py-3">
                       <button onClick={() => openVisit(v)}
-                        className="text-[#484a5a] hover:text-[#2e3044] text-xs font-semibold flex items-center gap-1">
+                        className="text-tertiary hover:text-[#2e3044] text-xs font-semibold flex items-center gap-1">
                         <span className="material-icons-outlined text-sm">open_in_new</span>
                         Open
                       </button>
@@ -324,15 +324,15 @@ export default function AdminSiteVisits() {
               <div className="border-t border-slate-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status & Notes</p>
                 <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a] bg-white">
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary bg-white">
                   {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
                 <textarea rows={2} value={adminNote} onChange={e => setAdminNote(e.target.value)}
                   placeholder="Admin note…"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a] resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary resize-none"
                 />
                 <button onClick={handleStatusUpdate} disabled={saving}
-                  className="w-full py-2.5 rounded-xl border-2 border-[#484a5a] text-[#484a5a] font-bold text-sm hover:bg-[#484a5a]/5 transition disabled:opacity-60">
+                  className="w-full py-2.5 rounded-xl border-2 border-tertiary text-tertiary font-bold text-sm hover:bg-tertiary/5 transition disabled:opacity-60">
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
@@ -420,7 +420,7 @@ export default function AdminSiteVisits() {
                           s.status === 'sent'      ? 'bg-emerald-100 text-emerald-700' :
                           s.status === 'pending'   ? 'bg-amber-100 text-amber-700' :
                           s.status === 'failed'    ? 'bg-rose-100 text-rose-700' :
-                          'bg-slate-100 text-slate-500'
+                          'bg-slate-100 text-slate-600'
                         }`}>{s.status}</span>
                         {s.status === 'pending' && (
                           <button onClick={() => cancelWaSchedule(s._id)}

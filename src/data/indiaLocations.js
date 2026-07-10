@@ -95,6 +95,12 @@ export const INDIA_STATES = {
     'Jaipur','Jodhpur','Udaipur','Kota','Bikaner','Ajmer','Alwar','Bharatpur',
     'Bhilwara','Sikar','Pali','Sri Ganganagar','Barmer','Jhunjhunu','Tonk',
     'Dausa','Nagaur','Churu','Banswara','Dungarpur',
+    // More Rajasthan cities / district HQs
+    'Chittorgarh','Sawai Madhopur','Hanumangarh','Jaisalmer','Jhalawar','Karauli',
+    'Rajsamand','Pratapgarh','Baran','Bundi','Sirohi','Jalore','Kishangarh','Beawar',
+    'Bhiwadi','Neemrana','Mount Abu','Abu Road','Nathdwara','Makrana','Sujangarh',
+    'Sardarshahar','Nawalgarh','Fatehpur','Ratangarh','Phalodi','Balotra','Merta City',
+    'Kuchaman City','Didwana','Nokha','Deshnok','Bhinmal','Sumerpur','Kekri','Nasirabad',
     // Jaipur areas
     'Vaishali Nagar','Mansarovar','Malviya Nagar','C-Scheme','Jhotwara','Vidhyadhar Nagar',
     'Raja Park','Murlipura','Tonk Road','Sitapura','Sanganer','Jagatpura','Pratap Nagar',

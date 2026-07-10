@@ -9,7 +9,7 @@ import ImageSlider from '../../../components/common/ImageSlider';
 const STATUS_COLOR = {
   available:     'bg-emerald-100 text-emerald-800',
   under_process: 'bg-amber-100 text-amber-800',
-  sold:          'bg-slate-100 text-slate-500',
+  sold:          'bg-slate-100 text-slate-600',
 };
 const STATUS_LABEL = {
   available:     'Available',
@@ -36,11 +36,11 @@ function LockedField({ placeholder, onUnlock }) {
       <span className="blur-sm select-none text-slate-700 text-sm font-medium pointer-events-none">
         {placeholder || '••••••••'}
       </span>
-      <span className="absolute inset-0 flex items-center justify-center gap-1 text-xs font-semibold text-[#4900e5] opacity-0 group-hover:opacity-100 transition bg-white/60 rounded px-1">
+      <span className="absolute inset-0 flex items-center justify-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition bg-white/60 rounded px-1">
         <span className="material-icons-outlined text-sm">lock_open</span>
         Login
       </span>
-      <span className="material-icons-outlined text-sm text-slate-400 group-hover:text-[#4900e5] transition">lock</span>
+      <span className="material-icons-outlined text-sm text-slate-400 group-hover:text-primary transition">lock</span>
     </button>
   );
 }
@@ -50,8 +50,8 @@ function LoginPrompt({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 text-center" onClick={e => e.stopPropagation()}>
-        <div className="w-14 h-14 rounded-full bg-[#4900e5]/10 flex items-center justify-center mx-auto mb-4">
-          <span className="material-icons-outlined text-[#4900e5] text-2xl">lock</span>
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <span className="material-icons-outlined text-primary text-2xl">lock</span>
         </div>
         <h3 className="font-montserrat font-bold text-lg text-slate-800 mb-2">Sign in to unlock full details</h3>
         <p className="text-sm text-slate-500 mb-6 leading-relaxed">
@@ -59,7 +59,7 @@ function LoginPrompt({ onClose }) {
         </p>
         <div className="flex gap-3">
           <button onClick={() => navigate('/signup')}
-            className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition">
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition">
             Sign Up Free
           </button>
           <button onClick={() => navigate('/login')}
@@ -115,7 +115,7 @@ export default function MortgagePropertyDetail() {
         <h2 className="font-montserrat font-bold text-xl text-slate-700 mb-2">Property not found</h2>
         <p className="text-slate-500 mb-6">This listing may have been removed or is no longer available.</p>
         <button onClick={() => navigate('/buyer/mortgage')}
-          className="px-5 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">
+          className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
           Back to Property Deals
         </button>
       </div>
@@ -128,7 +128,7 @@ export default function MortgagePropertyDetail() {
     <>
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 pb-24 sm:pb-8">
         <button onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#4900e5] mb-6 transition-colors">
+          className="flex items-center gap-1 text-sm text-slate-500 hover:text-primary mb-6 transition-colors">
           <span className="material-icons-outlined text-sm">arrow_back</span>Back
         </button>
 
@@ -137,7 +137,7 @@ export default function MortgagePropertyDetail() {
             <span className="material-icons-outlined text-amber-600 text-base">info</span>
             <span className="text-amber-800 flex-1">Some details are hidden. <strong>Sign in to see full property information.</strong></span>
             <button onClick={() => setShowLogin(true)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition">
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container transition">
               Sign In
             </button>
           </div>
@@ -149,7 +149,7 @@ export default function MortgagePropertyDetail() {
             {/* Media gallery — every photo and the video shown at once, no slider */}
             <div className="rounded-2xl border border-slate-100 bg-white p-3 overflow-hidden">
               <div className="flex items-center gap-2 mb-3">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-500'}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-600'}`}>
                   {STATUS_LABEL[property.status] || property.status}
                 </span>
                 <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 capitalize">
@@ -260,6 +260,23 @@ export default function MortgagePropertyDetail() {
                 )}
               </div>
 
+              {/* Extra expected prices by locality/area */}
+              {property.localityPrices?.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">Expected Prices by Locality</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {property.localityPrices.map((lp, i) => (
+                      <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2.5 border border-slate-100">
+                        <span className="text-sm text-slate-600">
+                          {[lp.area, lp.pincode].filter(Boolean).join(' · ') || 'Other locality'}
+                        </span>
+                        <span className="font-montserrat font-bold text-sm text-slate-800">{formatPrice(lp.expectedPrice)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Key stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 p-4 bg-slate-50 rounded-xl">
                 {[
@@ -269,7 +286,7 @@ export default function MortgagePropertyDetail() {
                   property.type           && { icon: 'home_work',   label: 'Type',     val: typeLabel(property) },
                 ].filter(Boolean).map(d => (
                   <div key={d.label} className="text-center">
-                    <span className="material-icons-outlined text-[#4900e5] text-xl">{d.icon}</span>
+                    <span className="material-icons-outlined text-primary text-xl">{d.icon}</span>
                     <p className="font-semibold text-slate-800 text-sm capitalize mt-0.5">{d.val}</p>
                     <p className="text-xs text-slate-400">{d.label}</p>
                   </div>
@@ -279,7 +296,7 @@ export default function MortgagePropertyDetail() {
               {property.description && (
                 <>
                   <h2 className="font-montserrat font-semibold text-slate-800 mb-2 text-sm uppercase tracking-wide">About This Property</h2>
-                  <p className="text-slate-500 text-sm leading-relaxed">{property.description}</p>
+                   <p className="text-on-surface-variant text-sm leading-relaxed">{property.description}</p>
                 </>
               )}
             </div>
@@ -287,37 +304,11 @@ export default function MortgagePropertyDetail() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Bank info */}
-            {property.bankName && (
-              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                <h3 className="font-montserrat font-semibold text-slate-800 mb-3 text-sm">Bank / Lender</h3>
-                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <span className="material-icons-outlined text-amber-600 text-xl">account_balance</span>
-                  <span className="font-semibold text-slate-800 text-sm">{property.bankName}</span>
-                </div>
-                {isGuest ? (
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="material-icons-outlined text-slate-300 text-lg">call</span>
-                      <LockedField placeholder="+91 •••••  •••••" onUnlock={() => setShowLogin(true)} />
-                    </div>
-                    <button onClick={() => setShowLogin(true)}
-                      className="w-full py-2 rounded-xl border border-dashed border-[#4900e5]/40 text-[#4900e5] text-xs font-semibold hover:bg-[#4900e5]/5 transition flex items-center justify-center gap-1">
-                      <span className="material-icons-outlined text-sm">lock_open</span>
-                      Login to contact bank
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 mt-2">Contact your branch for bid registration details.</p>
-                )}
-              </div>
-            )}
-
             {/* CTA */}
             <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3">
               <button
                 onClick={() => setShowEnquiry(true)}
-                className="w-full py-3 px-4 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-2">
+                className="w-full py-3 px-4 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition flex items-center justify-center gap-2">
                 <span className="material-icons-outlined text-sm">contact_support</span>
                 Enquire About This Property
               </button>
@@ -325,17 +316,11 @@ export default function MortgagePropertyDetail() {
                 onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
                   state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
                 })}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition flex items-center justify-center gap-2">
+                className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition flex items-center justify-center gap-2">
                 <span className="material-icons-outlined text-sm">event</span>
                 Schedule Site Visit
               </button>
               <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} className="w-full" />
-              {isGuest && (
-                <button onClick={() => setShowLogin(true)}
-                  className="w-full py-2.5 px-4 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
-                  Sign In to Track Auction
-                </button>
-              )}
               <p className="text-xs text-slate-400 text-center">Our team will reach out with auction details and bidding support.</p>
             </div>
 
@@ -366,14 +351,14 @@ export default function MortgagePropertyDetail() {
         <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} iconOnly className="flex-shrink-0" />
         <button
           onClick={() => setShowEnquiry(true)}
-          className="flex-1 py-2.5 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+          className="flex-1 py-2.5 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
           Enquire
         </button>
         <button
           onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
             state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
           })}
-          className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-1.5">
+          className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
           {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
           Schedule Visit
         </button>

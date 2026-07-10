@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../../api/axios';
+import { timeAgo } from '../../utils/timeAgo';
 
 const TYPE_COLORS = {
   property_pending:      'text-amber-500',
   property_approved:     'text-emerald-500',
   property_rejected:     'text-rose-500',
-  unit_property_added:   'text-[#484a5a]',
+  unit_property_added:   'text-tertiary',
   mortgage_property_added: 'text-blue-500',
   system:                'text-slate-400',
 };
-
-function timeAgo(date) {
-  const secs = Math.floor((Date.now() - new Date(date)) / 1000);
-  if (secs < 60)   return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
 
 export default function NotificationBell({ accentColor = '#484a5a' }) {
   const [open, setOpen]           = useState(false);
@@ -79,10 +72,10 @@ export default function NotificationBell({ accentColor = '#484a5a' }) {
       <button
         onClick={() => setOpen(o => !o)}
         className="relative w-11 h-11 flex items-center justify-center rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
-        title="Notifications"
+        title="Activity"
       >
-        <span className="material-icons-outlined text-[26px]">
-          {open ? 'notifications' : unread > 0 ? 'notifications_active' : 'notifications_none'}
+        <span className={`material-icons-outlined text-[26px] ${open || unread > 0 ? 'text-rose-500' : ''}`}>
+          favorite
         </span>
         {unread > 0 && (
           <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold px-1 leading-none">
@@ -96,7 +89,7 @@ export default function NotificationBell({ accentColor = '#484a5a' }) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <span className="font-montserrat font-bold text-sm text-slate-800">Notifications</span>
+              <span className="font-montserrat font-bold text-sm text-slate-800">Activity</span>
               {unread > 0 && (
                 <span className="bg-rose-100 text-rose-600 text-xs font-bold px-1.5 py-0.5 rounded-full">{unread}</span>
               )}
@@ -114,8 +107,8 @@ export default function NotificationBell({ accentColor = '#484a5a' }) {
               <div className="py-10 text-center text-slate-400 text-sm">Loading…</div>
             ) : notifications.length === 0 ? (
               <div className="py-10 text-center text-slate-400">
-                <span className="material-icons-outlined text-3xl text-slate-200 block mb-2">notifications_none</span>
-                <p className="text-sm">No notifications yet</p>
+                <span className="material-icons-outlined text-3xl text-slate-200 block mb-2">favorite</span>
+                <p className="text-sm">No activity yet</p>
               </div>
             ) : (
               notifications.map(n => {

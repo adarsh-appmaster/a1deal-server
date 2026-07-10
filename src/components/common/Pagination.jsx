@@ -10,8 +10,8 @@ export function Pagination({
   showPageNumbers = true,
   maxPageButtons = 5
 }) {
-  if (totalPages <= 1) return null;
-
+  // Hooks must run unconditionally and in the same order every render — compute
+  // the page list first, then bail out for the trivial single-page case below.
   const pages = useMemo(() => {
     if (totalPages <= maxPageButtons) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -37,6 +37,8 @@ export function Pagination({
     }
     return result;
   }, [currentPage, totalPages, maxPageButtons]);
+
+  if (totalPages <= 1) return null;
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);

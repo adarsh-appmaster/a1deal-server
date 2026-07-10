@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
   { path: '/developer', end: true, icon: 'dashboard', label: 'Dashboard' },
@@ -11,9 +13,13 @@ const NAV = [
 ];
 
 export default function DeveloperLayout() {
+  const { user, patchUser } = useAuth();
   return (
     <DashboardLayout portalName="Developer Portal" portalColor="#1a1d2b" navItems={NAV}>
       <Outlet />
+      {user?.mustChangePassword && (
+        <ChangePasswordModal forced onClose={() => patchUser({ mustChangePassword: false })} />
+      )}
     </DashboardLayout>
   );
 }

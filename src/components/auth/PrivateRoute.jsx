@@ -10,7 +10,7 @@ export default function PrivateRoute({ children, portalRole }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <span className="material-icons-outlined text-4xl text-[#4900e5] animate-spin">progress_activity</span>
+        <span className="material-icons-outlined text-4xl text-primary animate-spin">progress_activity</span>
       </div>
     );
   }

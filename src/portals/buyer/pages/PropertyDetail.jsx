@@ -10,7 +10,7 @@ const STATUS_COLOR = {
   available:         'bg-emerald-100 text-emerald-800',
   under_negotiation: 'bg-amber-100 text-amber-800',
   booked:            'bg-violet-100 text-violet-700',
-  sold:              'bg-slate-100 text-slate-500',
+  sold:              'bg-slate-100 text-slate-600',
 };
 const STATUS_LABEL = {
   available:         'Available',
@@ -39,7 +39,7 @@ function UnitCard({ unit, onEnquire }) {
   const st = UNIT_STATUS[unit.status] || UNIT_STATUS.available;
   const isUnavailable = unit.status === 'sold' || unit.status === 'booked';
   return (
-    <div className={`rounded-2xl border p-4 transition ${isUnavailable ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 hover:border-[#4900e5]/30 hover:shadow-sm'}`}>
+    <div className={`rounded-2xl border p-4 transition ${isUnavailable ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 hover:border-primary/30 hover:shadow-sm'}`}>
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Unit {unit.unitNumber}</p>
@@ -82,7 +82,7 @@ function UnitCard({ unit, onEnquire }) {
 
       <div className="pt-2 border-t border-slate-100">
         {unit.price > 0
-          ? <p className="font-montserrat font-bold text-[#4900e5]">{formatPrice(unit.price)}</p>
+          ? <p className="font-montserrat font-bold text-primary">{formatPrice(unit.price)}</p>
           : <p className="text-xs text-slate-400 italic">Price on request</p>
         }
       </div>
@@ -90,7 +90,7 @@ function UnitCard({ unit, onEnquire }) {
       {unit.amenities?.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {unit.amenities.slice(0, 3).map(a => (
-            <span key={a} className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{a}</span>
+            <span key={a} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">{a}</span>
           ))}
           {unit.amenities.length > 3 && (
             <span className="text-[10px] text-slate-400">+{unit.amenities.length - 3} more</span>
@@ -100,7 +100,7 @@ function UnitCard({ unit, onEnquire }) {
 
       {!isUnavailable && onEnquire && (
         <button type="button" onClick={() => onEnquire(unit)}
-          className="mt-3 w-full py-1.5 rounded-lg bg-[#4900e5]/8 text-[#4900e5] text-xs font-semibold hover:bg-[#4900e5]/15 transition border border-[#4900e5]/20">
+          className="mt-3 w-full py-1.5 rounded-lg bg-primary/8 text-primary text-xs font-semibold hover:bg-primary/15 transition border border-primary/20">
           Enquire for this unit
         </button>
       )}
@@ -146,7 +146,7 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
           {['all', 'available', 'under_negotiation', 'booked', 'sold'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-2.5 py-1 rounded-full text-xs font-semibold transition
-                ${statusFilter === s ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                ${statusFilter === s ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
               {s === 'all' ? 'All' : s === 'under_negotiation' ? 'Under Offer' : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
@@ -160,7 +160,7 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
           {['all', ...unitTypes].map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`px-3 py-1 rounded-full text-xs font-semibold border transition
-                ${typeFilter === t ? 'bg-[#4900e5]/10 border-[#4900e5]/30 text-[#4900e5]' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                ${typeFilter === t ? 'bg-primary/10 border-primary/30 text-primary' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
               {t === 'all' ? 'All Types' : t}
             </button>
           ))}
@@ -177,8 +177,8 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
             return (
               <div key={floor}>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#4900e5]/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] font-bold text-[#4900e5]">{floor}</span>
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-bold text-primary">{floor}</span>
                   </div>
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Floor {floor}</span>
                   <span className="text-xs text-slate-400">· {floorUnits.filter(u => u.status === 'available').length} available</span>
@@ -208,8 +208,8 @@ function LoginPrompt({ onClose }) {
       onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 text-center"
         onClick={e => e.stopPropagation()}>
-        <div className="w-14 h-14 rounded-full bg-[#4900e5]/10 flex items-center justify-center mx-auto mb-4">
-          <span className="material-icons-outlined text-[#4900e5] text-2xl">lock</span>
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <span className="material-icons-outlined text-primary text-2xl">lock</span>
         </div>
         <h3 className="font-montserrat font-bold text-lg text-slate-800 mb-2">
           Sign in to unlock full details
@@ -219,7 +219,7 @@ function LoginPrompt({ onClose }) {
         </p>
         <div className="flex gap-3">
           <button onClick={() => navigate('/signup')}
-            className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition">
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition">
             Sign Up Free
           </button>
           <button onClick={() => navigate('/login')}
@@ -244,11 +244,11 @@ function LockedField({ value, placeholder, onUnlock, className = '' }) {
       <span className="blur-sm select-none text-slate-700 text-sm font-medium pointer-events-none">
         {placeholder || value || '••••••••••'}
       </span>
-      <span className="absolute inset-0 flex items-center justify-center gap-1 text-xs font-semibold text-[#4900e5] opacity-0 group-hover:opacity-100 transition bg-white/60 rounded px-1">
+      <span className="absolute inset-0 flex items-center justify-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition bg-white/60 rounded px-1">
         <span className="material-icons-outlined text-sm">lock_open</span>
         Login to view
       </span>
-      <span className="material-icons-outlined text-sm text-slate-400 group-hover:text-[#4900e5] transition">lock</span>
+      <span className="material-icons-outlined text-sm text-slate-400 group-hover:text-primary transition">lock</span>
     </button>
   );
 }
@@ -310,7 +310,7 @@ export default function PropertyDetail() {
         <h2 className="font-montserrat font-bold text-xl text-slate-700 mb-2">Property not found</h2>
         <p className="text-slate-500 mb-6">This listing may have been removed or is no longer available.</p>
         <button onClick={() => navigate('/buyer/search')}
-          className="px-5 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">
+          className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
           Back to Search
         </button>
       </div>
@@ -329,13 +329,13 @@ export default function PropertyDetail() {
 
         {/* Guest banner */}
         {isGuest && (
-          <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#4900e5]/8 border border-[#4900e5]/20 text-sm">
-            <span className="material-icons-outlined text-[#4900e5] text-base">info</span>
-            <span className="text-[#4900e5] flex-1">
+          <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/8 border border-primary/20 text-sm">
+            <span className="material-icons-outlined text-primary text-base">info</span>
+            <span className="text-primary flex-1">
               You're browsing as a guest. <strong>Contact details and actions are locked.</strong>
             </span>
             <button onClick={() => setShowLogin(true)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition">
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container transition">
               Sign In / Sign Up
             </button>
           </div>
@@ -420,7 +420,7 @@ export default function PropertyDetail() {
               <div className="flex items-start justify-between mb-4 gap-4">
                 <div>
                   {property.status && (
-                    <span className={`portal-badge text-xs mb-2 inline-block ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`portal-badge text-xs mb-2 inline-block ${STATUS_COLOR[property.status] || 'bg-slate-100 text-slate-600'}`}>
                       {STATUS_LABEL[property.status] || property.status}
                     </span>
                   )}
@@ -520,13 +520,13 @@ export default function PropertyDetail() {
                 onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
                   state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'UnitProperty' },
                 }))}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-2">
+                className="w-full py-2.5 px-4 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-2">
                 {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
                 Schedule Site Visit
               </button>
               <button
                 onClick={() => { setEnquiryUnit(null); setShowEnquiry(true); }}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition flex items-center justify-center gap-2">
+                className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition flex items-center justify-center gap-2">
                 Enquire About This Property
               </button>
               <ShareWhatsappButton property={property} path={`/buyer/property/${id}`} className="w-full" />
@@ -550,7 +550,7 @@ export default function PropertyDetail() {
                     <LockedField placeholder="••••••@•••••.com" onUnlock={() => setShowLogin(true)} />
                   </div>
                   <button onClick={() => setShowLogin(true)}
-                    className="w-full py-2.5 rounded-xl border border-dashed border-[#4900e5]/40 text-[#4900e5] text-sm font-semibold hover:bg-[#4900e5]/5 transition flex items-center justify-center gap-2">
+                    className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition flex items-center justify-center gap-2">
                     <span className="material-icons-outlined text-sm">lock_open</span>
                     Login to contact seller
                   </button>
@@ -559,7 +559,7 @@ export default function PropertyDetail() {
                 <div className="space-y-2">
                   {property.sellerPhone && (
                     <a href={`tel:${property.sellerPhone}`}
-                      className="flex items-center gap-2 text-sm text-[#4900e5] font-semibold hover:underline">
+                      className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline">
                       <span className="material-icons-outlined text-base">call</span>
                       {property.sellerPhone}
                     </a>
@@ -586,14 +586,14 @@ export default function PropertyDetail() {
         <ShareWhatsappButton property={property} path={`/buyer/property/${id}`} iconOnly className="flex-shrink-0" />
         <button
           onClick={() => { setEnquiryUnit(null); setShowEnquiry(true); }}
-          className="flex-1 py-2.5 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+          className="flex-1 py-2.5 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
           Enquire
         </button>
         <button
           onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
             state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'UnitProperty' },
           }))}
-          className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition flex items-center justify-center gap-1.5">
+          className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
           {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
           Schedule Visit
         </button>

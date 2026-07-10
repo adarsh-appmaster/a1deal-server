@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import { SearchFilter } from '../../../components/common/SearchFilter';
 import { Pagination } from '../../../components/common/Pagination';
+import { validateForm } from '../../../validation/validate';
+import { whatsappGroupSchema } from '../../../validation/schemas';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const TYPE_OPTS = [
   { v: 'mortgage', l: 'Mortgage Property', icon: 'home_work', color: 'bg-amber-100 text-amber-700' },
   { v: 'unit',     l: 'Unit Partnership',  icon: 'apartment', color: 'bg-blue-100 text-blue-700' },
 ];
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30';
 
 const EMPTY_FORM = { type: 'mortgage', city: '', groupName: '', link: '', description: '' };
 
@@ -24,6 +27,7 @@ export default function AdminWhatsAppGroups() {
   const [search, setSearch]     = useState('');
   const [page, setPage]         = useState(1);
   const LIMIT = 10;
+  const { confirm, dialog } = useConfirm();
 
   async function fetchGroups() {
     setLoading(true);
@@ -66,6 +70,8 @@ export default function AdminWhatsAppGroups() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const { errors } = validateForm(whatsappGroupSchema, form);
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     setSaving(true); setMsg('');
     try {
       if (editId) {
@@ -80,7 +86,7 @@ export default function AdminWhatsAppGroups() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Remove this group link?')) return;
+    if (!(await confirm('Remove this group link?', { danger: true, confirmLabel: 'Remove' }))) return;
     try { await api.delete(`/whatsapp-groups/${id}`); fetchGroups(); } catch { /* empty */ }
   }
 
@@ -88,6 +94,7 @@ export default function AdminWhatsAppGroups() {
 
   return (
     <div className="space-y-6">
+      {dialog}
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -115,7 +122,7 @@ export default function AdminWhatsAppGroups() {
         {[{ v: 'all', l: 'All Groups' }, ...TYPE_OPTS.map(t => ({ v: t.v, l: t.l }))].map(t => (
           <button key={t.v} onClick={() => setTypeFilter(t.v)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition
-              ${typeFilter === t.v ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+              ${typeFilter === t.v ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
             {t.l}
           </button>
         ))}
@@ -191,7 +198,7 @@ export default function AdminWhatsAppGroups() {
                       </div>
                       <div className="flex flex-col gap-1 flex-shrink-0">
                         <button onClick={() => openEdit(g)}
-                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-[#484a5a] hover:border-[#484a5a] transition">
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-tertiary hover:border-tertiary transition">
                           <span className="material-icons-outlined text-sm">edit</span>
                         </button>
                         <button onClick={() => handleDelete(g._id)}
@@ -231,7 +238,7 @@ export default function AdminWhatsAppGroups() {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {msg && <div className="p-3 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">{msg}</div>}
+              {msg && <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-sm font-semibold">{msg}</div>}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Group Type</label>

@@ -6,7 +6,7 @@ const STATUS_COLORS = {
   confirmed: 'bg-violet-100 text-violet-700',
   completed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-rose-100 text-rose-600',
-  no_show:   'bg-slate-100 text-slate-500',
+  no_show:   'bg-slate-100 text-slate-600',
 };
 
 export default function BankSiteVisits() {
@@ -91,7 +91,7 @@ export default function BankSiteVisits() {
                       {v.date} · {v.slot}
                     </td>
                     <td className="px-5 py-4 text-center">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'}`}>
                         {v.status?.replace('_', ' ') || '—'}
                       </span>
                     </td>

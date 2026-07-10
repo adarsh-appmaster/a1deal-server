@@ -6,7 +6,7 @@ const PURPLE_BG = `
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#6236ff"/>
-      <stop offset="100%" stop-color="#4900e5"/>
+      <stop offset="100%" stop-color="#451886"/>
     </linearGradient>
   </defs>
   <rect width="400" height="300" fill="url(#g)"/>
@@ -40,7 +40,7 @@ const createAccountB = svgUri(`
 // ── Step 2: Discover Opportunities ───────────────────────────────────────────
 const discoverA = svgUri(`
   <path d="M140 190 v-70 l60 -40 l60 40 v70 z" fill="#ffffff" opacity="0.85"/>
-  <rect x="185" y="150" width="30" height="40" fill="#4900e5"/>
+  <rect x="185" y="150" width="30" height="40" fill="#451886"/>
   <circle cx="255" cy="150" r="38" fill="none" stroke="#ffffff" stroke-width="10"/>
   <line x1="282" y1="177" x2="315" y2="210" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
 `);

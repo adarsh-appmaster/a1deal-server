@@ -22,7 +22,7 @@ function fmtBudget(b) {
   return `Up to ${fmt(b.max)}`;
 }
 
-const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5a5f]/30 focus:border-[#ff5a5f] bg-white';
+const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-portal-broker/30 focus:border-portal-broker bg-white';
 
 // Modal to raise a new enquiry on behalf of a client (within broker's zone)
 function RaiseEnquiryModal({ brokerZone, onClose, onCreated }) {
@@ -83,14 +83,14 @@ function RaiseEnquiryModal({ brokerZone, onClose, onCreated }) {
             <h2 className="font-montserrat font-bold text-lg text-slate-800">Raise Client Enquiry</h2>
             <p className="text-xs text-slate-400 mt-0.5">Log an enquiry on behalf of a client in your zone</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600">
             <span className="material-icons-outlined">close</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[78vh]">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">{error}</div>
           )}
 
           {/* Client details */}
@@ -183,7 +183,7 @@ function RaiseEnquiryModal({ brokerZone, onClose, onCreated }) {
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
+              className="flex-1 py-2.5 rounded-xl bg-portal-broker text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
               {saving ? 'Raising…' : 'Raise Enquiry'}
             </button>
           </div>
@@ -272,12 +272,12 @@ export default function BrokerEnquiries() {
         </div>
         <div className="sm:ml-auto flex items-center gap-2">
           <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5a5f]/30 focus:border-[#ff5a5f] bg-white">
+            className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-portal-broker/30 focus:border-portal-broker bg-white">
             <option value="all">All Statuses</option>
             {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <button onClick={() => setShowRaise(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition whitespace-nowrap">
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-portal-broker text-white text-sm font-semibold hover:bg-[#e04e53] transition whitespace-nowrap">
             <span className="material-icons-outlined text-base">add</span>
             Raise Enquiry
           </button>
@@ -293,7 +293,7 @@ export default function BrokerEnquiries() {
           <span className="material-icons-outlined text-4xl mb-2 block">contact_support</span>
           No enquiries yet.
           <p className="text-sm mt-2">
-            <button onClick={() => setShowRaise(true)} className="text-[#ff5a5f] font-semibold hover:underline">
+            <button onClick={() => setShowRaise(true)} className="text-portal-broker font-semibold hover:underline">
               Raise your first enquiry →
             </button>
           </p>
@@ -335,7 +335,7 @@ export default function BrokerEnquiries() {
                   </span>
                   <span>{fmtBudget(e.budget)}</span>
                 </div>
-                {e.propertyTitle && <p className="text-xs text-[#4900e5] mt-1 truncate">{e.propertyTitle}</p>}
+                {e.propertyTitle && <p className="text-xs text-primary mt-1 truncate">{e.propertyTitle}</p>}
                 {e.message && <p className="text-xs text-slate-400 mt-1 truncate">{e.message}</p>}
               </div>
               <div className="flex items-center gap-3">
@@ -343,7 +343,7 @@ export default function BrokerEnquiries() {
                   {new Date(e.assignedAt || e.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                 </span>
                 <button onClick={() => openEnquiry(e)}
-                  className="px-4 py-2 rounded-xl bg-[#ff5a5f] text-white text-xs font-bold hover:bg-[#e04e53] transition whitespace-nowrap">
+                  className="px-4 py-2 rounded-xl bg-portal-broker text-white text-xs font-bold hover:bg-[#e04e53] transition whitespace-nowrap">
                   Update →
                 </button>
               </div>
@@ -424,17 +424,17 @@ export default function BrokerEnquiries() {
               <div className="border-t border-slate-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Update Progress</p>
                 <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5a5f]/30 focus:border-[#ff5a5f] bg-white">
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-portal-broker/30 focus:border-portal-broker bg-white">
                   <option value="assigned">Assigned</option>
                   <option value="in_progress">In Progress</option>
                   <option value="closed">Closed (Deal Done)</option>
                 </select>
                 <textarea rows={2} value={noteText} onChange={e => setNoteText(e.target.value)}
                   placeholder="Add a progress note…"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5a5f]/30 focus:border-[#ff5a5f] resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-portal-broker/30 focus:border-portal-broker resize-none"
                 />
                 <button onClick={handleUpdate} disabled={saving}
-                  className="w-full py-2.5 rounded-xl bg-[#ff5a5f] text-white font-bold text-sm hover:bg-[#e04e53] transition disabled:opacity-60">
+                  className="w-full py-2.5 rounded-xl bg-portal-broker text-white font-bold text-sm hover:bg-[#e04e53] transition disabled:opacity-60">
                   {saving ? 'Saving…' : 'Save Update'}
                 </button>
                 {saveMsg && (

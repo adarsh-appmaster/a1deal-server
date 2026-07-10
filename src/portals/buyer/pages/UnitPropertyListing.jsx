@@ -4,6 +4,7 @@ import api from '../../../api/axios';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ImageSlider from '../../../components/common/ImageSlider';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
+import BackButton from '../../../components/common/BackButton';
 import { getStartingPrice } from '../../../utils/pricing';
 
 function formatPrice(n) {
@@ -16,7 +17,7 @@ function formatPrice(n) {
 const STATUS_COLORS = {
   available:          'bg-emerald-100 text-emerald-700',
   under_negotiation:  'bg-amber-100 text-amber-700',
-  sold:               'bg-slate-100 text-slate-500',
+  sold:               'bg-slate-100 text-slate-600',
 };
 
 const TYPES = [
@@ -59,6 +60,7 @@ export default function UnitPropertyListing() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <BackButton fallback="/buyer" label="Back" />
       <div>
         <h1 className="font-montserrat font-bold text-2xl text-slate-800">🤝 Property Partners</h1>
         <p className="text-slate-500 text-sm mt-1">
@@ -67,15 +69,15 @@ export default function UnitPropertyListing() {
       </div>
 
       {/* Search + filters */}
-      <div className="flex flex-wrap gap-3">
-        <form onSubmit={handleSearch} className="flex-1 min-w-[220px] flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <form onSubmit={handleSearch} className="flex-1 flex gap-2 min-w-0">
           <input value={inputVal} onChange={e => setInputVal(e.target.value)}
             placeholder="Search by title, city, area, pincode…"
-            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30" />
-          <button type="submit" className="px-4 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">Search</button>
+            className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <button type="submit" className="flex-shrink-0 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">Search</button>
         </form>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none">
+          className="w-full sm:w-auto px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none">
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
@@ -97,7 +99,7 @@ export default function UnitPropertyListing() {
                 placeholderIcon="apartment"
                 overlay={
                   <>
-                    <span className={`absolute top-3 right-3 text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`absolute top-3 right-3 text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600'}`}>
                       {(p.status || '').replace('_', ' ')}
                     </span>
                     {p.investmentPlan?.enabled && (
@@ -111,7 +113,7 @@ export default function UnitPropertyListing() {
               <div className="p-5 space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{p.propertyType} · {[p.city, p.area].filter(Boolean).join(', ')}</p>
                 <h3 className="font-montserrat font-bold text-slate-800 text-lg">{p.title}</h3>
-                <p className="text-[#4900e5] font-bold text-xl">Units starting {formatPrice(getStartingPrice(p))}</p>
+                <p className="text-primary font-bold text-xl">Units starting {formatPrice(getStartingPrice(p))}</p>
                 {p.investmentPlan?.enabled && (
                   <p className="text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1 inline-block">
                     Est. {p.investmentPlan.returnRatePct}% p.a. return over {p.investmentPlan.durationYears} yr
@@ -119,7 +121,7 @@ export default function UnitPropertyListing() {
                 )}
                 <div className="flex gap-2 pt-2">
                   <button onClick={e => { e.stopPropagation(); setEnquireProperty(p); }}
-                    className="flex-1 py-2 rounded-xl bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold hover:bg-[#4900e5]/20 transition">
+                    className="flex-1 py-2 rounded-xl bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition">
                     Enquire
                   </button>
                   <button
@@ -129,7 +131,7 @@ export default function UnitPropertyListing() {
                         state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'UnitProperty' },
                       });
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-[#4900e5] text-[#4900e5] text-xs font-semibold hover:bg-[#4900e5]/5 transition">
+                    className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-primary text-primary text-xs font-semibold hover:bg-primary/5 transition">
                     <span className="material-icons-outlined text-sm">event</span>
                     Schedule Visit
                   </button>

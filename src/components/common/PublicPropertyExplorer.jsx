@@ -71,10 +71,10 @@ function PropertyCard({ property, type, onSignIn }) {
       {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-semibold text-[#0F172A] text-sm leading-tight line-clamp-2 flex-1">
+          <h3 className="font-semibold text-on-surface text-sm leading-tight line-clamp-2 flex-1">
             {property.title}
           </h3>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#4900e5]/10 text-[#4900e5] whitespace-nowrap flex-shrink-0">
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary whitespace-nowrap flex-shrink-0">
             {isMortgage ? (property.type || 'Property') : (property.propertyType?.replace('_', ' ') || 'Property')}
           </span>
         </div>
@@ -107,10 +107,10 @@ function PropertyCard({ property, type, onSignIn }) {
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="font-bold text-[#4900e5] text-base">{fmt(property.price)}</p>
+          <p className="font-bold text-primary text-base">{fmt(property.price)}</p>
           <button
             onClick={onSignIn}
-            className="text-xs font-semibold text-[#4900e5] hover:underline flex items-center gap-1">
+            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
             View Details
             <span className="material-icons-outlined text-xs">arrow_forward</span>
           </button>
@@ -128,7 +128,7 @@ function PropertyCard({ property, type, onSignIn }) {
             </div>
           </div>
           <button onClick={onSignIn}
-            className="text-[10px] font-semibold text-[#4900e5] bg-[#4900e5]/5 hover:bg-[#4900e5]/10 px-2 py-1 rounded-lg transition">
+            className="text-[10px] font-semibold text-primary bg-primary/5 hover:bg-primary/10 px-2 py-1 rounded-lg transition">
             Sign in to unlock
           </button>
         </div>
@@ -172,7 +172,7 @@ export default function PublicPropertyExplorer() {
     setLoading(false);
   }, [city, type, tab]);
 
-  useEffect(() => { fetchProps(1, '', 'all', tab); setCity(''); setCityInput(''); setType('all'); setPage(1); }, [tab]);
+  useEffect(() => { fetchProps(1, '', 'all', tab); setCity(''); setCityInput(''); setType('all'); setPage(1); }, [tab, fetchProps]);
 
   function handleCityInput(e) {
     const v = e.target.value;
@@ -222,7 +222,7 @@ export default function PublicPropertyExplorer() {
     <section id="explore-section" className="max-w-6xl mx-auto w-full px-4 py-16">
       {/* Header */}
       <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Explore Listings</p>
-      <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-3">
+      <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-on-surface text-center mb-3">
         Find Your Perfect Property
       </h2>
       <p className="text-slate-500 text-sm text-center mb-8">
@@ -232,12 +232,12 @@ export default function PublicPropertyExplorer() {
       {/* Tabs */}
       <div className="flex items-center gap-2 mb-6 bg-slate-100 rounded-xl p-1 w-fit mx-auto">
         <button onClick={() => setTab('unit')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${tab === 'unit' ? 'bg-white text-[#4900e5] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${tab === 'unit' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
           <span className="material-icons-outlined text-sm mr-1 align-middle">apartment</span>
           Unit Properties
         </button>
         <button onClick={() => setTab('mortgage')}
-          className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${tab === 'mortgage' ? 'bg-white text-[#4900e5] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+          className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${tab === 'mortgage' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
           <span className="material-icons-outlined text-sm mr-1 align-middle">gavel</span>
           Mortgage / Auction
         </button>
@@ -253,14 +253,14 @@ export default function PublicPropertyExplorer() {
             onChange={handleCityInput}
             autoComplete="off"
             placeholder="Search city, area or pincode…"
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           {citySugs.length > 0 && cityInput && (
             <ul className="absolute z-50 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
               {citySugs.map((s, i) => (
                 <li key={i}>
                   <button type="button" onMouseDown={() => pickCity(s)}
-                    className="w-full text-left px-3 py-2 hover:bg-[#4900e5]/5 text-sm flex justify-between items-center">
+                    className="w-full text-left px-3 py-2 hover:bg-primary/5 text-sm flex justify-between items-center">
                     <span className="flex items-center gap-2">
                       <span className="material-icons-outlined text-xs text-slate-400">location_on</span>
                       {s.label}
@@ -280,8 +280,8 @@ export default function PublicPropertyExplorer() {
               <button key={t.value} onClick={() => handleTypeChange(t.value)}
                 className={`px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                   type === t.value
-                    ? 'bg-[#4900e5] text-white border-[#4900e5]'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-[#4900e5]/40'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40'
                 }`}>
                 {t.label}
               </button>
@@ -319,7 +319,7 @@ export default function PublicPropertyExplorer() {
           </p>
           {city && (
             <button onClick={() => { setCityInput(''); setCity(''); setPage(1); fetchProps(1, '', type, tab); }}
-              className="mt-3 text-xs text-[#4900e5] hover:underline">
+              className="mt-3 text-xs text-primary hover:underline">
               Clear filter
             </button>
           )}
@@ -340,7 +340,7 @@ export default function PublicPropertyExplorer() {
               <button key={pg} onClick={() => goPage(pg)}
                 className={`w-9 h-9 rounded-xl text-sm font-semibold border transition ${
                   pg === page
-                    ? 'bg-[#4900e5] text-white border-[#4900e5]'
+                    ? 'bg-primary text-white border-primary'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}>
                 {pg}
@@ -355,18 +355,18 @@ export default function PublicPropertyExplorer() {
       )}
 
       {/* Sign-in CTA */}
-      <div className="mt-10 bg-gradient-to-r from-[#4900e5]/5 to-[#4900e5]/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="mt-10 bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <p className="font-semibold text-[#0F172A] text-sm mb-1">Want to see contact details, book visits, & more?</p>
+          <p className="font-semibold text-on-surface text-sm mb-1">Want to see contact details, book visits, & more?</p>
           <p className="text-slate-500 text-xs">Create a free account to unlock full property info, connect with sellers, and track your shortlist.</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <button onClick={() => navigate('/login')}
-            className="px-5 py-2.5 rounded-xl border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+            className="px-5 py-2.5 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
             Sign In
           </button>
           <button onClick={() => navigate('/signup')}
-            className="px-5 py-2.5 rounded-xl bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition">
+            className="px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition">
             Join Free
           </button>
         </div>

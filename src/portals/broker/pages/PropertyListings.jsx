@@ -5,11 +5,14 @@ import { useSocket, negoRoom } from '../../../context/SocketContext';
 import ChatPanel from '../../../components/common/ChatPanel';
 import api from '../../../api/axios';
 import { searchLocations } from '../../../data/indiaLocations';
+import { validateForm } from '../../../validation/validate';
+import { brokerListingSchema } from '../../../validation/schemas';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const STATUS = {
   active:      { label: 'Active',      color: 'bg-emerald-100 text-emerald-700' },
   under_offer: { label: 'Under Offer', color: 'bg-amber-100 text-amber-700' },
-  sold:        { label: 'Sold',        color: 'bg-slate-100 text-slate-500' },
+  sold:        { label: 'Sold',        color: 'bg-slate-100 text-slate-600' },
 };
 
 // ── Property type groups ──────────────────────────────────────────────────
@@ -42,7 +45,7 @@ function BLANK_FORM(zone) {
   };
 }
 
-const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff5a5f]/30 focus:border-[#ff5a5f] bg-white';
+const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-portal-broker/30 focus:border-portal-broker bg-white';
 
 function Field({ label, required, children }) {
   return (
@@ -75,8 +78,8 @@ function TypeSelector({ value, onChange }) {
                 key={t} type="button" onClick={() => onChange(t)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
                   ${value === t
-                    ? 'bg-[#ff5a5f] text-white border-[#ff5a5f] shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-[#ff5a5f] hover:text-[#ff5a5f]'}`}
+                    ? 'bg-portal-broker text-white border-portal-broker shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-portal-broker hover:text-portal-broker'}`}
               >
                 {t}
               </button>
@@ -95,12 +98,12 @@ const LEAD_STATUSES = [
   { value: 'site_visit',  label: 'Site Visit',  color: 'bg-purple-100 text-purple-700' },
   { value: 'negotiating', label: 'Negotiating', color: 'bg-orange-100 text-orange-700' },
   { value: 'closed_won',  label: 'Won',         color: 'bg-emerald-100 text-emerald-700' },
-  { value: 'closed_lost', label: 'Lost',        color: 'bg-slate-100 text-slate-500' },
+  { value: 'closed_lost', label: 'Lost',        color: 'bg-slate-100 text-slate-600' },
 ];
 const LEAD_SOURCES = ['manual', 'whatsapp', 'website', 'referral', 'walk_in', 'email'];
 
 function leadStatusColor(s) {
-  return LEAD_STATUSES.find(x => x.value === s)?.color || 'bg-slate-100 text-slate-500';
+  return LEAD_STATUSES.find(x => x.value === s)?.color || 'bg-slate-100 text-slate-600';
 }
 function leadStatusLabel(s) {
   return LEAD_STATUSES.find(x => x.value === s)?.label || s;
@@ -160,11 +163,11 @@ function PropertyLeadsModal({ listing, onClose }) {
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => { setShowAdd(v => !v); setError(''); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff5a5f] text-white text-xs font-semibold hover:bg-[#e04e53] transition">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-portal-broker text-white text-xs font-semibold hover:bg-[#e04e53] transition">
               <span className="material-icons-outlined text-sm">{showAdd ? 'close' : 'person_add'}</span>
               {showAdd ? 'Cancel' : 'Add Lead'}
             </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600">
               <span className="material-icons-outlined">close</span>
             </button>
           </div>
@@ -211,7 +214,7 @@ function PropertyLeadsModal({ listing, onClose }) {
                 </div>
               </div>
               <button type="submit" disabled={saving}
-                className="w-full py-2.5 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
+                className="w-full py-2.5 rounded-xl bg-portal-broker text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
                 {saving ? 'Adding…' : 'Add Lead'}
               </button>
             </form>
@@ -233,7 +236,7 @@ function PropertyLeadsModal({ listing, onClose }) {
               {leads.map(l => (
                 <div key={l._id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition">
                   <div className="w-9 h-9 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0">
-                    <span className="material-icons-outlined text-[#ff5a5f] text-base">person</span>
+                    <span className="material-icons-outlined text-portal-broker text-base">person</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-slate-800">{l.name}</p>
@@ -250,12 +253,12 @@ function PropertyLeadsModal({ listing, onClose }) {
                     <select
                       value={l.status}
                       onChange={e => changeStatus(l._id, e.target.value)}
-                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none focus:border-[#ff5a5f]"
+                      className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none focus:border-portal-broker"
                     >
                       {LEAD_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                     <a href={`tel:${l.phone}`}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition">
+                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
                       <span className="material-icons-outlined text-sm">call</span>
                     </a>
                   </div>
@@ -459,6 +462,8 @@ function AddListingModal({ myAreas, onClose, onAdded }) {
         images: images.map(i => i.url),
         video:  video?.url || '',
       };
+      const { errors } = validateForm(brokerListingSchema, payload);
+      if (errors) { setError(Object.values(errors)[0]); setSaving(false); return; }
       const { data } = await api.post('/broker/listings', payload);
       onAdded(data.listing);
       if (data.pendingApproval) {
@@ -480,14 +485,14 @@ function AddListingModal({ myAreas, onClose, onAdded }) {
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="font-montserrat font-bold text-lg text-slate-800">Add New Listing</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600">
             <span className="material-icons-outlined">close</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[82vh]">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">{error}</div>
           )}
 
           {/* ── Location Section ── */}
@@ -846,7 +851,7 @@ function AddListingModal({ myAreas, onClose, onAdded }) {
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
+              className="flex-1 py-2.5 rounded-xl bg-portal-broker text-white text-sm font-semibold hover:bg-[#e04e53] transition disabled:opacity-50">
               {saving ? 'Adding…' : `Add ${form.propertyType}`}
             </button>
           </div>
@@ -893,7 +898,7 @@ function TerritoryActions({ listing, onOpenChat, onDecided }) {
           Set &amp; Approve
         </button>
         <button onClick={() => decide('reject')} disabled={busy === 'reject'}
-          className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 text-xs font-semibold hover:bg-rose-50 transition disabled:opacity-50 whitespace-nowrap">
+          className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-50 transition disabled:opacity-50 whitespace-nowrap">
           {busy === 'reject' ? '…' : 'Reject'}
         </button>
       </div>
@@ -935,6 +940,7 @@ function PendingOfferActions({ listing, onOpenChat, onWithdrawn, onAccepted }) {
   const [busy, setBusy]   = useState(null); // 'accept' | 'withdraw'
   const [done, setDone]   = useState('');
   const accepted = listing.commissionRequest?.brokerAccepted;
+  const { confirm, dialog } = useConfirm();
 
   async function handleAccept() {
     setBusy('accept');
@@ -954,7 +960,7 @@ function PendingOfferActions({ listing, onOpenChat, onWithdrawn, onAccepted }) {
   }
 
   async function handleWithdraw() {
-    if (!window.confirm('Withdraw this listing request? This cannot be undone.')) return;
+    if (!(await confirm('Withdraw this listing request? This cannot be undone.', { danger: true, confirmLabel: 'Withdraw' }))) return;
     setBusy('withdraw');
     try {
       await api.patch(`/broker/listings/${listing._id}/withdraw`);
@@ -968,6 +974,7 @@ function PendingOfferActions({ listing, onOpenChat, onWithdrawn, onAccepted }) {
 
   return (
     <div className="flex gap-1.5 flex-wrap">
+      {dialog}
       {!accepted ? (
         <button
           onClick={handleAccept}
@@ -1083,7 +1090,7 @@ function CommissionRequestCard({ req, onDecided, onOpenChat }) {
           {busy ? '…' : 'Approve & Set Commission'}
         </button>
         <button onClick={() => decide('reject')} disabled={busy}
-          className="py-2 px-4 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50 transition disabled:opacity-50">
+          className="py-2 px-4 rounded-xl border border-rose-200 text-rose-700 text-sm font-semibold hover:bg-rose-50 transition disabled:opacity-50">
           {busy ? '…' : 'Reject'}
         </button>
         {onOpenChat && req.broker?._id && (
@@ -1110,6 +1117,11 @@ export default function PropertyListings() {
   const [isMaster, setIsMaster] = useState(
     user?.brokerTier === 'master' || (user?.role === 'broker' && (user?.coverageAreas?.length > 0))
   );
+
+  // Self-registered brokers can't create/manage listings until their partnership
+  // is approved — the backend enforces this too (requirePartnership middleware);
+  // this just keeps the button honest about it up front.
+  const isLocked = user?.partnershipStatus === 'pending' || user?.partnershipStatus === 'rejected';
 
   const [tab, setTab]               = useState('listings'); // 'listings' | 'requests'
   const [filter, setFilter]         = useState('all');
@@ -1208,9 +1220,15 @@ export default function PropertyListings() {
           <p className="text-on-surface-variant text-sm mt-1">Manage your property portfolio in your zone</p>
         </div>
         {tab === 'listings' && (
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition">
-            <span className="material-icons-outlined text-base">add</span>
+          <button
+            onClick={() => !isLocked && setShowAdd(true)}
+            disabled={isLocked}
+            title={isLocked ? 'Available once your broker partnership is approved' : undefined}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition
+              ${isLocked
+                ? 'bg-surface-container text-on-surface-variant/60 cursor-not-allowed'
+                : 'bg-portal-broker text-white hover:bg-[#e04e53]'}`}>
+            <span className="material-icons-outlined text-base">{isLocked ? 'lock' : 'add'}</span>
             Add Listing
           </button>
         )}
@@ -1221,7 +1239,7 @@ export default function PropertyListings() {
         <div className="flex gap-2 mb-5 flex-wrap">
           <button onClick={() => setTab('listings')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors
-              ${tab === 'listings' ? 'bg-[#ff5a5f] text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+              ${tab === 'listings' ? 'bg-portal-broker text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
             My Listings
           </button>
           <button onClick={() => { setTab('territory'); loadTerritory(); }}
@@ -1422,7 +1440,7 @@ export default function PropertyListings() {
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors
               ${filter === s
-                ? 'bg-[#ff5a5f] text-white'
+                ? 'bg-portal-broker text-white'
                 : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
             {s === 'all' ? 'All' : STATUS[s]?.label}
           </button>
@@ -1441,7 +1459,7 @@ export default function PropertyListings() {
             Add your first property to start managing your portfolio
           </p>
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#ff5a5f] text-white text-sm font-semibold hover:bg-[#e04e53] transition">
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-portal-broker text-white text-sm font-semibold hover:bg-[#e04e53] transition">
             <span className="material-icons-outlined text-base">add</span>
             Add First Listing
           </button>
@@ -1452,12 +1470,12 @@ export default function PropertyListings() {
             <div key={l._id || l.id} className="card p-5">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center flex-shrink-0">
-                  <span className="material-icons-outlined text-[#ff5a5f] text-2xl">home</span>
+                  <span className="material-icons-outlined text-portal-broker text-2xl">home</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h3 className="font-montserrat font-bold text-on-surface">{l.name || l.title}</h3>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS[l.status]?.color || 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS[l.status]?.color || 'bg-slate-100 text-slate-600'}`}>
                       {STATUS[l.status]?.label || l.status}
                     </span>
                     {l.approvalStatus === 'pending' && (
@@ -1506,7 +1524,7 @@ export default function PropertyListings() {
                   {l.listed && <p className="text-xs text-on-surface-variant">Listed {l.listed}</p>}
                   <div className="flex gap-2 mt-2 justify-end flex-wrap">
                     <button onClick={() => setLeadsListing(l)}
-                      className="flex items-center gap-1 text-xs text-[#ff5a5f] font-semibold hover:underline">
+                      className="flex items-center gap-1 text-xs text-portal-broker font-semibold hover:underline">
                       <span className="material-icons-outlined text-sm">group</span>
                       Leads{l.inquiries > 0 ? ` (${l.inquiries})` : ''}
                     </button>

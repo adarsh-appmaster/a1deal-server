@@ -1,24 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import WhatsAppGroupCard from '../../../components/common/WhatsAppGroupCard';
+import PropertyCard from '../../../components/common/PropertyCard';
+import { PropertyCardSkeleton } from '../../../components/common/Skeleton';
+import EmptyState from '../../../components/common/EmptyState';
+import BackButton from '../../../components/common/BackButton';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import { MORTGAGE_TYPES, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
-
-const STATUS_COLOR = {
-  'available':          'bg-emerald-100 text-emerald-800',
-  'under_negotiation':  'bg-amber-100 text-amber-800',
-  'under_auction':      'bg-amber-100 text-amber-800',
-  'sold':               'bg-slate-100 text-slate-500',
-  'withdrawn':          'bg-slate-100 text-slate-500',
-};
-const STATUS_LABEL = {
-  'available':         'Available',
-  'under_negotiation': 'Under Offer',
-  'under_auction':     'Under Auction',
-  'sold':              'Sold',
-  'withdrawn':          'Withdrawn',
-};
 
 // UnitProperty type enum values
 const UNIT_PROPERTY_TYPES = [
@@ -44,17 +33,6 @@ const TABS = [
   { key: 'unit',     label: 'Property Partners' },
   { key: 'mortgage', label: 'Property Deals' },
 ];
-
-function formatPrice(n) {
-  if (!n) return '—';
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(2)} Cr`;
-  if (n >= 100000)   return `₹${(n / 100000).toFixed(1)} L`;
-  return `₹${n.toLocaleString('en-IN')}`;
-}
-
-function locationLine(p) {
-  return [p.area, p.city, p.pincode].filter(Boolean).join(', ');
-}
 
 export default function PropertySearch() {
   const navigate = useNavigate();
@@ -117,6 +95,14 @@ export default function PropertySearch() {
   }, []);
 
   useEffect(() => { fetchResults(query, filters, tab); }, [query, filters, tab, fetchResults]);
+
+  // Keep the search bar in sync with the URL's ?q= — e.g. when the City switcher
+  // navigates here (or changes the city) while this page is already mounted.
+  const urlQuery = params.get('q') || '';
+  useEffect(() => {
+    setInputVal(urlQuery);
+    setQuery(urlQuery);
+  }, [urlQuery]);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -192,6 +178,7 @@ export default function PropertySearch() {
 
   return (
     <div className="max-w-container mx-auto px-6 py-8">
+      <BackButton fallback="/buyer" label="Back" className="mb-4" />
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-3 mb-4">
         <div className="flex-1 relative">
@@ -205,8 +192,9 @@ export default function PropertySearch() {
           />
         </div>
         <button type="submit"
-          className="px-5 py-3 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition">
-          Search
+          className="px-4 sm:px-5 py-3 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition flex items-center justify-center">
+          <span className="material-icons-outlined sm:hidden text-xl">search</span>
+          <span className="hidden sm:inline">Search</span>
         </button>
         <div className="hidden sm:flex items-center gap-2">
           <button type="button" onClick={() => setView('grid')}
@@ -267,32 +255,19 @@ export default function PropertySearch() {
         <div className="flex-1 min-w-0">
           {loading ? (
             <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="card overflow-hidden animate-pulse">
-                  <div className={`bg-slate-100 ${view === 'list' ? 'w-48 h-32' : 'h-44'}`} />
-                  <div className="p-4 space-y-2">
-                    <div className="h-3 bg-slate-100 rounded w-3/4" />
-                    <div className="h-4 bg-slate-100 rounded w-1/2" />
-                    <div className="h-3 bg-slate-100 rounded w-1/3" />
-                  </div>
-                </div>
-              ))}
+              {[1, 2, 3, 4].map(i => <PropertyCardSkeleton key={i} variant={view} />)}
             </div>
           ) : results.length === 0 ? (
-            <div className="card p-16 flex flex-col items-center justify-center text-center">
-              <span className="material-icons-outlined text-5xl text-slate-200 mb-3">search_off</span>
-              <p className="font-semibold text-on-surface mb-1">No properties found</p>
-              <p className="text-sm text-on-surface-variant mb-4">
-                {hasFilters
+            <div className="card">
+              <EmptyState
+                icon="search_off"
+                label="No properties found"
+                hint={hasFilters
                   ? 'Try a different city, area or pincode, or clear the filters'
                   : 'No properties are listed yet — check back soon'}
-              </p>
-              {hasFilters && (
-                <button onClick={clearFilters}
-                  className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition">
-                  Clear Filters
-                </button>
-              )}
+                actionLabel={hasFilters ? 'Clear Filters' : ''}
+                onAction={hasFilters ? clearFilters : null}
+              />
             </div>
           ) : (
             <>
@@ -301,54 +276,15 @@ export default function PropertySearch() {
               </p>
               <div className={`grid gap-4 ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
                 {results.map(p => (
-                  <div
+                  <PropertyCard
                     key={p._id}
-                    onClick={() => goToProperty(p)}
-                    className={`card overflow-hidden cursor-pointer hover:shadow-level-3 transition-all ${view === 'list' ? 'flex' : ''}`}
-                  >
-                    <div className={`relative bg-surface-container-high flex items-center justify-center flex-shrink-0 overflow-hidden ${view === 'list' ? 'w-44 h-full min-h-[7rem]' : 'h-44'}`}>
-                      {p.images?.[0] ? (
-                        <img src={p.images[0]} alt={p.title}
-                          className={`w-full h-full object-cover ${isGuest ? 'blur-md scale-110' : ''}`} />
-                      ) : (
-                        <span className="material-icons-outlined text-5xl text-on-surface-variant/30">apartment</span>
-                      )}
-                      {isGuest && p.images?.[0] && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/25">
-                          <span className="material-icons-outlined text-white text-2xl drop-shadow">lock</span>
-                          <span className="text-white text-[11px] font-semibold drop-shadow">Login to view photos</span>
-                        </div>
-                      )}
-                      <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10
-                        ${p._model === 'MortgageProperty' ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'}`}>
-                        {p._model === 'MortgageProperty' ? 'Property Deal' : 'Property Partner'}
-                      </span>
-                    </div>
-                    <div className="p-4 flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-xs text-on-surface-variant truncate capitalize">
-                          {p._model === 'MortgageProperty' ? mortgageTypeLabel(p) : p.propertyType?.replace(/_/g, ' ')} · {locationLine(p) || '—'}
-                        </p>
-                        {p.status && (
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLOR[p.status] || 'bg-slate-100 text-slate-500'}`}>
-                            {STATUS_LABEL[p.status] || p.status}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-montserrat font-bold text-on-surface mb-1 truncate">{p.title}</h3>
-                      <p className="text-primary font-bold mb-2">{formatPrice(p.price)}</p>
-                      <div className="flex flex-wrap gap-3 text-xs text-on-surface-variant">
-                        {p.bedrooms  > 0 && <span>{p.bedrooms} BHK</span>}
-                        {p.bathrooms > 0 && <><span>·</span><span>{p.bathrooms} Bath</span></>}
-                        {(p.areaSqft || p.area_sqft) > 0 && <><span>·</span><span>{(p.areaSqft || p.area_sqft).toLocaleString()} sqft</span></>}
-                        {p.isFeatured && (
-                          <span className="ml-auto text-amber-600 font-semibold flex items-center gap-1">
-                            <span className="material-icons-outlined text-sm">star</span>Featured
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    property={p}
+                    model={p._model}
+                    variant={view}
+                    showStatus
+                    blurImages={isGuest}
+                    onClick={goToProperty}
+                  />
                 ))}
               </div>
             </>

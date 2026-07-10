@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import { Pagination } from '../../../components/common/Pagination';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const STATUS_META = {
   new:         { label: 'New',          color: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-500' },
@@ -8,7 +9,7 @@ const STATUS_META = {
   site_visit:  { label: 'Site Visit',   color: 'bg-violet-100 text-violet-700', dot: 'bg-violet-500' },
   negotiating: { label: 'Negotiating',  color: 'bg-amber-100 text-amber-700',   dot: 'bg-amber-500' },
   closed_won:  { label: 'Closed Won',   color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-  closed_lost: { label: 'Closed Lost',  color: 'bg-slate-100 text-slate-500',   dot: 'bg-slate-400' },
+  closed_lost: { label: 'Closed Lost',  color: 'bg-slate-100 text-slate-600',   dot: 'bg-slate-400' },
 };
 const STATUSES = ['all', 'new', 'contacted', 'site_visit', 'negotiating', 'closed_won', 'closed_lost'];
 const PROP_TYPES = ['all', 'unit', 'mortgage'];
@@ -44,6 +45,7 @@ export default function AdminLeads() {
 
   const [selected, setSelected]   = useState(null); // lead for detail panel
   const [noteText, setNoteText]   = useState('');
+  const { confirm, dialog } = useConfirm();
   const [savingNote, setSavingNote] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
 
@@ -135,7 +137,7 @@ export default function AdminLeads() {
   }
 
   async function deleteLead(id) {
-    if (!window.confirm('Remove this lead?')) return;
+    if (!(await confirm('Remove this lead?', { danger: true, confirmLabel: 'Remove' }))) return;
     try {
       await api.delete(`/leads/${id}`);
       setLeads(prev => prev.filter(l => l._id !== id));
@@ -156,6 +158,7 @@ export default function AdminLeads() {
 
   return (
     <div className="space-y-6">
+      {dialog}
       {/* Header */}
       <div>
         <h1 className="font-montserrat font-bold text-xl text-slate-800">Lead Management</h1>
@@ -179,9 +182,9 @@ export default function AdminLeads() {
             <span className="material-icons-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
             <input type="text" value={inputVal} onChange={e => setInputVal(e.target.value)}
               placeholder="Search by name, phone, email, property…"
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white" />
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white" />
           </div>
-          <button type="submit" className="px-5 py-2.5 rounded-xl bg-[#484a5a] text-white text-sm font-semibold hover:bg-[#2e3044] transition">
+          <button type="submit" className="px-5 py-2.5 rounded-xl bg-tertiary text-white text-sm font-semibold hover:bg-[#2e3044] transition">
             Search
           </button>
           {search && (
@@ -199,7 +202,7 @@ export default function AdminLeads() {
             return (
               <button key={s} onClick={() => setStatusFilter(s)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                  ${statusFilter === s ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+                  ${statusFilter === s ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
                 {m && statusFilter !== s && <span className={`w-2 h-2 rounded-full ${m.dot}`} />}
                 {s === 'all' ? 'All Status' : m?.label}
               </button>
@@ -209,7 +212,7 @@ export default function AdminLeads() {
           {PROP_TYPES.map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition capitalize
-                ${typeFilter === t ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+                ${typeFilter === t ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
               {t === 'all' ? 'All Types' : `${t.charAt(0).toUpperCase() + t.slice(1)} Properties`}
             </button>
           ))}
@@ -224,7 +227,7 @@ export default function AdminLeads() {
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#484a5a]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-tertiary">progress_activity</span>
             </div>
           ) : leads.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -240,7 +243,7 @@ export default function AdminLeads() {
                   <div key={lead._id}
                     onClick={() => openLead(lead)}
                     className={`bg-white rounded-2xl border p-4 cursor-pointer hover:shadow-sm transition
-                      ${isOpen ? 'border-[#484a5a] ring-2 ring-[#484a5a]/15' : 'border-slate-100'}`}>
+                      ${isOpen ? 'border-tertiary ring-2 ring-tertiary/15' : 'border-slate-100'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
@@ -260,13 +263,13 @@ export default function AdminLeads() {
                         <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1 truncate">
                           <span className="material-icons-outlined text-xs">apartment</span>
                           {lead.propertyTitle || 'Unknown property'}
-                          <span className="bg-slate-100 text-slate-500 px-1.5 rounded-full text-[10px] capitalize">{lead.propertyType}</span>
+                          <span className="bg-slate-100 text-slate-600 px-1.5 rounded-full text-[10px] capitalize">{lead.propertyType}</span>
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0 space-y-1">
                         <p className="text-xs text-slate-400">{timeAgo(lead.createdAt)}</p>
                         {lead.assignedTo && (
-                          <p className="text-xs text-[#484a5a] font-semibold">{lead.assignedTo.name}</p>
+                          <p className="text-xs text-tertiary font-semibold">{lead.assignedTo.name}</p>
                         )}
                         {lead.budget && (
                           <p className="text-xs font-semibold text-slate-600">{fmt(lead.budget)}</p>
@@ -305,12 +308,12 @@ export default function AdminLeads() {
               <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
                 {/* Contact */}
                 <div className="space-y-1.5">
-                  <a href={`tel:${selected.phone}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-[#484a5a]">
+                  <a href={`tel:${selected.phone}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-tertiary">
                     <span className="material-icons-outlined text-base text-slate-400">call</span>
                     {selected.phone}
                   </a>
                   {selected.email && (
-                    <a href={`mailto:${selected.email}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-[#484a5a]">
+                    <a href={`mailto:${selected.email}`} className="flex items-center gap-2 text-sm text-slate-700 hover:text-tertiary">
                       <span className="material-icons-outlined text-base text-slate-400">mail</span>
                       {selected.email}
                     </a>
@@ -342,7 +345,7 @@ export default function AdminLeads() {
                       <button key={key} disabled={savingStatus || selected.status === key}
                         onClick={() => updateStatus(selected._id, key)}
                         className={`text-xs font-semibold px-3 py-2 rounded-xl border transition text-left
-                          ${selected.status === key ? `${m.color} border-transparent` : 'border-slate-200 text-slate-600 hover:border-[#484a5a]'}`}>
+                          ${selected.status === key ? `${m.color} border-transparent` : 'border-slate-200 text-slate-600 hover:border-tertiary'}`}>
                         <span className={`w-2 h-2 rounded-full inline-block mr-1.5 ${m.dot}`} />
                         {m.label}
                       </button>
@@ -354,7 +357,7 @@ export default function AdminLeads() {
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Assigned To</p>
                   {teamError && (
-                    <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-xs">
+                    <div className="flex items-center gap-2 mb-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 text-xs">
                       <span className="flex-1">{teamError}</span>
                       <button type="button" onClick={fetchTeam} className="font-semibold underline flex-shrink-0">Retry</button>
                     </div>
@@ -365,7 +368,7 @@ export default function AdminLeads() {
                   <select
                     value={selected.assignedTo?._id || ''}
                     onChange={e => assignLead(selected._id, e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30">
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30">
                     <option value="">Unassigned</option>
                     {teamMembers.length > 0 && (
                       <optgroup label="Team">
@@ -396,7 +399,7 @@ export default function AdminLeads() {
                         setSelected(data.lead);
                       } catch { /* empty */ }
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30" />
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30" />
                 </div>
 
                 {/* Notes timeline */}
@@ -421,9 +424,9 @@ export default function AdminLeads() {
                       value={noteText}
                       onChange={e => setNoteText(e.target.value)}
                       placeholder="Add a note…"
-                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30" />
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30" />
                     <button type="submit" disabled={savingNote || !noteText.trim()}
-                      className="px-3 py-2 rounded-xl bg-[#484a5a] text-white text-xs font-semibold hover:bg-[#2e3044] transition disabled:opacity-50">
+                      className="px-3 py-2 rounded-xl bg-tertiary text-white text-xs font-semibold hover:bg-[#2e3044] transition disabled:opacity-50">
                       {savingNote ? '…' : 'Add'}
                     </button>
                   </form>

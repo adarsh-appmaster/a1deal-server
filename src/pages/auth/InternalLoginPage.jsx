@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import Logo from '../../components/common/Logo';
+import AuthShell from '../../components/common/AuthShell';
 import { useAuth } from '../../context/AuthContext';
 
 const PORTAL_META = {
@@ -39,78 +39,69 @@ export default function InternalLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex justify-center mb-8">
-          <button onClick={() => navigate('/')}>
-            <Logo variant="full" size="lg" theme="dark" />
-          </button>
+    <AuthShell
+      theme="dark"
+      footer={
+        <button onClick={() => navigate('/')} className="hover:text-slate-400 transition">
+          ← Back to home
+        </button>
+      }
+    >
+      <div className="flex items-center gap-3 mb-6">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: meta.color }}
+        >
+          <span className="material-icons-outlined text-white text-xl">{meta.icon}</span>
         </div>
-
-        <div className="bg-slate-800 rounded-3xl p-8 border border-slate-700">
-          <div className="flex items-center gap-3 mb-6">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: meta.color }}
-            >
-              <span className="material-icons-outlined text-white text-xl">{meta.icon}</span>
-            </div>
-            <div>
-              <h1 className="font-montserrat font-bold text-lg text-white">{meta.label}</h1>
-              <p className="text-slate-400 text-xs">Internal Access Only</p>
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl bg-rose-900/40 border border-rose-700 text-rose-300 text-sm flex items-center gap-2">
-              <span className="material-icons-outlined text-base">error_outline</span>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Email</label>
-              <input
-                name="email"
-                type="email"
-                required
-                value={form.email}
-                onChange={handleChange}
-                placeholder="you@a1deal.in"
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/50 focus:border-[#6236ff] transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Password</label>
-              <input
-                name="password"
-                type="password"
-                required
-                value={form.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/50 focus:border-[#6236ff] transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-sm text-white transition disabled:opacity-60 mt-2"
-              style={{ backgroundColor: meta.color }}
-            >
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-          </form>
+        <div>
+          <h1 className="font-montserrat font-bold text-lg text-white">{meta.label}</h1>
+          <p className="text-slate-400 text-xs">Internal Access Only</p>
         </div>
-
-        <p className="text-center text-xs text-slate-600 mt-6">
-          <button onClick={() => navigate('/')} className="hover:text-slate-400 transition">
-            ← Back to home
-          </button>
-        </p>
       </div>
-    </div>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-rose-900/40 border border-rose-700 text-rose-300 text-sm flex items-center gap-2">
+          <span className="material-icons-outlined text-base">error_outline</span>
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Email</label>
+          <input
+            name="email"
+            type="email"
+            required
+            value={form.email}
+            onChange={handleChange}
+            placeholder="you@a1deal.in"
+            className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-container transition"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Password</label>
+          <input
+            name="password"
+            type="password"
+            required
+            value={form.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-container transition"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 rounded-xl font-bold text-sm text-white transition disabled:opacity-60 mt-2"
+          style={{ backgroundColor: meta.color }}
+        >
+          {loading ? 'Signing in…' : 'Sign In'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

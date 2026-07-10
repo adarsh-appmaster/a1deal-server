@@ -53,7 +53,7 @@ export default function CommissionTracker() {
   const maxM  = monthly.length ? Math.max(...monthly.map(m => m.amount), 1) : 1;
 
   const stats = [
-    { label: 'YTD Earned',  value: totals.ytd        || '₹0',  color: 'text-[#484a5a]',    bg: 'bg-[#484a5a]/10', icon: 'trending_up'  },
+    { label: 'YTD Earned',  value: totals.ytd        || '₹0',  color: 'text-tertiary',    bg: 'bg-tertiary/10', icon: 'trending_up'  },
     { label: 'Total Paid',  value: totals.paid        || '₹0',  color: 'text-emerald-600',  bg: 'bg-emerald-50',   icon: 'check_circle' },
     { label: 'Processing',  value: totals.processing  || '₹0',  color: 'text-blue-600',     bg: 'bg-blue-50',      icon: 'sync'         },
     { label: 'Open Leads',  value: totals.pending     || '0',   color: 'text-amber-600',    bg: 'bg-amber-50',     icon: 'schedule'     },
@@ -90,10 +90,10 @@ export default function CommissionTracker() {
             {monthly.map(m => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5">
                 {m.amount > 0 && (
-                  <span className="text-[10px] font-bold text-[#484a5a]">{m.amount}L</span>
+                  <span className="text-[10px] font-bold text-tertiary">{m.amount}L</span>
                 )}
                 <div
-                  className={`w-full rounded-t-lg transition-all ${m.amount > 0 ? 'bg-[#484a5a]' : 'bg-slate-100'}`}
+                  className={`w-full rounded-t-lg transition-all ${m.amount > 0 ? 'bg-tertiary' : 'bg-slate-100'}`}
                   style={{ height: `${m.amount > 0 ? Math.max(8, (m.amount / maxM) * 108) : 4}px` }}
                 />
                 <span className="text-xs text-on-surface-variant">{m.month}</span>
@@ -111,7 +111,7 @@ export default function CommissionTracker() {
             {['all', 'paid', 'processing', 'pending'].map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1 rounded-full text-xs font-semibold capitalize transition
-                  ${filter === f ? 'bg-[#484a5a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
+                  ${filter === f ? 'bg-tertiary text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                 {f === 'all' ? `All (${allDeals.length})` : f}
               </button>
             ))}
@@ -169,7 +169,7 @@ export default function CommissionTracker() {
                       <td className="px-5 py-4 text-right hidden md:table-cell text-slate-500 font-mono text-xs">
                         {d.percent}%
                       </td>
-                      <td className="px-5 py-4 text-right font-bold text-[#484a5a]">{d.commission}</td>
+                      <td className="px-5 py-4 text-right font-bold text-tertiary">{d.commission}</td>
                       <td className="px-5 py-4 text-center">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${st.color}`}>
                           <span className="material-icons-outlined text-xs">{st.icon}</span>
@@ -191,7 +191,7 @@ export default function CommissionTracker() {
           <div className="px-5 py-3 border-t border-outline-variant bg-surface-container-low flex items-center justify-between text-xs text-on-surface-variant">
             <span>{deals.length} record{deals.length !== 1 ? 's' : ''}</span>
             {filter !== 'all' && (
-              <button onClick={() => setFilter('all')} className="text-[#484a5a] font-semibold hover:underline">
+              <button onClick={() => setFilter('all')} className="text-tertiary font-semibold hover:underline">
                 Show all
               </button>
             )}

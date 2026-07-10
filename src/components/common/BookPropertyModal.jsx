@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 
-const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white transition';
+const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white transition';
 
 const ACTION_LABEL = {
   UnitProperty:     'Book Unit',
@@ -137,15 +137,15 @@ export default function BookPropertyModal({ propertyId, propertyModel, unitId = 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#4900e5]/10 flex items-center justify-center">
-              <span className="material-icons-outlined text-[#4900e5] text-lg">sell</span>
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-icons-outlined text-primary text-lg">sell</span>
             </div>
             <div>
               <h2 className="font-montserrat font-bold text-base text-slate-800">{actionLabel}</h2>
               {unitNumber && <p className="text-xs text-slate-400">Unit {unitNumber}</p>}
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
+          <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
             <span className="material-icons-outlined text-lg">close</span>
           </button>
         </div>
@@ -160,7 +160,7 @@ export default function BookPropertyModal({ propertyId, propertyModel, unitId = 
               <h3 className="font-montserrat font-bold text-lg text-slate-800 mb-2">{doneLabel}!</h3>
               <p className="text-slate-500 text-sm mb-6">Commission has been locked against this sale price.</p>
               <button onClick={onClose}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition">
                 Done
               </button>
             </div>
@@ -197,7 +197,7 @@ export default function BookPropertyModal({ propertyId, propertyModel, unitId = 
                         return (
                           <button key={c.enquiryId || `visit-${i}`} type="button" onClick={() => pickCandidate(c)}
                             className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left transition
-                              ${isSelected ? 'bg-[#4900e5]/8 border-[#4900e5]/40 ring-1 ring-[#4900e5]/30' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
+                              ${isSelected ? 'bg-primary/8 border-primary/40 ring-1 ring-primary/30' : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-slate-700 truncate">{c.name}</p>
                               <p className="text-xs text-slate-400">{c.phone}</p>
@@ -214,7 +214,7 @@ export default function BookPropertyModal({ propertyId, propertyModel, unitId = 
                                 )}
                               </div>
                             </div>
-                            {isSelected && <span className="material-icons-outlined text-[#4900e5] text-lg flex-shrink-0">check_circle</span>}
+                            {isSelected && <span className="material-icons-outlined text-primary text-lg flex-shrink-0">check_circle</span>}
                           </button>
                         );
                       })}
@@ -246,14 +246,14 @@ export default function BookPropertyModal({ propertyId, propertyModel, unitId = 
               </div>
 
               {err && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-xs">
                   <span className="material-icons-outlined text-sm">error_outline</span>
                   {err}
                 </div>
               )}
 
               <button type="submit" disabled={submitting}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {submitting ? 'Saving…' : `${actionLabel} & Lock Commission`}
               </button>
             </form>

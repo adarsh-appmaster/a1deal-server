@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Logo from './Logo';
 import AutoScrollRow from './AutoScrollRow';
+import PropertyCard from './PropertyCard';
 import ImageSlider from './ImageSlider';
-import ShareWhatsappButton from './ShareWhatsappButton';
+import MobileBottomNav from './MobileBottomNav';
 import { searchLocations } from '../../data/indiaLocations';
 import { HOW_IT_WORKS_ART } from '../../data/howItWorksArt';
-import { getStartingPrice } from '../../utils/pricing';
 import api from '../../api/axios';
 
 const ROLES = [
@@ -14,38 +14,74 @@ const ROLES = [
     id: 'buyer',
     label: 'Buyer',
     icon: 'home',
-    color: 'bg-[#4900e5]/10 text-[#4900e5]',
+    color: 'bg-primary/10 text-primary',
     description: 'Browse properties, apply for mortgages, attend auctions.',
   },
   {
     id: 'broker',
     label: 'Broker',
     icon: 'handshake',
-    color: 'bg-[#d6198f]/10 text-[#d6198f]',
+    color: 'bg-secondary/10 text-secondary',
     description: 'Access exclusive listings and manage high-value leads.',
   },
   {
     id: 'developer',
     label: 'Developer',
     icon: 'apartment',
-    color: 'bg-[#6236ff]/10 text-[#6236ff]',
+    color: 'bg-primary-container/10 text-primary-container',
     description: 'List projects, manage inventory, and track partnerships.',
-    badge: 'Admin Approval',
   },
   {
-    id: 'investor',
-    label: 'Investor',
-    icon: 'trending_up',
-    color: 'bg-[#ff4fa6]/10 text-[#ff4fa6]',
-    description: 'Track portfolio ROI and discover high-yield opportunities.',
-    badge: 'Admin Approval',
+    id: 'bank',
+    label: 'Bank',
+    icon: 'account_balance',
+    color: 'bg-secondary-container/10 text-secondary-container',
+    description: 'List mortgage & auction properties and manage bank repo listings.',
+  },
+];
+
+const JOIN_FAQS = [
+  {
+    id: 'buyer',
+    question: 'Why should I join as a Buyer?',
+    icon: 'home',
+    benefits: 'Browse RERA-verified listings, and on Property Deals get bank-repo/auction properties at 30–40% below market price — all in one place. Apply for mortgages, schedule site visits, and buy directly from developers or brokers — every listing is verified before it goes live.',
+    howToStart: 'Sign up and verify your email with a one-time OTP (about 60 seconds) — you get instant access, no approval wait. Start browsing listings, applying for mortgages, and scheduling visits right away.',
+  },
+  {
+    id: 'broker',
+    question: 'Why should I join as a Broker?',
+    icon: 'handshake',
+    benefits: 'Get exclusive leads and listings auto-routed to your pincode — no cold outreach needed. Manage every enquiry and site visit from one dashboard, and get promoted to Master Broker as you grow to start earning territory-wide override commissions.',
+    howToStart: 'Sign up and verify your email with a one-time OTP — you get instant access, no approval wait, with leads routed to your pincode immediately.',
+  },
+  {
+    id: 'master_broker',
+    question: 'What is a Master Broker and how do they benefit from pincodes?',
+    icon: 'verified',
+    benefits: 'Master Brokers are assigned a set of pincodes as their territory. Every property listed in that territory — mortgage or unit — automatically routes through them: they earn an override commission on every deal closed there, even ones handled by a regular broker, on top of full commission on deals they close directly themselves.',
+    howToStart: 'Start as a Broker, then request a Master Broker upgrade with your desired pincode coverage. Admin reviews and approves your territory before override commissions begin.',
+  },
+  {
+    id: 'developer',
+    question: 'Why should I join as a Developer?',
+    icon: 'apartment',
+    benefits: "List your projects to a verified buyer and broker network, manage unit-level inventory (pricing, floor-wise availability) in real time, and track partnership performance — admin-approved onboarding keeps the platform's listings trustworthy.",
+    howToStart: 'Sign up and verify your email with a one-time OTP, then your account goes through a quick admin review before you can list projects and manage inventory.',
+  },
+  {
+    id: 'bank',
+    question: 'Why should I join as a Banker?',
+    icon: 'account_balance',
+    benefits: 'Access a pipeline of pre-verified mortgage leads, manage loan approvals and disbursements from a single dashboard, and list bank-owned auction properties directly to thousands of active buyers — all within a compliant, audit-ready platform.',
+    howToStart: 'Sign up with your official bank email and submit your credentials. Your account goes through an admin verification step, and once approved you can immediately start managing mortgage leads and listing auction properties.',
   },
 ];
 
 const HOW_IT_WORKS = [
   {
     step: '01', icon: 'person_add', title: 'Create Your Account',
-    desc: 'Sign up as a buyer, broker, developer, or investor in under 2 minutes.',
+    desc: 'Sign up as a buyer, broker, developer, or banker in under 2 minutes.',
     images: HOW_IT_WORKS_ART.createAccount,
   },
   {
@@ -69,12 +105,6 @@ const FEATURES = [
   { icon: 'support_agent',   title: '360° Admin Support',        desc: 'Dedicated visit team reviews and admin oversight on every deal.' },
 ];
 
-const INTERNAL = [
-  { label: 'Admin', path: '/admin/login', icon: 'admin_panel_settings' },
-  { label: 'Team / Sales CRM', path: '/team/login', icon: 'groups' },
-  { label: 'Bank', path: '/bank/login', icon: 'account_balance' },
-];
-
 // ── Public property fetching ──────────────────────────────────────────────────
 function usePublicProperties() {
   const [units,     setUnits]     = useState([]);
@@ -94,68 +124,18 @@ function usePublicProperties() {
   return { units, mortgages, loading };
 }
 
-function formatPrice(n) {
-  if (!n && n !== 0) return '—';
-  if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
-  if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
-  return `₹${n.toLocaleString('en-IN')}`;
-}
-
-function PropCard({ title, city, price, priceLabel, type, beds, images, tag, tagColor, path, onClick }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
-      className="group text-left bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer"
-    >
-      <div className="relative h-64 bg-slate-100 overflow-hidden">
-        <ImageSlider
-          images={images || []}
-          alt={title}
-          className="h-64"
-          interval={2500}
-          placeholderIcon="home"
-          overlay={path ? <ShareWhatsappButton property={{ title, city, price }} path={path} iconOnly className="absolute bottom-2 right-2" /> : null}
-        />
-        <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full z-10 ${tagColor}`}>{tag}</span>
-      </div>
-      <div className="p-6">
-        <p className="font-semibold text-[#0F172A] text-lg leading-snug line-clamp-1">{title}</p>
-        <p className="text-sm text-slate-400 mt-1 flex items-center gap-1">
-          <span className="material-icons-outlined text-sm">location_on</span>{city || '—'}
-        </p>
-        <div className="flex items-center justify-between mt-4">
-          <p className="font-montserrat font-bold text-[#4900e5] text-lg">
-            {priceLabel ? `${priceLabel} ${formatPrice(price)}` : formatPrice(price)}
-          </p>
-          {beds != null && (
-            <span className="text-sm text-slate-400 flex items-center gap-1">
-              <span className="material-icons-outlined text-sm">bed</span>{beds} BHK
-            </span>
-          )}
-          {type && !beds && (
-            <span className="text-sm text-slate-400 capitalize">{type}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PropertySection({ title, tagline, icon, items, loading, navigate, baseRoute }) {
+function PropertySection({ title, tagline, icon, items, model, loading, navigate }) {
   if (!loading && items.length === 0) return null;
   return (
     <div className="mb-12">
       <div className="flex items-center justify-between mb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="material-icons-outlined text-2xl text-[#4900e5]">{icon}</span>
-            <h3 className="font-montserrat font-bold text-2xl text-[#0F172A]">{title}</h3>
+            <span className="material-icons-outlined text-2xl text-primary">{icon}</span>
+            <h3 className="font-montserrat font-bold text-2xl text-on-surface">{title}</h3>
           </div>
           {tagline && (
-            <p className="animate-blink font-semibold text-[#d6198f] text-base mt-1.5 ml-9 flex items-center gap-1.5">
+            <p className="animate-blink font-semibold text-secondary text-base mt-1.5 ml-9 flex items-center gap-1.5">
               <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-lg" style={{ animationDelay: '0ms' }}>auto_awesome</span>
               {tagline}
               <span className="material-icons-outlined animate-sparkle inline-block text-amber-400 text-lg" style={{ animationDelay: '400ms' }}>auto_awesome</span>
@@ -164,7 +144,7 @@ function PropertySection({ title, tagline, icon, items, loading, navigate, baseR
         </div>
         <button
           onClick={() => navigate('/signup')}
-          className="text-xs font-semibold text-[#4900e5] hover:underline flex items-center gap-1"
+          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
         >
           View all <span className="material-icons-outlined text-xs">arrow_forward</span>
         </button>
@@ -178,13 +158,50 @@ function PropertySection({ title, tagline, icon, items, loading, navigate, baseR
       ) : (
         <AutoScrollRow
           items={items.slice(0, 6)}
-          cardWidth="w-[26rem]"
-          gap="gap-6"
+          cardWidth="w-[85vw] max-w-[26rem] sm:w-[26rem]"
+          gap="gap-4 sm:gap-6"
           renderItem={p => (
-            <PropCard {...p} onClick={() => navigate(p.path || '/signup')} />
+            <PropertyCard property={p} model={model} showShare />
           )}
         />
       )}
+    </div>
+  );
+}
+
+// ── Join FAQ accordion ─────────────────────────────────────────────────────────
+function JoinFaqAccordion() {
+  const [openId, setOpenId] = useState('buyer');
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-3">
+      {JOIN_FAQS.map(f => {
+        const isOpen = openId === f.id;
+        return (
+          <div key={f.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpenId(isOpen ? null : f.id)}
+              className="w-full flex items-center gap-3 p-5 text-left"
+            >
+              <span className="material-icons-outlined text-primary flex-shrink-0">{f.icon}</span>
+              <span className="flex-1 font-montserrat font-semibold text-on-surface">{f.question}</span>
+              <span className={`material-icons-outlined text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+            {isOpen && (
+              <div className="px-5 pb-5 -mt-1 space-y-4">
+                <p className="text-sm text-slate-600 leading-relaxed">{f.benefits}</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">How to get started</p>
+                  <p className="text-sm text-slate-600 leading-relaxed">{f.howToStart}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -238,7 +255,7 @@ function CitySearchBar({ onSearch }) {
           className="flex-1 px-4 py-4 text-sm text-slate-700 focus:outline-none placeholder-slate-400"
         />
         <button type="submit"
-          className="m-1.5 px-5 py-2.5 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition">
+          className="m-1.5 px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition">
           Search
         </button>
       </form>
@@ -248,7 +265,7 @@ function CitySearchBar({ onSearch }) {
           {suggestions.map((s, i) => (
             <li key={i}>
               <button type="button" onMouseDown={() => pick(s)}
-                className="w-full text-left px-4 py-2.5 hover:bg-[#4900e5]/5 flex items-center gap-3 text-sm">
+                className="w-full text-left px-4 py-2.5 hover:bg-primary/5 flex items-center gap-3 text-sm">
                 <span className="material-icons-outlined text-sm text-slate-400">location_on</span>
                 <span className="text-slate-800 font-medium">{s.label}</span>
                 <span className="text-slate-400 text-xs ml-auto">{s.state}</span>
@@ -265,23 +282,6 @@ export default function PortalSelector() {
   const navigate = useNavigate();
   const { units, mortgages, loading } = usePublicProperties();
 
-  const unitItems = units.map(p => ({
-    _id: p._id, title: p.title, city: p.city,
-    price: getStartingPrice(p), priceLabel: 'Units starting', beds: p.bedrooms ?? null,
-    images: p.images || [],
-    tag: p.propertyType || 'Property', tagColor: 'bg-[#4900e5]/10 text-[#4900e5]',
-    path: `/buyer/property/${p._id}`,
-  }));
-
-  const mortgageItems = mortgages.map(p => ({
-    _id: p._id, title: p.title, city: p.city,
-    price: p.price, beds: p.bedrooms ?? null,
-    images: p.images || [],
-    tag: p.type || 'Mortgage', tagColor: 'bg-amber-100 text-amber-700',
-    type: p.bankName || null,
-    path: `/buyer/mortgage/${p._id}`,
-  }));
-
   function handleSearch(city) {
     navigate(`/buyer/search?q=${encodeURIComponent(city)}`);
   }
@@ -290,48 +290,50 @@ export default function PortalSelector() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-10 py-4 bg-white/90 backdrop-blur border-b border-slate-100">
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 md:px-10 py-3 md:py-4 bg-white/90 backdrop-blur border-b border-slate-100">
         <Logo variant="full" size="xl" />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           <button onClick={() => navigate('/login')}
-            className="px-5 py-2 rounded-full border border-[#4900e5] text-[#4900e5] font-semibold text-sm hover:bg-[#4900e5]/5 transition">
+            className="px-4 md:px-5 py-2 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition whitespace-nowrap">
             Sign In
           </button>
           <button onClick={() => navigate('/signup')}
-            className="px-5 py-2 rounded-full bg-[#4900e5] text-white font-semibold text-sm hover:bg-[#6236ff] transition shadow-md shadow-[#4900e5]/20">
-            Sign Up Free
+            className="px-4 md:px-5 py-2 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-container transition shadow-md shadow-primary/20 whitespace-nowrap">
+            <span className="hidden sm:inline">Sign Up Free</span>
+            <span className="sm:hidden">Sign Up</span>
           </button>
         </div>
       </header>
 
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-[#f5f3ff] via-white to-[#fdf2f2] pt-16 md:pt-24 pb-6 md:pb-8 px-4 text-center">
-        <span className="inline-block px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold tracking-widest uppercase mb-5">
+        <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-widest uppercase mb-5">
           India's Premier Real Estate Ecosystem
         </span>
-        <h1 className="font-montserrat font-bold text-4xl md:text-6xl text-[#0F172A] mb-5 leading-tight">
+        <h1 className="font-montserrat font-bold text-4xl md:text-6xl text-on-surface mb-5 leading-tight">
           One Platform.<br />
-          <span className="text-[#4900e5]">Every Deal.</span>
+          <span className="text-primary">Every Deal.</span>
         </h1>
         <p className="text-slate-500 text-base md:text-xl max-w-xl mx-auto mb-10">
-          Buy, sell, invest, or broker — <span className="text-[#d6198f] font-semibold">A1 Deal</span> connects every player in India's real estate market.
+          Buy, sell, invest, or broker — <span className="text-secondary font-semibold">A1 Deal</span> connects every player in India's real estate market.
         </p>
 
         <CitySearchBar onSearch={handleSearch} />
       </section>
 
       {/* ── Property Listings ── */}
-      {(loading || unitItems.length > 0 || mortgageItems.length > 0) && (
+      {(loading || units.length > 0 || mortgages.length > 0) && (
         <section className="max-w-6xl mx-auto w-full px-4 pt-4 pb-16">
-          <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Live on the Platform</p>
-          <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
+          <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Live on the Platform</p>
+          <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-on-surface text-center mb-12">
             Featured Properties
           </h2>
           <PropertySection
             title="Property Partners"
             tagline="Be a Partner in Premium Properties"
             icon="apartment"
-            items={unitItems}
+            model="UnitProperty"
+            items={units}
             loading={loading}
             navigate={navigate}
           />
@@ -339,7 +341,8 @@ export default function PortalSelector() {
             title="Property Deals"
             tagline="Save 30–40% Compared to Market Prices"
             icon="account_balance"
-            items={mortgageItems}
+            model="MortgageProperty"
+            items={mortgages}
             loading={loading}
             navigate={navigate}
           />
@@ -348,25 +351,25 @@ export default function PortalSelector() {
 
       {/* ── Who are you? ── */}
       <section className="max-w-5xl mx-auto w-full px-4 py-16">
-        <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Join as</p>
-        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-10">
+        <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Join as</p>
+        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#484456] text-center mb-10">
           What best describes you?
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {ROLES.map(r => (
             <button key={r.id} onClick={() => navigate(`/signup?role=${r.id}`)}
-              className="group text-left bg-white rounded-2xl p-7 border border-slate-100 hover:border-[#d6198f]/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#4900e5]">
+              className="group text-left bg-white rounded-2xl p-7 border border-slate-100 hover:border-secondary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
               <div className={`w-20 h-20 rounded-xl flex items-center justify-center mb-4 ${r.color}`}>
                 <span className="material-icons-outlined text-4xl">{r.icon}</span>
               </div>
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-montserrat font-bold text-xl text-[#0F172A]">{r.label}</h3>
+                <h3 className="font-montserrat font-bold text-xl text-on-surface">{r.label}</h3>
                 {r.badge && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700">{r.badge}</span>
                 )}
               </div>
               <p className="text-sm text-slate-500 leading-relaxed">{r.description}</p>
-              <div className="mt-4 flex items-center gap-1 text-[#4900e5] text-sm font-semibold opacity-0 group-hover:opacity-100 transition">
+              <div className="mt-4 flex items-center gap-1 text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition">
                 Get started <span className="material-icons-outlined text-base">arrow_forward</span>
               </div>
             </button>
@@ -374,13 +377,22 @@ export default function PortalSelector() {
         </div>
       </section>
 
+      {/* ── Why Join FAQ ── */}
+      <section className="max-w-5xl mx-auto w-full px-4 py-16">
+        <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Frequently Asked</p>
+        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#484456] text-center mb-12">
+          Why Join A1 Deal?
+        </h2>
+        <JoinFaqAccordion />
+      </section>
+
       {/* ── How it works ── */}
       <section className="bg-slate-50 py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Simple Process</p>
-          <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
-            How A1 Deal Works
-          </h2>
+          <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Simple Process</p>
+        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#484456] text-center mb-12">
+          How A1 Deal Works
+        </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map(h => (
               <div key={h.step} className="bg-white rounded-2xl border border-slate-100 overflow-hidden text-center shadow-sm">
@@ -392,11 +404,11 @@ export default function PortalSelector() {
                   placeholderIcon={h.icon}
                 />
                 <div className="p-5">
-                  <div className="w-12 h-12 mx-auto rounded-xl bg-[#4900e5]/10 flex items-center justify-center mb-3 -mt-10 relative z-10 border-4 border-white">
-                    <span className="material-icons-outlined text-xl text-[#4900e5]">{h.icon}</span>
+                  <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center mb-3 -mt-10 relative z-10 border-4 border-white">
+                    <span className="material-icons-outlined text-xl text-primary">{h.icon}</span>
                   </div>
-                  <span className="text-xs font-bold text-[#4900e5] tracking-widest">{h.step}</span>
-                  <h3 className="font-montserrat font-bold text-base text-[#0F172A] mt-1 mb-2">{h.title}</h3>
+                  <span className="text-xs font-bold text-primary tracking-widest">{h.step}</span>
+                  <h3 className="font-montserrat font-bold text-base text-on-surface mt-1 mb-2">{h.title}</h3>
                   <p className="text-sm text-slate-500 leading-relaxed">{h.desc}</p>
                 </div>
               </div>
@@ -407,18 +419,18 @@ export default function PortalSelector() {
 
       {/* ── Features ── */}
       <section className="max-w-5xl mx-auto w-full px-4 py-16">
-        <p className="text-center text-xs font-bold text-[#4900e5] uppercase tracking-widest mb-3">Why A1 Deal</p>
-        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#0F172A] text-center mb-12">
+        <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Why A1 Deal</p>
+        <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#484456] text-center mb-12">
           Everything You Need, In One Place
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map(f => (
             <div key={f.title} className="flex gap-5 p-6 rounded-2xl border border-slate-100 bg-white hover:shadow-lg transition-shadow">
-              <div className="w-20 h-20 rounded-xl bg-[#4900e5]/10 flex items-center justify-center flex-shrink-0">
-                <span className="material-icons-outlined text-4xl text-[#4900e5]">{f.icon}</span>
+              <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-icons-outlined text-4xl text-primary">{f.icon}</span>
               </div>
               <div>
-                <h3 className="font-semibold text-[#0F172A] text-base mb-1">{f.title}</h3>
+                <h3 className="font-semibold text-on-surface text-base mb-1">{f.title}</h3>
                 <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
               </div>
             </div>
@@ -427,7 +439,7 @@ export default function PortalSelector() {
       </section>
 
       {/* ── CTA Banner ── */}
-      <section className="bg-[#0F172A] py-16 px-4 text-center">
+      <section className="bg-on-surface py-16 px-4 text-center">
         <h2 className="font-montserrat font-bold text-2xl md:text-4xl text-white mb-4">
           Ready to find your next deal?
         </h2>
@@ -436,7 +448,7 @@ export default function PortalSelector() {
         </p>
         <div className="flex items-center justify-center gap-4 flex-wrap">
           <button onClick={() => navigate('/signup')}
-            className="px-8 py-3.5 rounded-full bg-[#4900e5] text-white font-bold hover:bg-[#6236ff] transition shadow-lg shadow-[#4900e5]/40">
+            className="px-8 py-3.5 rounded-full bg-primary text-white font-bold hover:bg-primary-container transition shadow-lg shadow-primary/40">
             Create Free Account
           </button>
           <button onClick={() => navigate('/login')}
@@ -447,30 +459,33 @@ export default function PortalSelector() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="bg-[#0F172A] border-t border-white/10 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+      <footer className="bg-on-surface border-t border-white/10 pt-10 pb-24 md:pb-10 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo variant="full" theme="dark" size="md" />
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-white/40">
-            <button onClick={() => navigate('/signup')} className="hover:text-white transition">Buy Property</button>
-            <button onClick={() => navigate('/signup?role=broker')} className="hover:text-white transition">Become a Broker</button>
-            <button onClick={() => navigate('/signup?role=developer')} className="hover:text-white transition">List Your Project</button>
-            <button onClick={() => navigate('/signup?role=investor')} className="hover:text-white transition">Invest</button>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm md:text-xs text-white/50">
+            <button onClick={() => navigate('/signup')} className="py-1 hover:text-white transition">Buy Property</button>
+            <button onClick={() => navigate('/signup?role=broker')} className="py-1 hover:text-white transition">Become a Broker</button>
+            <button onClick={() => navigate('/signup?role=developer')} className="py-1 hover:text-white transition">List Your Project</button>
+            <button onClick={() => navigate('/signup?role=bank')} className="py-1 hover:text-white transition">Bank Partner</button>
+            <button onClick={() => navigate('/buyer/articles')} className="py-1 hover:text-white transition">Articles</button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs text-white/30">
-            <span className="text-white/20">Internal:</span>
-            {INTERNAL.map(p => (
-              <button key={p.label} onClick={() => navigate(p.path)}
-                className="flex items-center gap-1 hover:text-white/70 transition">
-                <span className="material-icons-outlined text-xs">{p.icon}</span>
-                {p.label}
-              </button>
-            ))}
-          </div>
         </div>
-        <p className="text-center text-white/20 text-xs mt-6">© 2026 A1 Deal · Enterprise Real Estate Ecosystem</p>
+        <p className="text-center text-white/20 text-xs mt-8">© 2026 A1 Deal · Enterprise Real Estate Ecosystem</p>
       </footer>
+
+      {/* Sticky bottom nav (mobile) — guest / public landing */}
+      <MobileBottomNav
+        breakpoint="md"
+        items={[
+          { path: '/', icon: 'home', label: 'Home', end: true },
+          { path: '/buyer/search', icon: 'search', label: 'Search' },
+          { path: '/buyer/mortgage', icon: 'gavel', label: 'Deals' },
+          { path: '/buyer/unit-properties', icon: 'apartment', label: 'Partners' },
+          { path: '/login', icon: 'login', label: 'Sign In' },
+        ]}
+      />
 
     </div>
   );

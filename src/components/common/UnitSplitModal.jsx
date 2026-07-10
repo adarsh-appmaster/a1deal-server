@@ -2,6 +2,7 @@ import { useState } from 'react';
 import api from '../../api/axios';
 import BulkShareModal from './BulkShareModal';
 import BookPropertyModal from './BookPropertyModal';
+import { useConfirm } from '../../hooks/useConfirm';
 
 // ── Subcategories per property type ─────────────────────────────────────────
 const SUBCATEGORIES = {
@@ -33,8 +34,8 @@ const AMENITY_LIST = [
   'Play Area', 'Jogging Track', 'Balcony', 'Terrace', 'Store Room',
 ];
 
-const inp  = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white';
-const sinp = 'w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#484a5a]/20 bg-white';
+const inp  = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white';
+const sinp = 'w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-tertiary/20 bg-white';
 
 function fmt(n) {
   if (!n && n !== 0) return '—';
@@ -103,7 +104,7 @@ function BhkWiseConfig({ subs, groups, setGroups }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Unit Type Groups</p>
-        <span className="text-xs font-bold text-[#484a5a]">{totalUnits} units total</span>
+        <span className="text-xs font-bold text-tertiary">{totalUnits} units total</span>
       </div>
 
       {groups.map((g, gi) => (
@@ -134,7 +135,7 @@ function BhkWiseConfig({ subs, groups, setGroups }) {
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">
-                Price (₹) {g.price && <span className="text-[#484a5a] font-semibold">{fmtCompact(g.price)}</span>}
+                Price (₹) {g.price && <span className="text-tertiary font-semibold">{fmtCompact(g.price)}</span>}
               </label>
               <input type="number" min="0" value={g.price}
                 onChange={e => update(g.id, 'price', e.target.value)}
@@ -176,7 +177,7 @@ function BhkWiseConfig({ subs, groups, setGroups }) {
       ))}
 
       <button type="button" onClick={() => setGroups(gs => [...gs, newBhkGroup(subs)])}
-        className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-[#484a5a] hover:text-[#484a5a] transition flex items-center justify-center gap-2">
+        className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-tertiary hover:text-tertiary transition flex items-center justify-center gap-2">
         <span className="material-icons-outlined text-base">add</span>Add Unit Type
       </button>
     </div>
@@ -217,11 +218,11 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Total Floors</label>
           <input type="number" min="1" max="200" value={totalFloors}
             onChange={e => setTotalFloors(e.target.value)}
-            className="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white" />
+            className="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white" />
         </div>
         <div className="flex-1 text-right">
           <p className="text-[10px] text-slate-400 uppercase tracking-wide">Estimated total</p>
-          <p className="text-lg font-bold text-[#484a5a]">{totalUnits} units</p>
+          <p className="text-lg font-bold text-tertiary">{totalUnits} units</p>
         </div>
       </div>
 
@@ -237,7 +238,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
             <div key={fc.id} className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
               {/* Floor range header */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="material-icons-outlined text-[#484a5a] text-base">layers</span>
+                <span className="material-icons-outlined text-tertiary text-base">layers</span>
                 <span className="text-xs font-semibold text-slate-600">Floors</span>
                 <input type="number" min="1" max={totalFloors || 200} value={fc.floorStart}
                   onChange={e => updateFc(fc.id, 'floorStart', e.target.value)}
@@ -258,7 +259,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
               </div>
 
               {/* Unit groups inside this floor range */}
-              <div className="space-y-2 pl-3 border-l-2 border-[#484a5a]/20">
+              <div className="space-y-2 pl-3 border-l-2 border-tertiary/20">
                 {fc.unitGroups.map(ug => (
                   <div key={ug.id} className="bg-white rounded-xl p-3 space-y-2">
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
@@ -282,7 +283,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
                       </div>
                       <div>
                         <label className="block text-[10px] text-slate-400 uppercase tracking-wide mb-1">
-                          Price {ug.price ? <span className="text-[#484a5a]">{fmtCompact(ug.price)}</span> : '(₹)'}
+                          Price {ug.price ? <span className="text-tertiary">{fmtCompact(ug.price)}</span> : '(₹)'}
                         </label>
                         <input type="number" min="0" value={ug.price}
                           onChange={e => updateUg(fc.id, ug.id, 'price', e.target.value)}
@@ -316,7 +317,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
                 ))}
 
                 <button type="button" onClick={() => addUg(fc.id)}
-                  className="text-xs text-[#484a5a] font-semibold hover:underline flex items-center gap-1 py-1">
+                  className="text-xs text-tertiary font-semibold hover:underline flex items-center gap-1 py-1">
                   <span className="material-icons-outlined text-sm">add</span>
                   Add unit type to these floors
                 </button>
@@ -327,7 +328,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
 
         <button type="button"
           onClick={() => setFloorConfigs(fcs => [...fcs, newFloorConfig(subs, Number(totalFloors) || 1, Number(totalFloors) || 1)])}
-          className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-[#484a5a] hover:text-[#484a5a] transition flex items-center justify-center gap-2">
+          className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-tertiary hover:text-tertiary transition flex items-center justify-center gap-2">
           <span className="material-icons-outlined text-base">add</span>Add Floor Range
         </button>
       </div>
@@ -345,6 +346,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
   const [tab, setTab]           = useState(initHasSplit ? 'units' : 'configure');
   const [units, setUnits]       = useState(property.unitSplit?.units || []);
   const [showBulkShare, setShowBulkShare] = useState(false);
+  const { confirm, dialog } = useConfirm();
 
   // Configure state
   const [splitMode, setSplitMode]     = useState(property.unitSplit?.splitMode || suggested);
@@ -384,7 +386,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
   }
 
   async function handleDeleteSplit() {
-    if (!window.confirm('Remove unit split? All unit data will be lost.')) return;
+    if (!(await confirm('Remove unit split? All unit data will be lost.', { danger: true, confirmLabel: 'Remove' }))) return;
     try {
       await api.delete(`/unit-properties/${property._id}/split`);
       setHasSplit(false);
@@ -411,17 +413,18 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
 
   return (
     <>
+      {dialog}
       <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl"
           onClick={e => e.stopPropagation()}>
 
           {/* Header */}
           <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 flex-shrink-0">
-            <span className="material-icons-outlined text-[#484a5a] text-2xl">call_split</span>
+            <span className="material-icons-outlined text-tertiary text-2xl">call_split</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-montserrat font-bold text-slate-800">Unit Split</h2>
-                <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold capitalize">
+                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold capitalize">
                   {(property.propertyType || 'property').replace('_', ' ')}
                 </span>
                 {hasSplit && (
@@ -435,7 +438,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                 {property.areaSqft ? ` · ${property.areaSqft.toLocaleString()} sqft` : ''}
               </p>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-700 flex-shrink-0">
+            <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-700 flex-shrink-0">
               <span className="material-icons-outlined">close</span>
             </button>
           </div>
@@ -444,13 +447,13 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
           <div className="flex items-center border-b border-slate-100 flex-shrink-0">
             <button onClick={() => setTab('configure')}
               className={`flex items-center gap-1.5 px-5 py-3 text-sm font-semibold border-b-2 transition
-                ${tab === 'configure' ? 'text-[#484a5a] border-[#484a5a]' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
+                ${tab === 'configure' ? 'text-tertiary border-tertiary' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
               <span className="material-icons-outlined text-sm">tune</span>Configure
             </button>
             {hasSplit && (
               <button onClick={() => setTab('units')}
                 className={`flex items-center gap-1.5 px-5 py-3 text-sm font-semibold border-b-2 transition
-                  ${tab === 'units' ? 'text-[#484a5a] border-[#484a5a]' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
+                  ${tab === 'units' ? 'text-tertiary border-tertiary' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
                 <span className="material-icons-outlined text-sm">grid_view</span>Units ({units.length})
               </button>
             )}
@@ -468,7 +471,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
             {tab === 'configure' && (
               <form onSubmit={handleCreateSplit} className="p-6 space-y-6">
                 {configMsg && (
-                  <div className="p-3 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">{configMsg}</div>
+                  <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-sm font-semibold">{configMsg}</div>
                 )}
 
                 {/* ── Mode Picker ── */}
@@ -485,10 +488,10 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                     <button type="button" onClick={() => setSplitMode('bhk_wise')}
                       className={`relative p-4 rounded-2xl border-2 text-left transition
                         ${splitMode === 'bhk_wise'
-                          ? 'border-[#484a5a] bg-[#484a5a]/5'
+                          ? 'border-tertiary bg-tertiary/5'
                           : 'border-slate-200 hover:border-slate-300'}`}>
                       {splitMode === 'bhk_wise' && (
-                        <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-[#484a5a] flex items-center justify-center">
+                        <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-tertiary flex items-center justify-center">
                           <span className="material-icons-outlined text-white text-[10px]">check</span>
                         </span>
                       )}
@@ -497,7 +500,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                           {splitMode === 'bhk_wise' ? '✓ ' : ''}Suggested
                         </span>
                       )}
-                      <span className="material-icons-outlined text-[#484a5a] text-2xl mb-2 block">category</span>
+                      <span className="material-icons-outlined text-tertiary text-2xl mb-2 block">category</span>
                       <p className="font-montserrat font-bold text-slate-800 text-sm mb-1">BHK-wise</p>
                       <p className="text-xs text-slate-500 leading-relaxed">
                         Group units by type — e.g. 20 × 2BHK, 10 × 3BHK. Best for villas, plots, row houses.
@@ -508,10 +511,10 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                     <button type="button" onClick={() => setSplitMode('floor_wise')}
                       className={`relative p-4 rounded-2xl border-2 text-left transition
                         ${splitMode === 'floor_wise'
-                          ? 'border-[#484a5a] bg-[#484a5a]/5'
+                          ? 'border-tertiary bg-tertiary/5'
                           : 'border-slate-200 hover:border-slate-300'}`}>
                       {splitMode === 'floor_wise' && (
-                        <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-[#484a5a] flex items-center justify-center">
+                        <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-tertiary flex items-center justify-center">
                           <span className="material-icons-outlined text-white text-[10px]">check</span>
                         </span>
                       )}
@@ -520,7 +523,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                           {splitMode === 'floor_wise' ? '✓ ' : ''}Suggested
                         </span>
                       )}
-                      <span className="material-icons-outlined text-[#484a5a] text-2xl mb-2 block">layers</span>
+                      <span className="material-icons-outlined text-tertiary text-2xl mb-2 block">layers</span>
                       <p className="font-montserrat font-bold text-slate-800 text-sm mb-1">Floor-wise</p>
                       <p className="text-xs text-slate-500 leading-relaxed">
                         Configure each floor separately — unit 101, 102... 201, 202... Best for towers, buildings.
@@ -546,7 +549,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                 )}
 
                 <button type="submit" disabled={configSaving || previewTotal === 0}
-                  className="w-full py-3 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
+                  className="w-full py-3 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
                   {configSaving
                     ? 'Generating units…'
                     : previewTotal > 0
@@ -564,7 +567,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                   {[
                     { label: 'Available',   value: available,   cls: 'bg-emerald-50 text-emerald-700' },
                     { label: 'Negotiating', value: negotiating, cls: 'bg-amber-50 text-amber-700' },
-                    { label: 'Sold',        value: sold,        cls: 'bg-slate-100 text-slate-500' },
+                    { label: 'Sold',        value: sold,        cls: 'bg-slate-100 text-slate-600' },
                   ].map(s => (
                     <div key={s.label} className={`${s.cls} rounded-xl p-3 text-center`}>
                       <p className="font-bold text-xl leading-none">{s.value}</p>
@@ -688,8 +691,8 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
     <div className="bg-white border border-slate-100 rounded-xl p-3 hover:border-slate-200 transition">
       <div className="flex items-center gap-3">
         {/* Unit badge */}
-        <div className="w-10 h-10 rounded-xl bg-[#484a5a]/10 flex items-center justify-center flex-shrink-0">
-          <span className="font-bold text-[#484a5a] text-[10px] leading-tight text-center px-0.5">
+        <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center flex-shrink-0">
+          <span className="font-bold text-tertiary text-[10px] leading-tight text-center px-0.5">
             {unit.unitNumber}
           </span>
         </div>
@@ -709,7 +712,7 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
           <div className="flex flex-col justify-center">
             <span className="text-slate-400 leading-none mb-0.5">Subcategory</span>
             <select value={unitType} onChange={e => setUnitType(e.target.value)}
-              className="w-full text-xs px-2 py-1 rounded-lg border border-slate-200 font-semibold focus:outline-none bg-white text-[#484a5a]">
+              className="w-full text-xs px-2 py-1 rounded-lg border border-slate-200 font-semibold focus:outline-none bg-white text-tertiary">
               {subs.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
@@ -728,7 +731,7 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
         <div className="flex flex-col gap-1 flex-shrink-0">
           <button onClick={handleSave} disabled={saving}
             className={`w-14 py-1.5 rounded-xl text-xs font-bold transition
-              ${saved ? 'bg-emerald-500 text-white' : 'bg-[#484a5a] text-white hover:bg-[#2e3044]'} disabled:opacity-50`}>
+              ${saved ? 'bg-emerald-500 text-white' : 'bg-tertiary text-white hover:bg-[#2e3044]'} disabled:opacity-50`}>
             {saving ? '…' : saved ? '✓ OK' : 'Save'}
           </button>
           <button type="button" onClick={() => setExpanded(v => !v)}
@@ -767,7 +770,7 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
         <input value={notes} onChange={e => setNotes(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSave()}
           placeholder="Notes (optional)…"
-          className="w-full px-3 py-1.5 rounded-lg border border-slate-100 bg-slate-50 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#484a5a]/20 focus:bg-white"
+          className="w-full px-3 py-1.5 rounded-lg border border-slate-100 bg-slate-50 text-xs text-slate-600 focus:outline-none focus:ring-2 focus:ring-tertiary/20 focus:bg-white"
         />
       </div>
 
@@ -796,8 +799,8 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
                 <button type="button" key={a} onClick={() => toggleAmenity(a)}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition
                     ${amenities.includes(a)
-                      ? 'bg-[#484a5a] text-white border-[#484a5a]'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-[#484a5a] hover:text-[#484a5a]'}`}>
+                      ? 'bg-tertiary text-white border-tertiary'
+                      : 'bg-white text-slate-500 border-slate-200 hover:border-tertiary hover:text-tertiary'}`}>
                   {a}
                 </button>
               ))}

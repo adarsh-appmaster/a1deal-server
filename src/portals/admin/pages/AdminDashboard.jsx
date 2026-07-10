@@ -1,35 +1,54 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import api from '../../../api/axios';
+import { timeAgo } from '../../../utils/timeAgo';
+import EmptyState from '../../../components/common/EmptyState';
 
-const ACTIVITY_ICON  = { user: 'person_add', revenue: 'payments', project: 'apartment', alert: 'warning', security: 'security' };
+const ACTIVITY_ICON  = { user: 'person_add', project: 'apartment', enquiry: 'contact_support' };
 const ACTIVITY_COLOR = {
-  user:     'text-violet-600 bg-violet-50',
-  revenue:  'text-amber-600 bg-amber-50',
-  project:  'text-emerald-600 bg-emerald-50',
-  alert:    'text-rose-600 bg-rose-50',
-  security: 'text-blue-600 bg-blue-50',
+  user:    'text-violet-600 bg-violet-50',
+  project: 'text-emerald-600 bg-emerald-50',
+  enquiry: 'text-blue-600 bg-blue-50',
 };
 
-const RECENT_ACTIVITY = [
-  { action: 'New developer registered', user: 'Auto-approved', time: 'Latest', type: 'user' },
-  { action: 'Mortgage property approved', user: 'Admin', time: 'Latest', type: 'project' },
-  { action: 'Unit split configured', user: 'Admin', time: 'Latest', type: 'revenue' },
-  { action: 'User suspended', user: 'Admin Team', time: 'Latest', type: 'alert' },
-  { action: 'Bulk WhatsApp sent', user: 'Admin', time: 'Latest', type: 'security' },
-];
+const ROLE_COLOR = {
+  buyer: '#10b981', broker: '#f43f5e', developer: '#3b82f6',
+  investor: '#8b5cf6', bank: '#f59e0b', admin: '#64748b', team: '#06b6d4',
+};
 
-function fmt(n) {
-  if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)} Cr`;
-  if (n >= 100000)   return `₹${(n / 100000).toFixed(1)} L`;
-  return n?.toLocaleString('en-IN') ?? '—';
+// Merges the last few users/properties/enquiries (each already sorted by
+// createdAt server-side) into one real activity feed — no dedicated
+// activity-log endpoint needed for a feed this shallow.
+function buildActivity([users, units, mortgages, enquiries]) {
+  const items = [
+    ...(users?.data.users || []).map(u => ({
+      type: 'user', icon: 'person_add',
+      title: `New ${u.role} registered`, subtitle: u.name || u.email, time: u.createdAt,
+    })),
+    ...(units?.data.properties || []).map(p => ({
+      type: 'project', icon: 'apartment',
+      title: 'Unit property added', subtitle: p.title, time: p.createdAt,
+    })),
+    ...(mortgages?.data.properties || []).map(p => ({
+      type: 'project', icon: 'home_work',
+      title: 'Mortgage property added', subtitle: p.title, time: p.createdAt,
+    })),
+    ...(enquiries?.data.enquiries || []).map(e => ({
+      type: 'enquiry', icon: 'contact_support',
+      title: 'New property enquiry', subtitle: e.name || e.propertyTitle || 'Guest', time: e.createdAt,
+    })),
+  ];
+  return items.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 6);
 }
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats]       = useState(null);
+  const [stats, setStats]         = useState(null);
   const [propStats, setPropStats] = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [activity, setActivity]   = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -40,6 +59,14 @@ export default function AdminDashboard() {
       if (p) setPropStats(p.data);
       setLoading(false);
     });
+
+    Promise.all([
+      api.get('/users?page=1&limit=5').catch(() => null),
+      api.get('/unit-properties?page=1&limit=5').catch(() => null),
+      api.get('/mortgage-properties?page=1&limit=5').catch(() => null),
+      api.get('/enquiry?page=1&limit=5').catch(() => null),
+    ]).then(results => setActivity(buildActivity(results)))
+      .finally(() => setActivityLoading(false));
   }, []);
 
   const totalUsers   = stats?.total ?? '—';
@@ -52,7 +79,10 @@ export default function AdminDashboard() {
 
   const totalProps   = propStats?.total ?? '—';
   const availProps   = propStats?.available ?? '—';
-  const soldProps    = propStats?.sold ?? '—';
+
+  const roleChartData = (stats?.byRole || [])
+    .filter(r => r.count > 0)
+    .map(r => ({ name: r.role, value: r.count }));
 
   const METRICS = [
     { label: 'Total Users',       value: loading ? '…' : totalUsers,   change: pendingUsers > 0 ? `${pendingUsers} pending` : '', icon: 'people',       color: 'text-violet-600' },
@@ -88,42 +118,49 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Role Breakdown */}
-        <div className="lg:col-span-2 card p-5">
+        {/* Role Breakdown chart */}
+        <div className="card p-5">
           <h2 className="font-montserrat font-semibold text-on-surface mb-4">User Role Breakdown</h2>
-          {stats ? (
+          {roleChartData.length === 0 ? (
+            <EmptyState icon="pie_chart" label="No user data yet" className="py-8" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={roleChartData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
+                  {roleChartData.map(r => <Cell key={r.name} fill={ROLE_COLOR[r.name] || '#6366f1'} />)}
+                </Pie>
+                <Tooltip formatter={(value, name) => [value, name[0].toUpperCase() + name.slice(1)]} />
+                <Legend
+                  iconType="circle"
+                  formatter={value => value[0].toUpperCase() + value.slice(1)}
+                  wrapperStyle={{ fontSize: 12 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Recent Activity */}
+        <div className="card p-5">
+          <h2 className="font-montserrat font-semibold text-on-surface mb-4">Recent Activity</h2>
+          {activityLoading ? (
             <div className="space-y-3">
-              {(stats.byRole || []).filter(r => r.count > 0).map(r => {
-                const pct = stats.total > 0 ? Math.round((r.count / stats.total) * 100) : 0;
-                const colors = {
-                  buyer: '#10b981', broker: '#f43f5e', developer: '#3b82f6',
-                  investor: '#8b5cf6', bank: '#f59e0b', admin: '#64748b', team: '#06b6d4',
-                };
-                return (
-                  <div key={r.role}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="capitalize text-on-surface-variant font-medium">{r.role}</span>
-                      <span className="font-semibold text-on-surface">{r.count} <span className="text-on-surface-variant font-normal">({pct}%)</span></span>
-                    </div>
-                    <div className="h-2 bg-surface-container rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colors[r.role] || '#6366f1' }} />
-                    </div>
-                  </div>
-                );
-              })}
+              {[1, 2, 3].map(i => <div key={i} className="h-12 bg-surface-container rounded-xl animate-pulse" />)}
             </div>
+          ) : activity.length === 0 ? (
+            <EmptyState icon="history" label="No recent activity" className="py-8" />
           ) : (
             <div className="space-y-3">
-              {RECENT_ACTIVITY.map((a, i) => (
+              {activity.map((a, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${ACTIVITY_COLOR[a.type]}`}>
                     <span className="material-icons-outlined text-lg">{ACTIVITY_ICON[a.type]}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-on-surface">{a.action}</p>
-                    <p className="text-xs text-on-surface-variant">{a.user}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-on-surface truncate">{a.title}</p>
+                    <p className="text-xs text-on-surface-variant truncate">{a.subtitle}</p>
                   </div>
-                  <p className="text-xs text-on-surface-variant flex-shrink-0">{a.time}</p>
+                  <p className="text-xs text-on-surface-variant flex-shrink-0">{timeAgo(a.time)}</p>
                 </div>
               ))}
             </div>

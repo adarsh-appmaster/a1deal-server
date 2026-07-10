@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 // Auto-rotating media slider — cycles through images (and an optional video,
 // appended as the last slide) on a timer, with dot navigation and prev/next
@@ -14,10 +14,10 @@ export default function ImageSlider({
   overlay = null,
   imgClassName = '',
 }) {
-  const slides = [
+  const slides = useMemo(() => [
     ...images.map(src => ({ type: 'image', src })),
     ...(video ? [{ type: 'video', src: video }] : []),
-  ];
+  ], [images, video]);
   const count = slides.length;
   const [index, setIndex] = useState(0);
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import AssignPanel from '../../../components/common/AssignPanel';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 function fmtRs(n) {
   if (!n) return '₹0';
@@ -50,6 +51,7 @@ export default function AdminPropertyEnquiries() {
   const [newStatus, setNewStatus]     = useState('');
   const [saving, setSaving]           = useState(false);
   const [saveMsg, setSaveMsg]         = useState('');
+  const { confirm, dialog } = useConfirm();
 
   // Booking modal state
   const [showBookModal, setShowBookModal] = useState(false);
@@ -175,7 +177,7 @@ export default function AdminPropertyEnquiries() {
   }
 
   async function handleMarkPaid() {
-    if (!window.confirm('Mark commission as paid? This cannot be undone.')) return;
+    if (!(await confirm('Mark commission as paid? This cannot be undone.', { danger: true, confirmLabel: 'Mark Paid' }))) return;
     setSaving(true);
     try {
       const { data } = await api.patch(`/enquiry/${selected._id}/mark-paid`);
@@ -192,6 +194,7 @@ export default function AdminPropertyEnquiries() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {dialog}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div>
@@ -205,16 +208,16 @@ export default function AdminPropertyEnquiries() {
         <input
           value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search name, phone, city…"
-          className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]"
+          className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
         <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white">
+          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white">
           <option value="all">All Statuses</option>
           {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <input value={filterCity} onChange={e => { setFilterCity(e.target.value); setPage(1); }}
           placeholder="Filter by city…"
-          className="w-40 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]"
+          className="w-40 px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>
 
@@ -245,10 +248,10 @@ export default function AdminPropertyEnquiries() {
                     <td className="px-4 py-3">
                       <p className="font-semibold text-slate-800">{e.name}</p>
                       <p className="text-slate-400 text-xs">{e.phone}</p>
-                      {e.propertyTitle && <p className="text-xs text-[#4900e5] truncate max-w-[140px]" title={e.propertyTitle}>{e.propertyTitle}</p>}
+                      {e.propertyTitle && <p className="text-xs text-primary truncate max-w-[140px]" title={e.propertyTitle}>{e.propertyTitle}</p>}
                       {e.propertyModel && (
                         <span className={`mt-0.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded
-                          ${e.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]' : 'bg-amber-100 text-amber-700'}`}>
+                          ${e.propertyModel === 'UnitProperty' ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'}`}>
                           {e.propertyModel === 'UnitProperty' ? 'Unit' : 'Mortgage'}
                         </span>
                       )}
@@ -275,13 +278,20 @@ export default function AdminPropertyEnquiries() {
                           <p className="text-slate-400">{e.assignedTo.brokerTier === 'master' ? 'Master Broker' : 'Broker'}</p>
                         </>
                       ) : '—'}
+                      {e.routingNote && (
+                        <span title={e.routingNote}
+                          className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                          <span className="material-icons-outlined text-xs">warning</span>
+                          Verify coverage
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
                       {new Date(e.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
                     </td>
                     <td className="px-4 py-3">
                       <button onClick={() => openEnquiry(e)}
-                        className="text-[#4900e5] hover:text-[#6236ff] text-xs font-semibold flex items-center gap-1">
+                        className="text-primary hover:text-primary-container text-xs font-semibold flex items-center gap-1">
                         <span className="material-icons-outlined text-sm">open_in_new</span>
                         Open
                       </button>
@@ -339,11 +349,11 @@ export default function AdminPropertyEnquiries() {
                       {propertyUnits.map(u => (
                         <button key={u._id} onClick={() => selectUnit(u)}
                           className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm transition
-                            ${bookUnitId === u._id ? 'border-[#4900e5] bg-[#4900e5]/5' : 'border-slate-100 hover:border-slate-200'}`}>
+                            ${bookUnitId === u._id ? 'border-primary bg-primary/5' : 'border-slate-100 hover:border-slate-200'}`}>
                           <span className="font-semibold text-slate-800">Unit {u.unitNumber || u._id?.toString().slice(-4)}</span>
                           {u.unitType && <span className="ml-2 text-xs text-slate-400">{u.unitType}</span>}
                           {u.areaSqft && <span className="ml-2 text-xs text-slate-400">{u.areaSqft} sqft</span>}
-                          {u.price && <span className="ml-2 text-xs font-semibold text-[#4900e5]">{fmtRs(u.price)}</span>}
+                          {u.price && <span className="ml-2 text-xs font-semibold text-primary">{fmtRs(u.price)}</span>}
                           <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded font-semibold
                             ${u.status === 'available' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                             {u.status}
@@ -363,7 +373,7 @@ export default function AdminPropertyEnquiries() {
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit Number</label>
                     <input value={bookUnitNumber} onChange={e => setBookUnitNumber(e.target.value)}
                       placeholder="e.g. A-201"
-                      className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]" />
+                      className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                   </div>
                 )}
                 <div>
@@ -373,7 +383,7 @@ export default function AdminPropertyEnquiries() {
                   </label>
                   <input type="number" value={bookPrice} onChange={e => setBookPrice(e.target.value)}
                     placeholder="e.g. 4500000"
-                    className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]" />
+                    className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                   {bookPrice && !isNaN(Number(bookPrice)) && (
                     <p className="text-xs text-slate-400 mt-1">{fmtRs(Number(bookPrice))}</p>
                   )}
@@ -381,8 +391,8 @@ export default function AdminPropertyEnquiries() {
               </div>
 
               {selected.commission?.mode && bookPrice && !isNaN(Number(bookPrice)) && Number(bookPrice) > 0 && (
-                <div className="bg-[#4900e5]/5 border border-[#4900e5]/20 rounded-xl p-3 text-xs space-y-1">
-                  <p className="font-bold text-[#4900e5] uppercase tracking-wide">Commission Preview</p>
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs space-y-1">
+                  <p className="font-bold text-primary uppercase tracking-wide">Commission Preview</p>
                   {selected.commission.mode === 'broker_chain' && (
                     <p>Broker ({selected.commission.brokerPercent}%): <span className="font-semibold">{fmtRs(Math.round((selected.commission.brokerPercent || 0) / 100 * Number(bookPrice)))}</span></p>
                   )}
@@ -391,7 +401,7 @@ export default function AdminPropertyEnquiries() {
               )}
 
               {bookMsg && (
-                <p className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{bookMsg}</p>
+                <p className="text-xs text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{bookMsg}</p>
               )}
             </div>
 
@@ -401,7 +411,7 @@ export default function AdminPropertyEnquiries() {
                 Cancel
               </button>
               <button onClick={handleBook} disabled={bookSaving || !bookPrice}
-                className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-bold hover:bg-[#3700b3] transition disabled:opacity-60">
+                className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-[#3700b3] transition disabled:opacity-60">
                 {bookSaving ? 'Saving…'
                  : selected.propertyModel === 'MortgageProperty' ? 'Confirm Sale'
                  : 'Confirm Booking'}
@@ -436,7 +446,7 @@ export default function AdminPropertyEnquiries() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {selected.propertyModel && (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                        ${selected.propertyModel === 'UnitProperty' ? 'bg-[#4900e5]/10 text-[#4900e5]' : 'bg-amber-100 text-amber-700'}`}>
+                        ${selected.propertyModel === 'UnitProperty' ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'}`}>
                         {selected.propertyModel === 'UnitProperty' ? 'Unit Property' : 'Mortgage / Bank Repo'}
                       </span>
                     )}
@@ -469,6 +479,13 @@ export default function AdminPropertyEnquiries() {
                 <div>
                   <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-1">Message</p>
                   <p className="text-sm text-slate-600 bg-slate-50 rounded-xl p-3">{selected.message}</p>
+                </div>
+              )}
+
+              {selected.routingNote && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                  <span className="material-icons-outlined text-sm flex-shrink-0">warning</span>
+                  {selected.routingNote}
                 </div>
               )}
 
@@ -516,7 +533,7 @@ export default function AdminPropertyEnquiries() {
                     </div>
                   ) : (
                     <button onClick={openBookModal}
-                      className="mt-1 w-full py-2 rounded-xl bg-[#4900e5] text-white text-xs font-bold hover:bg-[#3700b3] transition">
+                      className="mt-1 w-full py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#3700b3] transition">
                       {selected.propertyModel === 'UnitProperty' ? 'Book Unit & Lock Commission'
                        : selected.propertyModel === 'MortgageProperty' ? 'Mark as Sold & Lock Commission'
                        : 'Mark as Transferred & Lock Commission'}
@@ -544,15 +561,15 @@ export default function AdminPropertyEnquiries() {
               <div className="border-t border-slate-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status & Notes</p>
                 <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white">
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white">
                   {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
                 <textarea rows={2} value={adminNote} onChange={e => setAdminNote(e.target.value)}
                   placeholder="Admin note…"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                 />
                 <button onClick={handleStatusUpdate} disabled={saving}
-                  className="w-full py-2.5 rounded-xl border-2 border-[#4900e5] text-[#4900e5] font-bold text-sm hover:bg-[#4900e5]/5 transition disabled:opacity-60">
+                  className="w-full py-2.5 rounded-xl border-2 border-primary text-primary font-bold text-sm hover:bg-primary/5 transition disabled:opacity-60">
                   {saving ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>

@@ -202,8 +202,8 @@ function PendingListingCard({ room, onDecided }) {
   const statusCfg = {
     pending:   { border: 'border-amber-200',   bg: 'bg-amber-50/50',   badge: 'bg-amber-100 text-amber-700',   label: 'Awaiting Approval' },
     approved:  { border: 'border-emerald-200', bg: 'bg-emerald-50/50', badge: 'bg-emerald-100 text-emerald-700', label: 'Approved' },
-    rejected:  { border: 'border-rose-200',    bg: 'bg-rose-50/50',    badge: 'bg-rose-100 text-rose-600',     label: 'Rejected' },
-    withdrawn: { border: 'border-slate-200',   bg: 'bg-slate-50/50',   badge: 'bg-slate-100 text-slate-500',   label: 'Withdrawn' },
+    rejected:  { border: 'border-rose-200',    bg: 'bg-rose-50/50',    badge: 'bg-rose-100 text-rose-700',     label: 'Rejected' },
+    withdrawn: { border: 'border-slate-200',   bg: 'bg-slate-50/50',   badge: 'bg-slate-100 text-slate-600',   label: 'Withdrawn' },
   };
   const sc = statusCfg[status] || statusCfg.pending;
   const INP = 'px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-violet-400 bg-white';
@@ -533,7 +533,7 @@ function ChatRoom({ room, otherName, onBack }) {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-white flex-shrink-0">
-        <button onClick={onBack}
+        <button onClick={onBack} aria-label="Back"
           className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex-shrink-0">
           <span className="material-icons-outlined text-[20px]">arrow_back</span>
         </button>
@@ -718,7 +718,7 @@ export default function ChatPanel({ open, onClose, initialRoom, initialOtherName
             <p className="text-[10px] text-slate-400">Pincode commission chats</p>
           </div>
         </div>
-        <button onClick={handleClose}
+        <button onClick={handleClose} aria-label="Close"
           className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
           <span className="material-icons-outlined text-[20px]">close</span>
         </button>

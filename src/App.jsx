@@ -1,9 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/auth/PrivateRoute';
+import { ToastHost } from './components/common/Toast';
 
-// Auth pages
+// Auth pages — small, kept static
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import PendingApproval from './pages/auth/PendingApproval';
@@ -14,93 +22,107 @@ import OtpVerificationPage from './pages/auth/OtpVerificationPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
-// Portal Entry
+// Portal Entry — small, kept static
 import PortalSelector from './components/common/PortalSelector';
+import ComingSoon from './components/common/ComingSoon';
 
-// Buyer Portal
-import BuyerLayout from './portals/buyer/BuyerLayout';
-import BuyerHome from './portals/buyer/pages/BuyerHome';
-import PropertySearch from './portals/buyer/pages/PropertySearch';
-import PropertyDetail from './portals/buyer/pages/PropertyDetail';
-import MortgageListing from './portals/buyer/pages/MortgageListing';
-import UnitPropertyListing from './portals/buyer/pages/UnitPropertyListing';
-import BuilderProfile from './portals/buyer/pages/BuilderProfile';
-import SiteVisitFlow from './portals/buyer/pages/SiteVisitFlow';
-import MyVisits from './portals/buyer/pages/MyVisits';
-import MortgagePropertyDetail from './portals/buyer/pages/MortgagePropertyDetail';
+// Lazy-loaded portal chunks
+const BuyerPortal        = lazy(() => import('./portals/buyer/BuyerLayout'));
+const BuyerHome          = lazy(() => import('./portals/buyer/pages/BuyerHome'));
+const PropertySearch     = lazy(() => import('./portals/buyer/pages/PropertySearch'));
+const PropertyDetail     = lazy(() => import('./portals/buyer/pages/PropertyDetail'));
+const MortgageListing    = lazy(() => import('./portals/buyer/pages/MortgageListing'));
+const UnitPropertyListing = lazy(() => import('./portals/buyer/pages/UnitPropertyListing'));
+const BuilderProfile     = lazy(() => import('./portals/buyer/pages/BuilderProfile'));
+const SiteVisitFlow      = lazy(() => import('./portals/buyer/pages/SiteVisitFlow'));
+const MyVisits           = lazy(() => import('./portals/buyer/pages/MyVisits'));
+const MortgagePropertyDetail = lazy(() => import('./portals/buyer/pages/MortgagePropertyDetail'));
+const ArticlesListing    = lazy(() => import('./portals/buyer/pages/ArticlesListing'));
+const ArticleDetail      = lazy(() => import('./portals/buyer/pages/ArticleDetail'));
 
-// Developer Portal
-import DeveloperLayout from './portals/developer/DeveloperLayout';
-import DeveloperDashboard from './portals/developer/pages/DeveloperDashboard';
-import ProjectList from './portals/developer/pages/ProjectList';
-import ProjectManagement from './portals/developer/pages/ProjectManagement';
-import CreateProject from './portals/developer/pages/CreateProject';
-import InventoryTracking from './portals/developer/pages/InventoryTracking';
-import PartnershipPackages from './portals/developer/pages/PartnershipPackages';
-import DeveloperRegister from './portals/developer/pages/DeveloperRegister';
-import DeveloperMortgageProperties from './portals/developer/pages/DeveloperMortgageProperties';
+const DeveloperLayout    = lazy(() => import('./portals/developer/DeveloperLayout'));
+const DeveloperDashboard = lazy(() => import('./portals/developer/pages/DeveloperDashboard'));
+const ProjectList        = lazy(() => import('./portals/developer/pages/ProjectList'));
+const ProjectManagement  = lazy(() => import('./portals/developer/pages/ProjectManagement'));
+const CreateProject      = lazy(() => import('./portals/developer/pages/CreateProject'));
+const InventoryTracking  = lazy(() => import('./portals/developer/pages/InventoryTracking'));
+const PartnershipPackages = lazy(() => import('./portals/developer/pages/PartnershipPackages'));
+const DeveloperRegister  = lazy(() => import('./portals/developer/pages/DeveloperRegister'));
+const DeveloperMortgageProperties = lazy(() => import('./portals/developer/pages/DeveloperMortgageProperties'));
 
-// Broker Portal
-import BrokerLayout from './portals/broker/BrokerLayout';
-import BrokerDashboard from './portals/broker/pages/BrokerDashboard';
-import BrokerLeads from './portals/broker/pages/BrokerLeads';
-import PropertyListings from './portals/broker/pages/PropertyListings';
-import DealPipeline from './portals/broker/pages/DealPipeline';
-import CommissionTracker from './portals/broker/pages/CommissionTracker';
-import MasterBroker from './portals/broker/pages/MasterBroker';
-import BrokerMortgageProperties from './portals/broker/pages/BrokerMortgageProperties';
-import BrokerEnquiries from './portals/broker/pages/BrokerEnquiries';
+const BrokerLayout       = lazy(() => import('./portals/broker/BrokerLayout'));
+const BrokerDashboard    = lazy(() => import('./portals/broker/pages/BrokerDashboard'));
+const BrokerLeads        = lazy(() => import('./portals/broker/pages/BrokerLeads'));
+// PropertyListings and MasterBroker pages are temporarily disabled (see routes below) —
+// kept imported so re-enabling later is a one-line route change.
+const PropertyListings   = lazy(() => import('./portals/broker/pages/PropertyListings'));
+const DealPipeline       = lazy(() => import('./portals/broker/pages/DealPipeline'));
+const CommissionTracker  = lazy(() => import('./portals/broker/pages/CommissionTracker'));
+const MasterBroker       = lazy(() => import('./portals/broker/pages/MasterBroker'));
+const PincodeRequests    = lazy(() => import('./portals/broker/pages/PincodeRequests'));
+const PropertyPartners   = lazy(() => import('./portals/broker/pages/PropertyPartners'));
+const BrokerMortgageProperties = lazy(() => import('./portals/broker/pages/BrokerMortgageProperties'));
+const BrokerEnquiries    = lazy(() => import('./portals/broker/pages/BrokerEnquiries'));
 
-// Admin Portal
-import AdminLayout from './portals/admin/AdminLayout';
-import AdminDashboard from './portals/admin/pages/AdminDashboard';
-import PendingApprovals from './portals/admin/pages/PendingApprovals';
-import MasterBrokerRequests from './portals/admin/pages/MasterBrokerRequests';
-import AdminMortgageProperties from './portals/admin/pages/AdminMortgageProperties';
-import CommissionSettings from './portals/admin/pages/CommissionSettings';
-import UserManagement from './portals/admin/pages/UserManagement';
-import RevenueAnalytics from './portals/admin/pages/RevenueAnalytics';
-import TeamDirectory from './portals/admin/pages/TeamDirectory';
-import TeamMemberProfile from './portals/admin/pages/TeamMemberProfile';
-import RolePermissions from './portals/admin/pages/RolePermissions';
-import SystemSettings from './portals/admin/pages/SystemSettings';
-import AdminUnitProperties from './portals/admin/pages/AdminUnitProperties';
-import AdminWhatsAppGroups from './portals/admin/pages/AdminWhatsAppGroups';
-import AdminEmailCampaign from './portals/admin/pages/AdminEmailCampaign';
-import AdminLeads from './portals/admin/pages/AdminLeads';
-import AdminBulkMessage from './portals/admin/pages/AdminBulkMessage';
-import AdminPropertyEnquiries from './portals/admin/pages/AdminPropertyEnquiries';
-import AdminSiteVisits from './portals/admin/pages/AdminSiteVisits';
+const AdminLayout        = lazy(() => import('./portals/admin/AdminLayout'));
+const AdminDashboard     = lazy(() => import('./portals/admin/pages/AdminDashboard'));
+const PendingApprovals   = lazy(() => import('./portals/admin/pages/PendingApprovals'));
+const MasterBrokerRequests = lazy(() => import('./portals/admin/pages/MasterBrokerRequests'));
+const AdminMortgageProperties = lazy(() => import('./portals/admin/pages/AdminMortgageProperties'));
+const CommissionSettings = lazy(() => import('./portals/admin/pages/CommissionSettings'));
+const UserManagement     = lazy(() => import('./portals/admin/pages/UserManagement'));
+const RevenueAnalytics   = lazy(() => import('./portals/admin/pages/RevenueAnalytics'));
+const TeamDirectory      = lazy(() => import('./portals/admin/pages/TeamDirectory'));
+const TeamMemberProfile  = lazy(() => import('./portals/admin/pages/TeamMemberProfile'));
+const RolePermissions    = lazy(() => import('./portals/admin/pages/RolePermissions'));
+const SystemSettings     = lazy(() => import('./portals/admin/pages/SystemSettings'));
+const AdminUnitProperties = lazy(() => import('./portals/admin/pages/AdminUnitProperties'));
+const AdminWhatsAppGroups = lazy(() => import('./portals/admin/pages/AdminWhatsAppGroups'));
+const AdminEmailCampaign = lazy(() => import('./portals/admin/pages/AdminEmailCampaign'));
+const AdminLeads         = lazy(() => import('./portals/admin/pages/AdminLeads'));
+const AdminBulkMessage   = lazy(() => import('./portals/admin/pages/AdminBulkMessage'));
+const AdminPropertyEnquiries = lazy(() => import('./portals/admin/pages/AdminPropertyEnquiries'));
+const AdminSiteVisits    = lazy(() => import('./portals/admin/pages/AdminSiteVisits'));
+const AdminArticles      = lazy(() => import('./portals/admin/pages/AdminArticles'));
 
-// Team / Sales CRM Portal
-import TeamLayout from './portals/team/TeamLayout';
-import TeamDashboard from './portals/team/pages/TeamDashboard';
-import LeadManagement from './portals/team/pages/LeadManagement';
-import MasterBrokerReview from './portals/team/pages/MasterBrokerReview';
-import TeamSiteVisits from './portals/team/pages/TeamSiteVisits';
+const TeamLayout         = lazy(() => import('./portals/team/TeamLayout'));
+const TeamDashboard      = lazy(() => import('./portals/team/pages/TeamDashboard'));
+const LeadManagement     = lazy(() => import('./portals/team/pages/LeadManagement'));
+const MasterBrokerReview = lazy(() => import('./portals/team/pages/MasterBrokerReview'));
+const TeamSiteVisits     = lazy(() => import('./portals/team/pages/TeamSiteVisits'));
+const SupportChat        = lazy(() => import('./portals/team/pages/SupportChat'));
 
-// Bank Portal
-import BankLayout from './portals/bank/BankLayout';
-import BankDashboard from './portals/bank/pages/BankDashboard';
-import MortgageLeads from './portals/bank/pages/MortgageLeads';
-import AuctionProperties from './portals/bank/pages/AuctionProperties';
-import LoanApprovals from './portals/bank/pages/LoanApprovals';
-import BankSiteVisits from './portals/bank/pages/BankSiteVisits';
+const BankLayout         = lazy(() => import('./portals/bank/BankLayout'));
+const BankDashboard      = lazy(() => import('./portals/bank/pages/BankDashboard'));
+const MortgageLeads      = lazy(() => import('./portals/bank/pages/MortgageLeads'));
+const AuctionProperties  = lazy(() => import('./portals/bank/pages/AuctionProperties'));
+const LoanApprovals      = lazy(() => import('./portals/bank/pages/LoanApprovals'));
+const BankSiteVisits     = lazy(() => import('./portals/bank/pages/BankSiteVisits'));
 
-// Investor Portal
-import InvestorLayout from './portals/investor/InvestorLayout';
-import InvestorDashboard from './portals/investor/pages/InvestorDashboard';
-import Opportunities from './portals/investor/pages/Opportunities';
-import ReturnsROI from './portals/investor/pages/ReturnsROI';
-import MyInvestments from './portals/investor/pages/MyInvestments';
-import InvestorMortgageProperties from './portals/investor/pages/InvestorMortgageProperties';
-import InvestorDocuments from './portals/investor/pages/InvestorDocuments';
+const InvestorLayout     = lazy(() => import('./portals/investor/InvestorLayout'));
+const InvestorDashboard  = lazy(() => import('./portals/investor/pages/InvestorDashboard'));
+const Opportunities      = lazy(() => import('./portals/investor/pages/Opportunities'));
+const ReturnsROI         = lazy(() => import('./portals/investor/pages/ReturnsROI'));
+const MyInvestments      = lazy(() => import('./portals/investor/pages/MyInvestments'));
+const InvestorMortgageProperties = lazy(() => import('./portals/investor/pages/InvestorMortgageProperties'));
+const InvestorDocuments  = lazy(() => import('./portals/investor/pages/InvestorDocuments'));
+
+function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center h-[60vh]">
+      <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <AuthProvider>
       <SocketProvider>
+      <ToastHost />
       <BrowserRouter>
+        <ScrollToTop />
+        <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Public landing */}
           <Route path="/" element={<PortalSelector />} />
@@ -121,8 +143,8 @@ export default function App() {
           {/* Developer standalone register */}
           <Route path="/developer/register" element={<DeveloperRegister />} />
 
-          {/* Buyer Portal — layout is public; individual routes protect what needs auth */}
-          <Route path="/buyer" element={<BuyerLayout />}>
+          {/* Buyer Portal */}
+          <Route path="/buyer" element={<BuyerPortal />}>
             <Route index element={<BuyerHome />} />
             <Route path="search" element={<PropertySearch />} />
             <Route path="property/:id" element={<PropertyDetail />} />
@@ -130,9 +152,10 @@ export default function App() {
             <Route path="mortgage" element={<MortgageListing />} />
             <Route path="mortgage/:id" element={<MortgagePropertyDetail />} />
             <Route path="unit-properties" element={<UnitPropertyListing />} />
-            {/* Requires login — booking a site visit */}
             <Route path="visit/:propertyId" element={<PrivateRoute portalRole="buyer"><SiteVisitFlow /></PrivateRoute>} />
             <Route path="visits" element={<PrivateRoute portalRole="buyer"><MyVisits /></PrivateRoute>} />
+            <Route path="articles" element={<ArticlesListing />} />
+            <Route path="articles/:slug" element={<ArticleDetail />} />
           </Route>
 
           {/* Developer Portal */}
@@ -150,10 +173,12 @@ export default function App() {
           <Route path="/broker" element={<PrivateRoute portalRole="broker"><BrokerLayout /></PrivateRoute>}>
             <Route index element={<BrokerDashboard />} />
             <Route path="leads" element={<BrokerLeads />} />
-            <Route path="listings" element={<PropertyListings />} />
+            <Route path="listings" element={<ComingSoon icon="home" title="My Listings" message="Listing management is temporarily disabled for brokers. Please check back soon." />} />
             <Route path="pipeline" element={<DealPipeline />} />
             <Route path="commissions" element={<CommissionTracker />} />
-            <Route path="master" element={<MasterBroker />} />
+            <Route path="master" element={<ComingSoon icon="verified" title="Master Broker" message="The Master Broker facility will be available soon." />} />
+            <Route path="pincode-requests" element={<PincodeRequests />} />
+            <Route path="property-partners" element={<PropertyPartners />} />
             <Route path="mortgage-properties" element={<BrokerMortgageProperties />} />
             <Route path="enquiries" element={<BrokerEnquiries />} />
           </Route>
@@ -178,6 +203,7 @@ export default function App() {
             <Route path="email-campaigns" element={<AdminEmailCampaign />} />
             <Route path="enquiries" element={<AdminPropertyEnquiries />} />
             <Route path="site-visits" element={<AdminSiteVisits />} />
+            <Route path="articles" element={<AdminArticles />} />
           </Route>
 
           {/* Team / Sales CRM */}
@@ -186,6 +212,7 @@ export default function App() {
             <Route path="leads" element={<LeadManagement />} />
             <Route path="master-broker-review" element={<MasterBrokerReview />} />
             <Route path="site-visits" element={<TeamSiteVisits />} />
+            <Route path="support-chat" element={<SupportChat />} />
           </Route>
 
           {/* Bank Portal */}
@@ -210,6 +237,7 @@ export default function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
       </SocketProvider>
     </AuthProvider>

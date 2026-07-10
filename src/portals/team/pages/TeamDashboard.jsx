@@ -1,32 +1,65 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../api/axios';
+import { useAuth } from '../../../context/AuthContext';
 
-const METRICS = [
-  { label: 'My Leads', value: '34', change: '+8', icon: 'people', color: 'text-primary-container' },
-  { label: 'Meetings Today', value: '6', change: '', icon: 'event', color: 'text-amber-600' },
-  { label: 'Deals Closed (Mo)', value: '12', change: '+3', icon: 'handshake', color: 'text-emerald-600' },
-  { label: 'Revenue (L)', value: '₹28.4', change: '+18%', icon: 'payments', color: 'text-purple-600' },
+const STAGE_META = [
+  { key: 'new',         label: 'New',         color: 'bg-blue-400' },
+  { key: 'contacted',   label: 'Contacted',   color: 'bg-indigo-400' },
+  { key: 'site_visit',  label: 'Site Visit',  color: 'bg-amber-400' },
+  { key: 'negotiating', label: 'Negotiating', color: 'bg-orange-400' },
+  { key: 'closed_won',  label: 'Closed Won',  color: 'bg-emerald-500' },
+  { key: 'closed_lost', label: 'Closed Lost', color: 'bg-slate-400' },
 ];
+const STATUS_LABEL = {
+  new: 'New', contacted: 'Contacted', site_visit: 'Site Visit',
+  negotiating: 'Negotiating', closed_won: 'Closed Won', closed_lost: 'Closed Lost',
+};
+const CLOSED = ['closed_won', 'closed_lost'];
 
-const PIPELINE = [
-  { stage: 'New', count: 12, color: 'bg-blue-400' },
-  { stage: 'Contacted', count: 18, color: 'bg-indigo-400' },
-  { stage: 'Site Visit', count: 8, color: 'bg-amber-400' },
-  { stage: 'Negotiation', count: 5, color: 'bg-orange-400' },
-  { stage: 'Closed', count: 3, color: 'bg-emerald-500' },
-];
-const total = PIPELINE.reduce((s, p) => s + p.count, 0);
-
-const MY_LEADS = [
-  { name: 'Rajesh Gupta', requirement: '3BHK, Bandra', budget: '₹2.5 Cr', stage: 'Site Visit', priority: 'High' },
-  { name: 'Sunita Rao', requirement: 'Villa, Whitefield', budget: '₹4 Cr', stage: 'Negotiation', priority: 'High' },
-  { name: 'Mohan Das', requirement: '2BHK, Koramangala', budget: '₹1.2 Cr', stage: 'Contacted', priority: 'Medium' },
-  { name: 'Poonam Singh', requirement: 'Plot, Lonavala', budget: '₹60 L', stage: 'New', priority: 'Low' },
-];
-
-const PRIORITY_COLOR = { High: 'bg-red-100 text-red-800', Medium: 'bg-amber-100 text-amber-800', Low: 'bg-gray-100 text-gray-600' };
+function fmtBudget(n) {
+  if (!n) return null;
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(1)} Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)} L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+}
 
 export default function TeamDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [leads, setLeads]     = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    api.get(`/leads?assignedTo=${user.id}&limit=100`)
+      .then(r => setLeads(r.data.leads || []))
+      .catch(() => setLeads([]))
+      .finally(() => setLoading(false));
+  }, [user?.id]);
+
+  const active = leads.filter(l => !CLOSED.includes(l.status));
+  const now = new Date();
+  const closedWonThisMonth = leads.filter(l => {
+    if (l.status !== 'closed_won') return false;
+    const d = new Date(l.updatedAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const followUpsDue = leads.filter(l =>
+    l.followUpDate && new Date(l.followUpDate) <= now && !CLOSED.includes(l.status)
+  );
+
+  const METRICS = [
+    { label: 'My Leads',             value: leads.length,              icon: 'people',           color: 'text-primary-container' },
+    { label: 'Active',               value: active.length,             icon: 'trending_up',      color: 'text-amber-600' },
+    { label: 'Closed Won (This Mo)', value: closedWonThisMonth.length, icon: 'handshake',        color: 'text-emerald-600' },
+    { label: 'Follow-ups Due',       value: followUpsDue.length,       icon: 'event_available',  color: 'text-purple-600' },
+  ];
+
+  const pipeline = STAGE_META.map(s => ({ ...s, count: leads.filter(l => l.status === s.key).length }));
+  const pipelineTotal = leads.length || 1;
+  const recentActive = [...active].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,9 +72,8 @@ export default function TeamDashboard() {
           <div key={m.label} className="metric-card">
             <div className="flex items-start justify-between mb-3">
               <span className={`material-icons-outlined text-2xl ${m.color}`}>{m.icon}</span>
-              {m.change && <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.change.startsWith('+') ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>{m.change}</span>}
             </div>
-            <p className="font-montserrat font-bold text-2xl text-on-surface">{m.value}</p>
+            <p className="font-montserrat font-bold text-2xl text-on-surface">{loading ? '—' : m.value}</p>
             <p className="text-xs text-on-surface-variant mt-1">{m.label}</p>
           </div>
         ))}
@@ -49,22 +81,30 @@ export default function TeamDashboard() {
 
       {/* Pipeline Funnel */}
       <div className="card p-5">
-        <h2 className="font-montserrat font-semibold text-on-surface mb-4">Deal Pipeline</h2>
-        <div className="flex gap-2 items-end h-24 mb-2">
-          {PIPELINE.map(p => (
-            <div key={p.stage} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-xs font-bold text-on-surface">{p.count}</span>
-              <div className={`w-full rounded-t-lg ${p.color}`} style={{ height: `${(p.count / total) * 80 + 20}px` }} />
+        <h2 className="font-montserrat font-semibold text-on-surface mb-4">My Deal Pipeline</h2>
+        {loading ? (
+          <p className="text-sm text-on-surface-variant">Loading…</p>
+        ) : leads.length === 0 ? (
+          <p className="text-sm text-on-surface-variant">No leads assigned to you yet.</p>
+        ) : (
+          <>
+            <div className="flex gap-2 items-end h-24 mb-2">
+              {pipeline.map(p => (
+                <div key={p.key} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs font-bold text-on-surface">{p.count}</span>
+                  <div className={`w-full rounded-t-lg ${p.color}`} style={{ height: `${(p.count / pipelineTotal) * 80 + 4}px` }} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          {PIPELINE.map(p => (
-            <div key={p.stage} className="flex-1 text-center">
-              <p className="text-xs text-on-surface-variant">{p.stage}</p>
+            <div className="flex gap-2">
+              {pipeline.map(p => (
+                <div key={p.key} className="flex-1 text-center">
+                  <p className="text-xs text-on-surface-variant">{p.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
 
       {/* My Leads */}
@@ -73,21 +113,29 @@ export default function TeamDashboard() {
           <h2 className="font-montserrat font-semibold text-on-surface">My Active Leads</h2>
           <button onClick={() => navigate('/team/leads')} className="text-xs text-primary-container font-semibold hover:underline">View All</button>
         </div>
-        <div className="space-y-3">
-          {MY_LEADS.map(l => (
-            <div key={l.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-container-low">
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">{l.name[0]}</div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-on-surface text-sm">{l.name}</p>
-                <p className="text-xs text-on-surface-variant truncate">{l.requirement} · {l.budget}</p>
+        {loading ? (
+          <p className="text-sm text-on-surface-variant">Loading…</p>
+        ) : recentActive.length === 0 ? (
+          <p className="text-sm text-on-surface-variant">No active leads right now.</p>
+        ) : (
+          <div className="space-y-3">
+            {recentActive.map(l => (
+              <div key={l._id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-container-low cursor-pointer"
+                onClick={() => navigate('/team/leads')}>
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                  {l.name?.[0] || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-on-surface text-sm">{l.name}</p>
+                  <p className="text-xs text-on-surface-variant truncate">
+                    {l.propertyTitle || 'Unknown property'}{fmtBudget(l.budget) ? ` · ${fmtBudget(l.budget)}` : ''}
+                  </p>
+                </div>
+                <p className="text-xs text-on-surface-variant flex-shrink-0">{STATUS_LABEL[l.status] || l.status}</p>
               </div>
-              <div className="text-right flex-shrink-0 space-y-1">
-                <p className="text-xs text-on-surface-variant">{l.stage}</p>
-                <span className={`portal-badge text-xs ${PRIORITY_COLOR[l.priority]}`}>{l.priority}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

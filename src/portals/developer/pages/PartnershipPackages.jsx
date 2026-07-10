@@ -5,7 +5,7 @@ const PACKAGES = [
     cta: 'Get Started',
   },
   {
-    name: 'Professional', price: '₹6.5L / yr', color: 'from-[#4900e5] to-[#6236ff]', popular: true,
+    name: 'Professional', price: '₹6.5L / yr', color: 'from-primary to-primary-container', popular: true,
     features: ['Unlimited projects','5,000 leads/month','Advanced analytics','Priority support','Dedicated account manager','Co-marketing opportunities','Legal documentation'],
     cta: 'Most Popular',
   },

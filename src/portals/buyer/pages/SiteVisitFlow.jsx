@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { siteVisitSchema } from '../../../validation/schemas';
 
 const SLOTS = [
   '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
@@ -48,8 +50,12 @@ export default function SiteVisitFlow() {
   const visibleSteps = isLoggedIn ? steps.filter(s => s.n !== 1) : steps;
 
   async function handleConfirm() {
-    setSaving(true);
     setError('');
+    const { errors } = validateForm(siteVisitSchema, {
+      name: form.name, phone: form.phone, email: form.email, date: form.date, slot: form.slot,
+    });
+    if (errors) { setError(Object.values(errors)[0]); return; }
+    setSaving(true);
     try {
       const { data } = await api.post('/site-visits', {
         name: form.name, phone: form.phone, email: form.email,

@@ -85,7 +85,7 @@ export default function ProjectManagement() {
               <span className="text-2xl font-bold text-primary-container">{PROJECT.progress}%</span>
             </div>
             <div className="h-3 bg-surface-container rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#6236ff] to-[#4900e5] rounded-full" style={{ width: `${PROJECT.progress}%` }} />
+              <div className="h-full bg-gradient-to-r from-primary-container to-primary rounded-full" style={{ width: `${PROJECT.progress}%` }} />
             </div>
             <div className="flex justify-between mt-2 text-xs text-on-surface-variant">
               <span>Launch: {PROJECT.launch}</span>

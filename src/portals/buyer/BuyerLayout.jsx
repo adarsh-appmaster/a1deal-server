@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import Logo from '../../components/common/Logo';
+import CitySwitcher from '../../components/common/CitySwitcher';
+import NotificationBell from '../../components/common/NotificationBell';
+import SupportChatWidget from '../../components/common/SupportChatWidget';
+import MobileBottomNav from '../../components/common/MobileBottomNav';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BuyerLayout() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, patchUser } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -32,7 +37,11 @@ export default function BuyerLayout() {
             {user && <Link to="/buyer/visits" className="hover:text-primary transition-colors">My Visits</Link>}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <CitySwitcher defaultCity={user?.city || ''} className="hidden sm:block" />
+
+            {user && <NotificationBell />}
+
             {user ? (
               <div className="relative">
                 <button
@@ -52,6 +61,12 @@ export default function BuyerLayout() {
                     <div className="px-4 py-2 border-b border-outline-variant">
                       <p className="text-xs text-on-surface-variant">Signed in as</p>
                       <p className="text-sm font-semibold text-on-surface truncate">{user.email}</p>
+                      {user.city && (
+                        <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-1">
+                          <span className="material-icons-outlined text-xs">location_on</span>
+                          {[user.area, user.city, user.pincode].filter(Boolean).join(', ')}
+                        </p>
+                      )}
                     </div>
                     <button
                       onClick={handleLogout}
@@ -77,6 +92,9 @@ export default function BuyerLayout() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden border-t border-outline-variant bg-white px-4 py-3 space-y-1">
+            <div className="sm:hidden flex justify-end pb-2">
+              <CitySwitcher defaultCity={user?.city || ''} />
+            </div>
             {[
               { to: '/buyer', label: 'Home' },
               { to: '/buyer/search', label: 'Search' },
@@ -110,18 +128,39 @@ export default function BuyerLayout() {
         <Outlet />
       </main>
 
-      <footer className="bg-inverse-surface text-inverse-on-surface py-10 px-6">
+      <footer className="bg-inverse-surface text-inverse-on-surface pt-10 pb-24 md:pb-10 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <Logo variant="full" theme="dark" size="sm" />
             <div className="flex flex-wrap gap-6 text-xs text-white/50">
               <Link to="/buyer" className="hover:text-white">Home</Link>
               <Link to="/buyer/mortgage" className="hover:text-white">Property Deals</Link>
+              <Link to="/buyer/articles" className="hover:text-white">Articles</Link>
             </div>
           </div>
           <p className="text-white/30 text-xs mt-6">© 2026 A1 Deal. All rights reserved.</p>
         </div>
       </footer>
+
+      <SupportChatWidget />
+
+      {/* Sticky bottom nav (mobile) */}
+      <MobileBottomNav
+        breakpoint="md"
+        items={[
+          { path: '/buyer', icon: 'home', label: 'Home', end: true },
+          { path: '/buyer/search', icon: 'search', label: 'Search' },
+          { path: '/buyer/mortgage', icon: 'gavel', label: 'Deals' },
+          { path: '/buyer/unit-properties', icon: 'apartment', label: 'Partners' },
+          ...(user
+            ? [{ path: '/buyer/visits', icon: 'event', label: 'Visits' }]
+            : [{ path: '/login', icon: 'login', label: 'Sign In' }]),
+        ]}
+      />
+
+      {user?.mustChangePassword && (
+        <ChangePasswordModal forced onClose={() => patchUser({ mustChangePassword: false })} />
+      )}
     </div>
   );
 }

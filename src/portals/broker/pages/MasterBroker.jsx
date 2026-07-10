@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../../api/axios';
 import { STATE_LIST, getCities } from '../../../data/indiaLocations';
 import { useAuth } from '../../../context/AuthContext';
+import { validateForm } from '../../../validation/validate';
+import { subBrokerSchema } from '../../../validation/schemas';
 
 /* ─── status badges ──────────────────────────────────────────────────────── */
 const STATUS_BADGE = {
@@ -198,11 +200,18 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
     setSelected(prev => prev.includes(pincode) ? prev.filter(x => x !== pincode) : [...prev, pincode]);
   }
 
+  // Select/clear all pincodes within one section only — adds/removes just
+  // that section's pincodes from `selected`, leaving other sections' picks intact.
+  function toggleAll(pincodes) {
+    const allSelected = pincodes.length > 0 && pincodes.every(p => selected.includes(p));
+    setSelected(prev => allSelected
+      ? prev.filter(p => !pincodes.includes(p))
+      : [...new Set([...prev, ...pincodes])]);
+  }
+
   function handleConfirm() {
-    if (!city.trim()) return;
-    const areas = selected.length
-      ? selected.map(p => ({ city: city.trim(), area: area.trim(), pincode: p }))
-      : [{ city: city.trim(), area: area.trim(), pincode: '' }];
+    if (!city.trim() || selected.length === 0) return;
+    const areas = selected.map(p => ({ city: city.trim(), area: area.trim(), pincode: p }));
     onConfirm(areas);
     onClose();
   }
@@ -220,7 +229,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                 : 'Green = available · Amber = reserved · Gray = taken'}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600">
             <span className="material-icons-outlined">close</span>
           </button>
         </div>
@@ -232,7 +241,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 block">City *</label>
               {restrictToCities.length === 1 ? (
                 <div className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 flex items-center gap-2">
-                  <span className="material-icons-outlined text-sm text-[#4900e5]">location_on</span>
+                  <span className="material-icons-outlined text-sm text-primary">location_on</span>
                   {restrictToCities[0]}
                 </div>
               ) : (
@@ -240,7 +249,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                   autoFocus
                   value={city}
                   onChange={e => { setCity(e.target.value); setSelected([]); }}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
                 >
                   <option value="">Select your city…</option>
                   {restrictToCities.map(c => <option key={c} value={c}>{c}</option>)}
@@ -255,7 +264,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                   autoFocus
                   value={state}
                   onChange={e => { setState(e.target.value); setCity(''); setSelected([]); }}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
                 >
                   <option value="">Select state…</option>
                   {STATE_LIST.map(s => <option key={s} value={s}>{s}</option>)}
@@ -263,16 +272,15 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 block">City *</label>
-                <input
+                <select
                   value={city}
                   onChange={e => { setCity(e.target.value); setSelected([]); }}
-                  placeholder="e.g. Pune"
-                  list="picker-modal-cities"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]"
-                />
-                <datalist id="picker-modal-cities">
-                  {pickerCities.map(c => <option key={c} value={c} />)}
-                </datalist>
+                  disabled={!state}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white disabled:opacity-50"
+                >
+                  <option value="">{state ? 'Select city…' : 'Select a state first…'}</option>
+                  {pickerCities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
             </div>
           )}
@@ -282,7 +290,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
               value={area}
               onChange={e => setArea(e.target.value)}
               placeholder="e.g. Baner"
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5]"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
         </div>
@@ -291,7 +299,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {loading && (
             <div className="flex items-center justify-center py-10">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           )}
 
@@ -307,11 +315,11 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
           {!loading && allMine.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-2 h-2 rounded-full bg-[#4900e5] inline-block" />
-                <p className="text-xs font-bold text-[#4900e5] uppercase tracking-wide">Your Territory ({allMine.length})</p>
-                <button type="button" onClick={() => setSelected(allMine.map(c => c.pincode))}
-                  className="ml-auto text-[10px] text-[#4900e5] font-semibold hover:underline">
-                  Select all
+                <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+                <p className="text-xs font-bold text-primary uppercase tracking-wide">Your Territory ({allMine.length})</p>
+                <button type="button" onClick={() => toggleAll(allMine.map(c => c.pincode))}
+                  className="ml-auto text-[10px] text-primary font-semibold hover:underline">
+                  {allMine.length > 0 && allMine.every(c => selected.includes(c.pincode)) ? 'Clear all' : 'Select all'}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -322,8 +330,8 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                     onClick={() => toggle(c.pincode)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all
                       ${selected.includes(c.pincode)
-                        ? 'bg-[#4900e5] text-white border-[#4900e5] shadow-md'
-                        : 'bg-[#4900e5]/10 text-[#4900e5] border-[#4900e5]/30 hover:border-[#4900e5] hover:bg-[#4900e5]/20'}`}
+                        ? 'bg-primary text-white border-primary shadow-md'
+                        : 'bg-primary/10 text-primary border-primary/30 hover:border-primary hover:bg-primary/20'}`}
                   >
                     {selected.includes(c.pincode) ? '✓ ' : ''}{c.pincode}
                   </button>
@@ -338,9 +346,9 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                 <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
                 <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Available ({available.length})</p>
                 {available.length > 0 && (
-                  <button type="button" onClick={() => setSelected(available.map(c => c.pincode))}
-                    className="ml-auto text-[10px] text-[#4900e5] font-semibold hover:underline">
-                    Select all
+                  <button type="button" onClick={() => toggleAll(available.map(c => c.pincode))}
+                    className="ml-auto text-[10px] text-primary font-semibold hover:underline">
+                    {available.every(c => selected.includes(c.pincode)) ? 'Clear all' : 'Select all'}
                   </button>
                 )}
               </div>
@@ -352,8 +360,8 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
                     onClick={() => toggle(c.pincode)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all
                       ${selected.includes(c.pincode)
-                        ? 'bg-[#4900e5] text-white border-[#4900e5] shadow-md'
-                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-[#4900e5] hover:text-[#4900e5]'}`}
+                        ? 'bg-primary text-white border-primary shadow-md'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-primary hover:text-primary'}`}
                   >
                     {selected.includes(c.pincode) ? '✓ ' : ''}{c.pincode}
                   </button>
@@ -407,7 +415,7 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 space-y-3">
           {selected.length > 0 && (
-            <p className="text-xs text-[#4900e5] font-semibold">
+            <p className="text-xs text-primary font-semibold">
               {selected.length} pincode{selected.length > 1 ? 's' : ''} selected: {selected.join(', ')}
             </p>
           )}
@@ -416,9 +424,9 @@ function CoveragePickerModal({ onClose, onConfirm, restrictToCities, ownedPincod
               className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition">
               Cancel
             </button>
-            <button onClick={handleConfirm} disabled={!city.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-50">
-              {selected.length > 0 ? `Add ${selected.length} Pincode${selected.length > 1 ? 's' : ''}` : city.trim() ? 'Add City (no pincode)' : 'Enter a city'}
+            <button onClick={handleConfirm} disabled={!city.trim() || selected.length === 0}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-50">
+              {selected.length > 0 ? `Add ${selected.length} Pincode${selected.length > 1 ? 's' : ''}` : city.trim() ? 'Select at least one pincode' : 'Enter a city'}
             </button>
           </div>
         </div>
@@ -449,7 +457,7 @@ function PincodeInput({ values, onChange }) {
       onClick={() => inputRef.current?.focus()}
     >
       {values.map(v => (
-        <span key={v} className="flex items-center gap-1 bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold px-2 py-0.5 rounded-full">
+        <span key={v} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full">
           {v}
           <button type="button" onClick={e => { e.stopPropagation(); remove(v); }} className="hover:text-rose-500">×</button>
         </span>
@@ -531,8 +539,8 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
     <div className="space-y-4">
       {/* Quick-pick from registered zone */}
       {registeredZoneAreas.length > 0 && (
-        <div className="p-3 bg-[#4900e5]/5 border border-[#4900e5]/10 rounded-xl">
-          <p className="text-xs font-semibold text-[#4900e5] mb-2 uppercase tracking-wide">Your registered zone — click to add</p>
+        <div className="p-3 bg-primary/5 border border-primary/10 rounded-xl">
+          <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">Your registered zone — click to add</p>
           <div className="flex flex-wrap gap-2">
             {registeredZoneAreas.map((a, i) => {
               const already = editAreas.some(x => x.city === a.city && x.pincode === a.pincode);
@@ -544,8 +552,8 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
                   onClick={() => addZoneArea(a)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition
                     ${already
-                      ? 'bg-[#4900e5] text-white border-[#4900e5] cursor-default'
-                      : 'bg-white border-[#4900e5]/30 text-[#4900e5] hover:bg-[#4900e5]/10'}`}
+                      ? 'bg-primary text-white border-primary cursor-default'
+                      : 'bg-white border-primary/30 text-primary hover:bg-primary/10'}`}
                 >
                   {already && <span className="material-icons-outlined text-xs">check</span>}
                   <span className="material-icons-outlined text-xs">location_on</span>
@@ -565,8 +573,8 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
       ) : (
         <div className="space-y-2">
           {grouped.map((g, gi) => (
-            <div key={gi} className="flex items-start gap-3 p-3 rounded-xl bg-[#4900e5]/5 border border-[#4900e5]/10">
-              <span className="material-icons-outlined text-[#4900e5] text-base mt-0.5">location_on</span>
+            <div key={gi} className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+              <span className="material-icons-outlined text-primary text-base mt-0.5">location_on</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-700">{g.city}{g.area ? ` — ${g.area}` : ''}</p>
                 {g.pincodes.length > 0 && (
@@ -576,7 +584,7 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
                         key={p}
                         type="button"
                         onClick={() => setEditAreas(prev => prev.filter(a => !(a.city === g.city && a.area === g.area && a.pincode === p)))}
-                        className="px-2.5 py-0.5 rounded-full bg-[#4900e5]/15 text-[#4900e5] text-xs font-semibold hover:bg-rose-100 hover:text-rose-600 transition group flex items-center gap-1"
+                        className="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-semibold hover:bg-rose-100 hover:text-rose-600 transition group flex items-center gap-1"
                       >
                         {p}
                         <span className="material-icons-outlined text-[10px] opacity-0 group-hover:opacity-100">close</span>
@@ -597,7 +605,7 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
 
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => setShowPicker(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4900e5]/10 text-[#4900e5] text-xs font-bold hover:bg-[#4900e5]/20 transition">
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold hover:bg-primary/20 transition">
           <span className="material-icons-outlined text-sm">add_location_alt</span>
           Pick from Map
         </button>
@@ -610,7 +618,7 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
       </div>
 
       {msg && (
-        <div className={`p-3 rounded-xl text-sm border ${msg.includes('updated') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+        <div className={`p-3 rounded-xl text-sm border ${msg.includes('updated') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
           {msg}
         </div>
       )}
@@ -623,7 +631,7 @@ function ZoneEditor({ initial, brokerZone, onSave, onCancel, saving, msg, applyM
             Cancel
           </button>
           <button type="button" onClick={() => onSave(editAreas)} disabled={saving || editAreas.length === 0}
-            className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-50">
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-50">
             {saving ? 'Saving…' : 'Save Zone'}
           </button>
         </div>
@@ -725,7 +733,7 @@ export default function MasterBroker() {
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
-      <span className="material-icons-outlined text-4xl text-[#4900e5] animate-spin">progress_activity</span>
+      <span className="material-icons-outlined text-4xl text-primary animate-spin">progress_activity</span>
     </div>
   );
 
@@ -739,7 +747,7 @@ export default function MasterBroker() {
       contacted: { label: 'Team Contacted',   cls: 'bg-sky-100 text-sky-700',       icon: 'phone_in_talk' },
       converted: { label: 'Accepted',         cls: 'bg-emerald-100 text-emerald-700', icon: 'verified' },
       rejected:  { label: 'Not Accepted',     cls: 'bg-rose-100 text-rose-700',     icon: 'cancel' },
-      cancelled: { label: 'Cancelled',        cls: 'bg-slate-100 text-slate-500',   icon: 'block' },
+      cancelled: { label: 'Cancelled',        cls: 'bg-slate-100 text-slate-600',   icon: 'block' },
     };
     const s = INQ_STATUS[myInquiry.status] || INQ_STATUS['new'];
     return (
@@ -770,7 +778,7 @@ export default function MasterBroker() {
               {/* Only allow edit while not yet assigned to team */}
               {!editingZone && ['new', 'contacted'].includes(myInquiry.status) && (
                 <button onClick={() => { setEditingZone(true); setZoneMsg(''); }}
-                  className="flex items-center gap-1 text-xs text-[#4900e5] font-semibold hover:underline">
+                  className="flex items-center gap-1 text-xs text-primary font-semibold hover:underline">
                   <span className="material-icons-outlined text-sm">edit_location_alt</span>
                   Change Zone
                 </button>
@@ -789,12 +797,12 @@ export default function MasterBroker() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {(myInquiry.requestedAreas?.length > 0) ? myInquiry.requestedAreas.map((a, i) => (
-                  <span key={i} className="px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                  <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                     {[a.city, a.area, a.pincode].filter(Boolean).join(' / ') || 'Zone TBD'}
                   </span>
                 )) : (
                   <span className="text-xs text-slate-400 italic">No zone selected yet —
-                    <button onClick={() => setEditingZone(true)} className="text-[#4900e5] font-semibold ml-1 hover:underline">Add zone</button>
+                    <button onClick={() => setEditingZone(true)} className="text-primary font-semibold ml-1 hover:underline">Add zone</button>
                   </span>
                 )}
               </div>
@@ -859,7 +867,7 @@ export default function MasterBroker() {
               {/* Only allow edit while application is still pending (not yet reviewed) */}
               {!editingZone && myRequest.status === 'pending' && (
                 <button onClick={() => { setEditingZone(true); setZoneMsg(''); }}
-                  className="flex items-center gap-1 text-xs text-[#4900e5] font-semibold hover:underline">
+                  className="flex items-center gap-1 text-xs text-primary font-semibold hover:underline">
                   <span className="material-icons-outlined text-sm">edit_location_alt</span>
                   Change Zone
                 </button>
@@ -878,7 +886,7 @@ export default function MasterBroker() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {(myRequest.requestedAreas?.length > 0) ? myRequest.requestedAreas.map((a, i) => (
-                  <span key={i} className="px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                  <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                     {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
                   </span>
                 )) : (
@@ -921,14 +929,14 @@ export default function MasterBroker() {
             { icon: 'verified',    label: 'Verified Badge' },
           ].map(b => (
             <div key={b.icon} className="card p-3 flex items-center gap-2 text-sm">
-              <span className="material-icons-outlined text-[#4900e5] text-lg">{b.icon}</span>
+              <span className="material-icons-outlined text-primary text-lg">{b.icon}</span>
               <span className="text-on-surface font-medium">{b.label}</span>
             </div>
           ))}
         </div>
 
         {msg && (
-          <div className={`mb-4 p-3 rounded-xl text-sm border ${msg.includes('submitted') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-rose-50 border-rose-200 text-rose-600'}`}>
+          <div className={`mb-4 p-3 rounded-xl text-sm border ${msg.includes('submitted') ? 'bg-green-50 border-green-200 text-green-700' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
             {msg}
           </div>
         )}
@@ -941,7 +949,7 @@ export default function MasterBroker() {
             <textarea rows={3} value={motivation}
               onChange={e => setMotivation(e.target.value)}
               placeholder="Describe your experience and why you'd like to lead in your area…"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 resize-none" />
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
           </div>
 
           {/* Coverage areas — uses ZoneEditor with registered zone quick-pick */}
@@ -964,7 +972,7 @@ export default function MasterBroker() {
           </div>
 
           <button type="submit" disabled={submitting || areas.length === 0}
-            className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+            className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
             {submitting ? 'Submitting…' : `Submit Application${areas.length > 0 ? ` (${areas.length} area${areas.length > 1 ? 's' : ''})` : ''}`}
           </button>
         </form>
@@ -976,7 +984,7 @@ export default function MasterBroker() {
 /* ═══════════════════════════════════════════════════════════════════════════
    MASTER PANEL — full management interface
 ═══════════════════════════════════════════════════════════════════════════ */
-const INP = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white';
+const INP = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white';
 
 function MasterPanel({ request }) {
   const { user } = useAuth();
@@ -1064,6 +1072,11 @@ function MasterPanel({ request }) {
 
   async function saveAddBroker(e) {
     e.preventDefault();
+    const { errors } = validateForm(subBrokerSchema, {
+      name: addForm.name, email: addForm.email, phone: addForm.phone,
+      city: addForm.city, area: addForm.area,
+    });
+    if (errors) { setAddMsg(Object.values(errors)[0]); return; }
     setAddSaving(true); setAddMsg('');
     try {
       const { data } = await api.post('/master-broker/sub-brokers', {
@@ -1136,11 +1149,48 @@ function MasterPanel({ request }) {
 
   const pendingExpCount = expansions.filter(r => r.status === 'pending').length;
 
+  // ── Partnership requests — brokers who signed up in a pincode this master broker covers ──
+  const [partnerships, setPartnerships]         = useState([]);
+  const [partnershipsLoading, setPartnershipsLoading] = useState(false);
+  const [decidingId, setDecidingId]             = useState(null);
+  const [decideMsg, setDecideMsg]               = useState({ text: '', ok: true });
+
+  useEffect(() => { if (tab === 'partnerships') fetchPartnerships(); }, [tab]);
+
+  async function fetchPartnerships() {
+    setPartnershipsLoading(true);
+    try {
+      const { data } = await api.get('/master-broker/partnership-requests');
+      setPartnerships(data.requests || []);
+    } catch { /* empty */ }
+    setPartnershipsLoading(false);
+  }
+
+  async function decidePartnership(id, decision) {
+    setDecidingId(id); setDecideMsg({ text: '', ok: true });
+    try {
+      const { data } = await api.patch(`/master-broker/partnership-requests/${id}/decide`, { decision });
+      setPartnerships(prev => prev.map(r => r._id === id ? data.request : r));
+      setDecideMsg({ text: `Request ${decision}.`, ok: true });
+    } catch (err) {
+      setDecideMsg({ text: err.response?.data?.message || 'Failed.', ok: false });
+    }
+    setDecidingId(null);
+  }
+
+  const PARTNERSHIP_STATUS = {
+    pending:  { label: 'Pending',  cls: 'bg-amber-100 text-amber-700',   icon: 'hourglass_top' },
+    approved: { label: 'Approved', cls: 'bg-emerald-100 text-emerald-700', icon: 'check_circle' },
+    rejected: { label: 'Rejected', cls: 'bg-rose-100 text-rose-700',     icon: 'cancel' },
+  };
+  const pendingPartnershipCount = partnerships.filter(r => r.status === 'pending').length;
+
   const TABS = [
-    { key: 'brokers',    icon: 'people',           label: 'My Brokers' },
-    { key: 'unit',       icon: 'domain',           label: 'Unit Properties' },
-    { key: 'mortgage',   icon: 'account_balance',  label: 'Mortgage Properties' },
-    { key: 'expansions', icon: 'add_location_alt', label: 'Pincode Expansion', count: pendingExpCount },
+    { key: 'brokers',      icon: 'people',           label: 'My Brokers' },
+    { key: 'partnerships', icon: 'how_to_reg',        label: 'Partnership Requests', count: pendingPartnershipCount },
+    { key: 'unit',         icon: 'domain',           label: 'Unit Properties' },
+    { key: 'mortgage',     icon: 'account_balance',  label: 'Mortgage Properties' },
+    { key: 'expansions',   icon: 'add_location_alt', label: 'Pincode Expansion', count: pendingExpCount },
   ];
 
   return (
@@ -1148,7 +1198,7 @@ function MasterPanel({ request }) {
       {/* Header */}
       <div className="flex items-start gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="material-icons-outlined text-3xl text-[#4900e5]">verified</span>
+          <span className="material-icons-outlined text-3xl text-primary">verified</span>
           <div>
             <h1 className="font-montserrat font-bold text-2xl text-on-surface">Master Broker Panel</h1>
             <p className="text-on-surface-variant text-sm">Manage your brokers and distribute properties</p>
@@ -1156,7 +1206,7 @@ function MasterPanel({ request }) {
         </div>
         <div className="sm:ml-auto flex flex-wrap gap-2">
           {request?.subscriptionPaid && (
-            <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+            <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               <span className="material-icons-outlined text-sm">check_circle</span> Active
             </span>
           )}
@@ -1164,7 +1214,7 @@ function MasterPanel({ request }) {
             <span className="material-icons-outlined text-sm">people</span> {subBrokers.length} Brokers
           </span>
           <button onClick={openAddBroker}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition">
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-white text-xs font-semibold hover:bg-primary-container transition">
             <span className="material-icons-outlined text-sm">person_add</span> Add Broker
           </button>
         </div>
@@ -1175,7 +1225,7 @@ function MasterPanel({ request }) {
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs text-slate-400 font-semibold">Coverage:</span>
           {request.requestedAreas.map((a, i) => (
-            <span key={i} className="px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-medium">
+            <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
               {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
             </span>
           ))}
@@ -1185,7 +1235,7 @@ function MasterPanel({ request }) {
       {/* Pincode usage banner */}
       {pincodeLimit !== null && (
         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold
-          ${coverageCount >= pincodeLimit ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-[#4900e5]/8 text-[#4900e5] border border-[#4900e5]/20'}`}>
+          ${coverageCount >= pincodeLimit ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-primary/8 text-primary border border-primary/20'}`}>
           <span className="material-icons-outlined text-lg">
             {coverageCount >= pincodeLimit ? 'warning' : 'location_on'}
           </span>
@@ -1205,7 +1255,7 @@ function MasterPanel({ request }) {
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-colors -mb-px whitespace-nowrap
-              ${tab === t.key ? 'border-[#4900e5] text-[#4900e5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              ${tab === t.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
             <span className="material-icons-outlined text-base">{t.icon}</span>
             {t.label}
             {t.count > 0 && (
@@ -1240,7 +1290,7 @@ function MasterPanel({ request }) {
             <button
               onClick={() => { setShowExpForm(true); setExpMsg({ text: '', ok: true }); setExpAreas([]); setExpReason(''); }}
               disabled={pendingExpCount > 0}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-50 disabled:cursor-not-allowed">
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-50 disabled:cursor-not-allowed">
               <span className="material-icons-outlined text-sm">add_location_alt</span>
               Request Expansion
             </button>
@@ -1255,7 +1305,7 @@ function MasterPanel({ request }) {
 
           {expLoading ? (
             <div className="flex items-center justify-center py-16">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           ) : expansions.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
@@ -1319,6 +1369,81 @@ function MasterPanel({ request }) {
         </div>
       )}
 
+      {/* Partnership requests tab */}
+      {tab === 'partnerships' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-800">Partnership Requests</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Brokers who signed up directly in a pincode you cover. Approve to give them full listing access.
+            </p>
+          </div>
+
+          {decideMsg.text && (
+            <div className={`text-xs rounded-xl px-4 py-2.5 ${decideMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+              {decideMsg.text}
+            </div>
+          )}
+
+          {partnershipsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
+            </div>
+          ) : partnerships.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
+              <span className="material-icons-outlined text-5xl text-slate-200">how_to_reg</span>
+              <p className="text-slate-400 mt-3 text-sm">No partnership requests yet.</p>
+              <p className="text-slate-300 text-xs mt-1">New brokers signing up in your pincodes will show up here.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {partnerships.map(req => {
+                const s = PARTNERSHIP_STATUS[req.status] || PARTNERSHIP_STATUS['pending'];
+                return (
+                  <div key={req._id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className={`material-icons-outlined text-lg ${s.cls.includes('amber') ? 'text-amber-600' : s.cls.includes('emerald') ? 'text-emerald-600' : 'text-rose-500'}`}>{s.icon}</span>
+                        <div>
+                          <p className="font-semibold text-slate-800 text-sm">{req.broker?.name}</p>
+                          <p className="text-xs text-slate-400">{req.broker?.email}{req.broker?.phone ? ` · ${req.broker.phone}` : ''}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.label}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {[req.city, req.area, req.pincode].filter(Boolean).length > 0 && (
+                        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                          {[req.city, req.area, req.pincode].filter(Boolean).join(' / ')}
+                        </span>
+                      )}
+                    </div>
+
+                    {req.status === 'pending' && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => decidePartnership(req._id, 'rejected')}
+                          disabled={decidingId === req._id}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition disabled:opacity-60">
+                          <span className="material-icons-outlined text-sm">cancel</span> Reject
+                        </button>
+                        <button
+                          onClick={() => decidePartnership(req._id, 'approved')}
+                          disabled={decidingId === req._id}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition disabled:opacity-60">
+                          <span className="material-icons-outlined text-sm">verified</span> Approve
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Expansion request form modal */}
       {showExpForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -1344,7 +1469,7 @@ function MasterPanel({ request }) {
                 {expAreas.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {expAreas.map((a, i) => (
-                      <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-medium">
+                      <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                         {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
                         <button type="button" onClick={() => removeExpArea(a.pincode)} className="ml-0.5 hover:text-rose-500">
                           <span className="material-icons-outlined text-xs">close</span>
@@ -1354,7 +1479,7 @@ function MasterPanel({ request }) {
                   </div>
                 )}
                 <button type="button" onClick={() => setShowExpPicker(true)}
-                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-[#4900e5] hover:text-[#4900e5] transition">
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-primary hover:text-primary transition">
                   <span className="material-icons-outlined text-sm">add_location_alt</span>
                   {expAreas.length > 0 ? 'Add More Pincodes' : 'Select Pincodes'}
                 </button>
@@ -1374,7 +1499,7 @@ function MasterPanel({ request }) {
                 <button type="button" onClick={() => setShowExpForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50 transition">Cancel</button>
                 <button type="submit" disabled={expSubmitting || !expAreas.length}
-                  className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60">
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60">
                   {expSubmitting ? 'Submitting…' : 'Submit Request'}
                 </button>
               </div>
@@ -1409,14 +1534,14 @@ function MasterPanel({ request }) {
                       {[assignForm.area, assignForm.city].filter(Boolean).join(', ')}
                     </span>
                     {assignForm.pincodes.map(p => (
-                      <span key={p} className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#4900e5]/10 text-[#4900e5]">{p}</span>
+                      <span key={p} className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p}</span>
                     ))}
                     <button type="button" onClick={() => setShowAssignPicker(true)}
-                      className="ml-auto text-xs font-semibold text-[#4900e5] hover:underline">Change</button>
+                      className="ml-auto text-xs font-semibold text-primary hover:underline">Change</button>
                   </div>
                 ) : (
                   <button type="button" onClick={() => setShowAssignPicker(true)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-[#4900e5] hover:text-[#4900e5] transition">
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-primary hover:text-primary transition">
                     <span className="material-icons-outlined text-sm">add_location_alt</span>
                     Select City &amp; Pincode(s)
                   </button>
@@ -1429,7 +1554,7 @@ function MasterPanel({ request }) {
                 <button type="button" onClick={() => setAssignBroker(null)}
                   className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50 transition">Cancel</button>
                 <button type="submit" disabled={assignSaving || !assignForm.city}
-                  className="flex-1 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60">
+                  className="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60">
                   {assignSaving ? 'Saving…' : 'Save'}
                 </button>
               </div>
@@ -1484,14 +1609,14 @@ function MasterPanel({ request }) {
                       {[addForm.area, addForm.city].filter(Boolean).join(', ')}
                     </span>
                     {addForm.pincodes.map(p => (
-                      <span key={p} className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#4900e5]/10 text-[#4900e5]">{p}</span>
+                      <span key={p} className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{p}</span>
                     ))}
                     <button type="button" onClick={() => setShowAddPicker(true)}
-                      className="ml-auto text-xs font-semibold text-[#4900e5] hover:underline">Change</button>
+                      className="ml-auto text-xs font-semibold text-primary hover:underline">Change</button>
                   </div>
                 ) : (
                   <button type="button" onClick={() => setShowAddPicker(true)}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-[#4900e5] hover:text-[#4900e5] transition">
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-semibold hover:border-primary hover:text-primary transition">
                     <span className="material-icons-outlined text-sm">add_location_alt</span>
                     Select City &amp; Pincode(s)
                   </button>
@@ -1504,7 +1629,7 @@ function MasterPanel({ request }) {
                 <button type="button" onClick={() => setShowAddBroker(false)}
                   className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50 transition">Cancel</button>
                 <button type="submit" disabled={addSaving || !addForm.city}
-                  className="flex-1 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60">
+                  className="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60">
                   {addSaving ? 'Adding…' : 'Add Broker'}
                 </button>
               </div>
@@ -1529,7 +1654,7 @@ function MasterPanel({ request }) {
 function BrokersTab({ subBrokers, loading, onAssign }) {
   if (loading) return (
     <div className="flex items-center justify-center py-16">
-      <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+      <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
     </div>
   );
 
@@ -1554,7 +1679,7 @@ function BrokersTab({ subBrokers, loading, onAssign }) {
       <td className="py-3 px-4 text-slate-500 text-sm">{b.phone || '—'}</td>
       <td className="py-3 px-4">
         {b.pincode ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <span className="material-icons-outlined text-xs">location_on</span>
             {[b.area, b.city, b.pincode].filter(Boolean).join(', ')}
           </span>
@@ -1570,7 +1695,7 @@ function BrokersTab({ subBrokers, loading, onAssign }) {
       <td className="py-3 px-4 text-slate-400 text-xs">{fmtDate(b.createdAt)}</td>
       <td className="py-3 px-4">
         <button onClick={() => onAssign(b)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-[#4900e5] hover:text-[#4900e5] transition">
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:border-primary hover:text-primary transition">
           <span className="material-icons-outlined text-sm">edit_location_alt</span>
           {b.pincode ? 'Edit Area' : 'Assign Area'}
         </button>
@@ -1584,7 +1709,7 @@ function BrokersTab({ subBrokers, loading, onAssign }) {
       <div className="grid grid-cols-3 gap-3">
         {[
           { label: 'Total Brokers',   value: subBrokers.length,    icon: 'people',        color: 'text-slate-700' },
-          { label: 'Pincode Brokers', value: pincodeBrokers.length, icon: 'location_on',   color: 'text-[#4900e5]' },
+          { label: 'Pincode Brokers', value: pincodeBrokers.length, icon: 'location_on',   color: 'text-primary' },
           { label: 'Normal Brokers',  value: normalBrokers.length,  icon: 'person_outline', color: 'text-slate-500' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
@@ -1718,9 +1843,9 @@ function PropertySendTab({ type, subBrokers }) {
             <span className="material-icons-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
             <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
               placeholder={`Search ${isUnit ? 'unit' : 'mortgage'} properties…`}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white" />
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
           </div>
-          <button type="submit" className="px-4 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">Search</button>
+          <button type="submit" className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">Search</button>
           {search && (
             <button type="button" onClick={() => { setSearch(''); setSearchInput(''); fetchProps(); }}
               className="px-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition">
@@ -1730,11 +1855,11 @@ function PropertySendTab({ type, subBrokers }) {
         </form>
 
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-[#4900e5]/5 rounded-xl border border-[#4900e5]/20">
-            <span className="text-sm text-[#4900e5] font-semibold">{selectedIds.size} selected</span>
+          <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/5 rounded-xl border border-primary/20">
+            <span className="text-sm text-primary font-semibold">{selectedIds.size} selected</span>
             <button onClick={() => setSelectedIds(new Set())} className="text-xs text-slate-400 hover:text-rose-500">Clear</button>
             <button onClick={generateMessage}
-              className="ml-auto flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition">
+              className="ml-auto flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container transition">
               <span className="material-icons-outlined text-sm">auto_awesome</span>
               Generate Message
             </button>
@@ -1743,7 +1868,7 @@ function PropertySendTab({ type, subBrokers }) {
 
         {propsLoading ? (
           <div className="flex items-center justify-center py-16">
-            <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+            <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
           </div>
         ) : props.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -1769,7 +1894,7 @@ function PropertySendTab({ type, subBrokers }) {
             {[{ k: 'whatsapp', icon: 'chat', label: 'WhatsApp' }, { k: 'email', icon: 'email', label: 'Email' }].map(c => (
               <button key={c.k} onClick={() => setChannel(c.k)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold border transition
-                  ${channel === c.k ? 'bg-[#4900e5] text-white border-[#4900e5]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#4900e5]/40'}`}>
+                  ${channel === c.k ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40'}`}>
                 <span className="material-icons-outlined text-base">{c.icon}</span>{c.label}
               </button>
             ))}
@@ -1786,7 +1911,7 @@ function PropertySendTab({ type, subBrokers }) {
                   <button key={pc} type="button"
                     onClick={() => setFilterPincodes(prev => prev.includes(pc) ? prev.filter(x => x !== pc) : [pc])}
                     className={`px-3 py-1 rounded-full text-xs font-semibold border transition
-                      ${filterPincodes.includes(pc) ? 'bg-[#4900e5] text-white border-[#4900e5]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#4900e5]/40'}`}>
+                      ${filterPincodes.includes(pc) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:border-primary/40'}`}>
                     {pc}
                   </button>
                 ))}
@@ -1805,7 +1930,7 @@ function PropertySendTab({ type, subBrokers }) {
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 block">WhatsApp Message</label>
               <textarea rows={10} value={message} onChange={e => setMessage(e.target.value)}
                 placeholder="Select properties above and click Generate Message…"
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 resize-y font-mono" />
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono" />
             </div>
           ) : (
             <div className="space-y-3">
@@ -1817,7 +1942,7 @@ function PropertySendTab({ type, subBrokers }) {
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Email Body (HTML)</label>
                 <textarea rows={8} value={emailBody} onChange={e => setEmailBody(e.target.value)}
                   placeholder="Select properties above and click Generate Message…"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 resize-y font-mono text-xs" />
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono text-xs" />
               </div>
             </div>
           )}
@@ -1835,7 +1960,7 @@ function PropertySendTab({ type, subBrokers }) {
           )}
 
           <button onClick={handleSend} disabled={sending || (!message.trim() && channel === 'whatsapp')}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-40">
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-40">
             {sending ? (
               <><span className="material-icons-outlined text-base animate-spin">progress_activity</span> Sending…</>
             ) : (
@@ -1874,21 +1999,21 @@ function PropCard({ prop: p, isUnit, selected, onToggle }) {
   return (
     <div onClick={onToggle}
       className={`bg-white rounded-xl border cursor-pointer transition-all hover:shadow-md select-none overflow-hidden
-        ${selected ? 'border-[#4900e5] ring-2 ring-[#4900e5]/20' : 'border-slate-100'}`}>
+        ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'}`}>
 
       {/* Image */}
       {p.images?.[0] ? (
         <div className="relative h-28 bg-slate-100">
           <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
           {selected && (
-            <div className="absolute inset-0 bg-[#4900e5]/20 flex items-center justify-center">
+            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
               <span className="material-icons-outlined text-white text-3xl">check_circle</span>
             </div>
           )}
         </div>
       ) : (
-        <div className={`h-12 flex items-center justify-center ${selected ? 'bg-[#4900e5]/10' : 'bg-slate-50'}`}>
-          <span className={`material-icons-outlined text-2xl ${selected ? 'text-[#4900e5]' : 'text-slate-200'}`}>
+        <div className={`h-12 flex items-center justify-center ${selected ? 'bg-primary/10' : 'bg-slate-50'}`}>
+          <span className={`material-icons-outlined text-2xl ${selected ? 'text-primary' : 'text-slate-200'}`}>
             {isUnit ? 'domain' : 'account_balance'}
           </span>
         </div>
@@ -1897,7 +2022,7 @@ function PropCard({ prop: p, isUnit, selected, onToggle }) {
       <div className="p-3">
         <div className="flex items-start justify-between gap-2 mb-1">
           <p className="font-semibold text-slate-800 text-sm leading-tight line-clamp-1">{p.title}</p>
-          {selected && <span className="material-icons-outlined text-[#4900e5] text-lg flex-shrink-0">check_circle</span>}
+          {selected && <span className="material-icons-outlined text-primary text-lg flex-shrink-0">check_circle</span>}
         </div>
         <p className="text-xs text-slate-400 flex items-center gap-0.5 mb-2">
           <span className="material-icons-outlined text-xs">location_on</span>

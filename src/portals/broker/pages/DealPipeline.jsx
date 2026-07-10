@@ -3,7 +3,7 @@ import api from '../../../api/axios';
 
 const STAGES = ['Contact', 'Site Visit', 'Negotiation', 'Documentation', 'Closed'];
 
-const PRIORITY_COLOR = { high: 'bg-rose-100 text-rose-600', medium: 'bg-amber-100 text-amber-600', low: 'bg-slate-100 text-slate-500' };
+const PRIORITY_COLOR = { high: 'bg-rose-100 text-rose-600', medium: 'bg-amber-100 text-amber-600', low: 'bg-slate-100 text-slate-600' };
 const STAGE_COLOR = {
   'Contact':       'border-t-slate-400',
   'Site Visit':    'border-t-blue-400',
@@ -93,7 +93,7 @@ export default function DealPipeline() {
                         </div>
                         <p className="text-xs text-on-surface-variant mb-2">{deal.buyer}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#ff5a5f]">{deal.value}</span>
+                          <span className="text-xs font-bold text-portal-broker">{deal.value}</span>
                           <span className="text-[10px] text-on-surface-variant">{deal.lastContact}</span>
                         </div>
                       </div>
@@ -123,7 +123,7 @@ export default function DealPipeline() {
                   <tr key={d._id || d.id} className="hover:bg-surface-container-low transition-colors cursor-pointer">
                     <td className="px-5 py-4 font-semibold text-on-surface">{d.property}</td>
                     <td className="px-5 py-4 text-on-surface-variant hidden sm:table-cell">{d.buyer}</td>
-                    <td className="px-5 py-4 text-right font-bold text-[#ff5a5f]">{d.value}</td>
+                    <td className="px-5 py-4 text-right font-bold text-portal-broker">{d.value}</td>
                     <td className="px-5 py-4 text-center">
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">{d.stage}</span>
                     </td>

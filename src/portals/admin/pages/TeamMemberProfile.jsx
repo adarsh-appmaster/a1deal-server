@@ -44,7 +44,7 @@ export default function TeamMemberProfile() {
         {/* Profile card */}
         <div className="card p-6">
           <div className="text-center mb-5">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#6236ff] to-[#4900e5] flex items-center justify-center text-white text-3xl font-bold mx-auto mb-3">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-white text-3xl font-bold mx-auto mb-3">
               {m.avatar}
             </div>
             <h2 className="font-montserrat font-bold text-xl text-on-surface">{m.name}</h2>
@@ -101,7 +101,7 @@ export default function TeamMemberProfile() {
               {m.pipeline.map(p => (
                 <div key={p.stage} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-xs font-bold text-on-surface">{p.count}</span>
-                  <div className="w-full rounded-t-lg bg-gradient-to-t from-[#4900e5] to-[#6236ff]"
+                  <div className="w-full rounded-t-lg bg-gradient-to-t from-primary to-primary-container"
                     style={{ height: `${(p.count / maxPipeline) * 80}px` }} />
                   <span className="text-xs text-on-surface-variant">{p.stage}</span>
                 </div>

@@ -67,6 +67,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Swap in a freshly issued token (e.g. after a password change rotates it)
+  // so the current session keeps working instead of being logged out.
+  const applyToken = (token) => {
+    if (!token) return;
+    localStorage.setItem('a1deal_token', token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  };
+
   const portalPath = (role) => ROLE_PATHS[role] || '/';
 
   // Allow components to patch the cached user object (e.g. clear mustChangePassword)
@@ -79,7 +87,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, portalPath, patchUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, portalPath, patchUser, applyToken }}>
       {children}
     </AuthContext.Provider>
   );

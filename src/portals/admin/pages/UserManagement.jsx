@@ -1,6 +1,31 @@
 import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
 import { Pagination } from '../../../components/common/Pagination';
+import { validateForm } from '../../../validation/validate';
+import { Joi } from '../../../validation/schemas';
+import { name as nameRule, email as emailRule, password as passwordRule, phone as phoneRule, shortText, pincode as pincodeRule } from '../../../validation/common';
+
+const createUserFormSchema = Joi.object({
+  name: nameRule.required(),
+  email: emailRule.required(),
+  password: passwordRule.required(),
+  role: Joi.string().valid('buyer', 'broker', 'developer', 'investor', 'bank', 'admin', 'team').required(),
+  phone: phoneRule.allow('', null),
+  company: shortText.allow('', null),
+  city: shortText.allow('', null),
+  area: shortText.allow('', null),
+  pincode: pincodeRule.allow('', null),
+}).unknown(true);
+
+const createBankerFormSchema = Joi.object({
+  name: nameRule.required(),
+  email: emailRule.required(),
+  phone: phoneRule.allow('', null),
+  company: shortText.allow('', null),
+  city: shortText.allow('', null),
+  area: shortText.allow('', null),
+  pincode: pincodeRule.allow('', null),
+}).unknown(true);
 
 const ROLES = ['buyer', 'broker', 'developer', 'investor', 'bank', 'admin', 'team'];
 
@@ -25,7 +50,7 @@ const EMPTY_FORM = {
   phone: '', company: '', city: '', area: '', pincode: '',
 };
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30';
 const LIMIT = 15;
 
 export default function UserManagement() {
@@ -95,6 +120,8 @@ export default function UserManagement() {
 
   async function handleCreate(e) {
     e.preventDefault();
+    const { errors } = validateForm(createUserFormSchema, form);
+    if (errors) { setFormMsg(Object.values(errors)[0]); return; }
     setSaving(true); setFormMsg('');
     try {
       await api.post('/users', form);
@@ -134,6 +161,8 @@ export default function UserManagement() {
 
   async function handleCreateBanker(e) {
     e.preventDefault();
+    const { errors } = validateForm(createBankerFormSchema, bankerForm);
+    if (errors) { setBankerMsg(Object.values(errors)[0]); return; }
     setBankerSaving(true); setBankerMsg(''); setBankerCreated(null);
     try {
       const { data } = await api.post('/users/create-banker', bankerForm);
@@ -184,7 +213,7 @@ export default function UserManagement() {
           </button>
           <button
             onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setFormMsg(''); }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#4900e5] text-white text-sm font-semibold rounded-xl hover:bg-[#6236ff] transition"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-container transition"
           >
             <span className="material-icons-outlined text-base">person_add</span>
             Create User
@@ -206,14 +235,14 @@ export default function UserManagement() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by name or email…"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         {/* Role filter */}
         <select
           value={roleFilter}
           onChange={e => setRoleFilter(e.target.value)}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 min-w-[140px]"
+          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[140px]"
         >
           <option value="all">All Roles</option>
           {ROLES.map(r => <option key={r} value={r} className="capitalize">{r}</option>)}
@@ -222,7 +251,7 @@ export default function UserManagement() {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 min-w-[140px]"
+          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-[140px]"
         >
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
@@ -252,7 +281,7 @@ export default function UserManagement() {
                   <tr key={u._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-[#4900e5]/10 flex items-center justify-center text-[#4900e5] font-bold text-sm flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                           {u.name?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div className="min-w-0">
@@ -288,7 +317,7 @@ export default function UserManagement() {
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
                         <button onClick={() => openEdit(u)} title="Edit user"
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#4900e5] transition">
+                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-primary transition">
                           <span className="material-icons-outlined text-base">edit</span>
                         </button>
                         {u.status === 'pending' && (
@@ -343,7 +372,7 @@ export default function UserManagement() {
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               {formMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${formMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${formMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {formMsg}
                 </div>
               )}
@@ -387,7 +416,7 @@ export default function UserManagement() {
                 User will be created as <strong>Active</strong> with email pre-verified — they can log in immediately.
               </p>
               <button type="submit" disabled={saving}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {saving ? 'Creating…' : 'Create User'}
               </button>
             </form>
@@ -410,7 +439,7 @@ export default function UserManagement() {
             </div>
             <div className="p-6 space-y-4">
               {bankerMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${bankerMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${bankerMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {bankerMsg}
                 </div>
               )}
@@ -434,7 +463,7 @@ export default function UserManagement() {
                       Add Another
                     </button>
                     <button onClick={() => setShowBankerModal(false)}
-                      className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-bold hover:bg-[#6236ff]">
+                      className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-container">
                       Done
                     </button>
                   </div>
@@ -504,7 +533,7 @@ export default function UserManagement() {
             </div>
             <form onSubmit={handleEditSave} className="p-6 space-y-4">
               {editMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${editMsg === 'Saved.' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${editMsg === 'Saved.' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {editMsg}
                 </div>
               )}
@@ -622,7 +651,7 @@ export default function UserManagement() {
               )}
 
               <button type="submit" disabled={editSaving}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {editSaving ? 'Saving…' : 'Save Changes'}
               </button>
             </form>

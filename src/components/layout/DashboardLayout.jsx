@@ -5,6 +5,9 @@ import { useSocket } from '../../context/SocketContext';
 import Logo from '../common/Logo';
 import NotificationBell from '../common/NotificationBell';
 import ChatPanel from '../common/ChatPanel';
+import Breadcrumbs from '../common/Breadcrumbs';
+import MobileBottomNav from '../common/MobileBottomNav';
+import BackButton from '../common/BackButton';
 
 export default function DashboardLayout({ portalName, portalColor, navItems, children, banner }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,6 +33,11 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   const handleLogout = () => { logout(); navigate('/'); };
+
+  // Portal home is the first path segment (e.g. /admin, /broker). Show a back
+  // button on every deeper page, falling back to the portal home.
+  const portalHome = `/${location.pathname.split('/')[1] || ''}`;
+  const showBack   = location.pathname !== portalHome;
 
   return (
     <>
@@ -64,24 +72,32 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
           <p className="text-xs font-semibold text-white/40 uppercase tracking-widest truncate">{portalName}</p>
         </div>
 
-        {/* Nav */}
+        {/* Nav — items may carry an optional `section` label to group under a
+            heading; items without one render flat, so short nav lists (most
+            portals) look exactly as before. */}
         <nav className="flex-1 p-3 overflow-y-auto space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                  isActive
-                    ? 'bg-white/15 text-white'
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
-                }`
-              }
-            >
-              <span className="material-icons-outlined text-xl flex-shrink-0">{item.icon}</span>
-              <span>{item.label}</span>
-            </NavLink>
+          {navItems.map((item, i) => (
+            <div key={item.path}>
+              {item.section && item.section !== navItems[i - 1]?.section && (
+                <p className={`px-3 pb-1 text-[10px] font-bold text-white/30 uppercase tracking-widest ${i === 0 ? '' : 'pt-4'}`}>
+                  {item.section}
+                </p>
+              )}
+              <NavLink
+                to={item.path}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                    isActive
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  }`
+                }
+              >
+                <span className="material-icons-outlined text-xl flex-shrink-0">{item.icon}</span>
+                <span>{item.label}</span>
+              </NavLink>
+            </div>
           ))}
         </nav>
 
@@ -89,7 +105,7 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
         <div className="p-3 border-t border-white/10">
           {user && (
             <div className="flex items-center gap-2 px-3 py-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-[#6236ff] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                 {user.name?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="min-w-0">
@@ -121,9 +137,8 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
             >
               <span className="material-icons-outlined text-2xl">menu</span>
             </button>
-            <h1 className="font-montserrat font-semibold text-on-surface text-sm md:text-base truncate">
-              {portalName}
-            </h1>
+            {showBack && <BackButton fallback={portalHome} />}
+            <Breadcrumbs portalName={portalName} navItems={navItems} />
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell accentColor={portalColor} />
@@ -145,11 +160,17 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
         {/* Optional banner slot (e.g. "under review" notice) */}
         {banner}
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-surface">
+        {/* Page content — extra bottom padding on mobile so the sticky nav doesn't cover it */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 lg:pb-6 bg-surface">
           {children}
         </main>
       </div>
+
+      {/* Sticky bottom nav (mobile) — first few destinations + More opens the sidebar */}
+      <MobileBottomNav
+        items={navItems.slice(0, 4).map(({ path, icon, label, end }) => ({ path, icon, label, end }))}
+        onMore={() => setSidebarOpen(true)}
+      />
     </div>
 
     {/* Negotiation chat panel */}

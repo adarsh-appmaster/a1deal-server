@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { unitPropertySchema } from '../../../validation/schemas';
 import SharePropertyModal from '../../../components/common/SharePropertyModal';
 import BulkShareModal from '../../../components/common/BulkShareModal';
 import UnitSplitModal from '../../../components/common/UnitSplitModal';
 import BookPropertyModal from '../../../components/common/BookPropertyModal';
 import { Pagination } from '../../../components/common/Pagination';
 import MediaUploader from '../../../components/common/MediaUploader';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const PROP_TYPES = [
   'all', 'tower', 'building', 'villa', 'commercial',
@@ -51,7 +54,7 @@ const VISIBLE_OPTS = [
 const STATUS_COLORS = {
   available:         'bg-emerald-100 text-emerald-700',
   under_negotiation: 'bg-amber-100 text-amber-700',
-  sold:              'bg-slate-100 text-slate-500',
+  sold:              'bg-slate-100 text-slate-600',
 };
 const LEAD_STATUS_META = {
   new:          { label: 'New',          dot: 'bg-slate-400',   pill: 'bg-slate-100 text-slate-600' },
@@ -59,7 +62,7 @@ const LEAD_STATUS_META = {
   site_visit:   { label: 'Site Visit',   dot: 'bg-purple-400',  pill: 'bg-purple-50 text-purple-700' },
   negotiating:  { label: 'Negotiating',  dot: 'bg-amber-400',   pill: 'bg-amber-50 text-amber-700' },
   closed_won:   { label: 'Won',          dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-700' },
-  closed_lost:  { label: 'Lost',         dot: 'bg-rose-400',    pill: 'bg-rose-50 text-rose-600' },
+  closed_lost:  { label: 'Lost',         dot: 'bg-rose-400',    pill: 'bg-rose-50 text-rose-700' },
 };
 const LIMIT = 10;
 
@@ -94,7 +97,7 @@ const TYPE_AMENITIES = {
   other:     ['Power Backup', '24×7 Water', 'Security', 'CCTV', 'Parking', 'Lift/Elevator', 'Intercom', 'EV Charging'],
 };
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30';
 
 function fmt(n) {
   if (!n) return '—';
@@ -165,6 +168,7 @@ export default function AdminUnitProperties() {
   const [formVideo, setFormVideo]     = useState('');
   const [saving, setSaving]           = useState(false);
   const [msg, setMsg]                 = useState('');
+  const { confirm, dialog } = useConfirm();
   const [loadError, setLoadError]     = useState('');
 
   const [shareProperty, setShareProperty]   = useState(null);
@@ -366,7 +370,10 @@ export default function AdminUnitProperties() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault(); setSaving(true); setMsg('');
+    e.preventDefault();
+    const { errors } = validateForm(unitPropertySchema, form);
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
+    setSaving(true); setMsg('');
     try {
       const payload = {
         ...form,
@@ -398,7 +405,7 @@ export default function AdminUnitProperties() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Deactivate this property?')) return;
+    if (!(await confirm('Deactivate this property?', { danger: true, confirmLabel: 'Deactivate' }))) return;
     try { await api.delete(`/unit-properties/${id}`); fetchProps(page); fetchStats(); } catch { /* empty */ }
   }
 
@@ -441,6 +448,7 @@ export default function AdminUnitProperties() {
 
   return (
     <div className="space-y-6">
+      {dialog}
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -456,7 +464,7 @@ export default function AdminUnitProperties() {
             </button>
           )}
           <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#484a5a] text-white text-sm font-semibold rounded-xl hover:bg-[#2e3044] transition">
+            className="flex items-center gap-2 px-4 py-2.5 bg-tertiary text-white text-sm font-semibold rounded-xl hover:bg-[#2e3044] transition">
             <span className="material-icons-outlined text-base">add</span> Add Property
           </button>
         </div>
@@ -469,7 +477,7 @@ export default function AdminUnitProperties() {
           { label: 'Available',        value: stats.available,        color: 'text-emerald-600' },
           { label: 'Under Negotiation',value: stats.underNegotiation, color: 'text-amber-600' },
           { label: 'Sold',             value: stats.sold,             color: 'text-slate-500' },
-          { label: 'Featured',         value: stats.featured,         color: 'text-[#484a5a]' },
+          { label: 'Featured',         value: stats.featured,         color: 'text-tertiary' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
             <p className={`font-montserrat font-bold text-2xl ${s.color}`}>{s.value}</p>
@@ -485,9 +493,9 @@ export default function AdminUnitProperties() {
             <span className="material-icons-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
             <input type="text" value={inputVal} onChange={e => setInputVal(e.target.value)}
               placeholder="Search by title, city, area, owner…"
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white" />
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white" />
           </div>
-          <button type="submit" className="px-5 py-2.5 rounded-xl bg-[#484a5a] text-white text-sm font-semibold hover:bg-[#2e3044] transition">
+          <button type="submit" className="px-5 py-2.5 rounded-xl bg-tertiary text-white text-sm font-semibold hover:bg-[#2e3044] transition">
             Search
           </button>
           {search && (
@@ -503,7 +511,7 @@ export default function AdminUnitProperties() {
           {PROP_TYPES.map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition capitalize
-                ${typeFilter === t ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+                ${typeFilter === t ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
               {t !== 'all' && <span className="material-icons-outlined text-xs">{TYPE_ICONS[t]}</span>}
               {t === 'all' ? 'All Types' : t.replace('_', ' ')}
             </button>
@@ -515,7 +523,7 @@ export default function AdminUnitProperties() {
           {STATUSES.map(t => (
             <button key={t.v} onClick={() => setStatusFilter(t.v)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                ${statusFilter === t.v ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
+                ${statusFilter === t.v ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
               {t.l}
             </button>
           ))}
@@ -543,7 +551,7 @@ export default function AdminUnitProperties() {
                   if (e.target.checked) setSelectedIds(prev => new Set([...prev, ...properties.map(p => p._id)]));
                   else setSelectedIds(prev => { const s = new Set(prev); properties.forEach(p => s.delete(p._id)); return s; });
                 }}
-                className="accent-[#484a5a]" />
+                className="accent-tertiary" />
               <span>Select page</span>
             </label>
           )}
@@ -559,7 +567,7 @@ export default function AdminUnitProperties() {
       {/* Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <span className="material-icons-outlined text-3xl animate-spin text-[#484a5a]">progress_activity</span>
+          <span className="material-icons-outlined text-3xl animate-spin text-tertiary">progress_activity</span>
         </div>
       ) : properties.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
@@ -571,7 +579,7 @@ export default function AdminUnitProperties() {
           {properties.map(p => (
             <div key={p._id}
               className={`bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-shadow
-                ${selectedIds.has(p._id) ? 'border-[#484a5a] ring-2 ring-[#484a5a]/20' : 'border-slate-100'}`}>
+                ${selectedIds.has(p._id) ? 'border-tertiary ring-2 ring-tertiary/20' : 'border-slate-100'}`}>
 
               {/* Cover image */}
               {p.images?.[0] ? (
@@ -579,7 +587,7 @@ export default function AdminUnitProperties() {
                   <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
                   <input type="checkbox" checked={selectedIds.has(p._id)}
                     onChange={e => setSelectedIds(prev => { const s = new Set(prev); e.target.checked ? s.add(p._id) : s.delete(p._id); return s; })}
-                    className="absolute top-2 left-2 w-4 h-4 accent-[#484a5a] cursor-pointer" />
+                    className="absolute top-2 left-2 w-4 h-4 accent-tertiary cursor-pointer" />
                   <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
                     {p.images.length} photo{p.images.length !== 1 ? 's' : ''}
                   </span>
@@ -589,14 +597,14 @@ export default function AdminUnitProperties() {
                   <span className="material-icons-outlined text-slate-300 text-3xl">{TYPE_ICONS[p.propertyType] || 'domain'}</span>
                   <input type="checkbox" checked={selectedIds.has(p._id)}
                     onChange={e => setSelectedIds(prev => { const s = new Set(prev); e.target.checked ? s.add(p._id) : s.delete(p._id); return s; })}
-                    className="absolute top-2 left-2 w-4 h-4 accent-[#484a5a] cursor-pointer" />
+                    className="absolute top-2 left-2 w-4 h-4 accent-tertiary cursor-pointer" />
                 </div>
               )}
 
               <div className="px-4 pt-3 pb-2">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex gap-1.5 flex-wrap">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600'}`}>
                       {(p.status || '').replace('_', ' ')}
                     </span>
                     {p.isFeatured && (
@@ -680,11 +688,11 @@ export default function AdminUnitProperties() {
                 </button>
                 {/* CRM drawer button */}
                 <button onClick={() => openCrm(p)}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-[#484a5a]/10 text-[#484a5a] text-xs font-bold hover:bg-[#484a5a]/20 transition">
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl bg-tertiary/10 text-tertiary text-xs font-bold hover:bg-tertiary/20 transition">
                   <span className="material-icons-outlined text-sm">person_search</span>
                   CRM
                   {leadCounts[p._id] > 0 && (
-                    <span className="bg-[#484a5a] text-white rounded-full px-1.5 text-[10px] ml-0.5">{leadCounts[p._id]}</span>
+                    <span className="bg-tertiary text-white rounded-full px-1.5 text-[10px] ml-0.5">{leadCounts[p._id]}</span>
                   )}
                 </button>
                 <button onClick={() => setSplitProperty(p)}
@@ -759,7 +767,7 @@ export default function AdminUnitProperties() {
                       <p className="text-sm font-semibold text-slate-700">Unit {u.unitNumber}</p>
                       <p className="text-xs text-slate-400">{u.unitType}{u.floor != null ? ` · Floor ${u.floor}` : ''}</p>
                     </div>
-                    <span className="text-xs font-bold text-[#4900e5] flex-shrink-0">{fmt(u.price)}</span>
+                    <span className="text-xs font-bold text-primary flex-shrink-0">{fmt(u.price)}</span>
                   </button>
                 ))}
             </div>
@@ -788,7 +796,7 @@ export default function AdminUnitProperties() {
               <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{leadModal.title}</p>
             </div>
             {leadMsg && (
-              <div className={`p-2 rounded-xl text-xs font-semibold text-center ${leadMsg.includes('!') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>{leadMsg}</div>
+              <div className={`p-2 rounded-xl text-xs font-semibold text-center ${leadMsg.includes('!') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{leadMsg}</div>
             )}
             <form onSubmit={handleLeadSubmit} className="space-y-3">
               <div>
@@ -823,7 +831,7 @@ export default function AdminUnitProperties() {
               </div>
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={leadSaving}
-                  className="flex-1 py-2.5 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
+                  className="flex-1 py-2.5 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
                   {leadSaving ? 'Saving…' : 'Save Lead'}
                 </button>
                 <button type="button" onClick={() => setLeadModal(null)}
@@ -845,7 +853,7 @@ export default function AdminUnitProperties() {
           <div className="w-full max-w-4xl bg-white flex flex-col shadow-2xl">
 
             {/* Drawer header */}
-            <div className="flex items-start gap-3 px-5 py-4 border-b border-slate-100 flex-shrink-0 bg-gradient-to-r from-[#484a5a] to-[#2e3044] text-white">
+            <div className="flex items-start gap-3 px-5 py-4 border-b border-slate-100 flex-shrink-0 bg-gradient-to-r from-tertiary to-[#2e3044] text-white">
               {crmProp.images?.[0] ? (
                 <img src={crmProp.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border-2 border-white/20" />
               ) : (
@@ -863,7 +871,7 @@ export default function AdminUnitProperties() {
                   <span className="text-xs text-white/60">{leadCounts[crmProp._id] || 0} leads</span>
                 </div>
               </div>
-              <button onClick={closeCrm} className="text-white/60 hover:text-white mt-0.5 flex-shrink-0">
+              <button onClick={closeCrm} aria-label="Close" className="text-white/60 hover:text-white mt-0.5 flex-shrink-0">
                 <span className="material-icons-outlined">close</span>
               </button>
             </div>
@@ -877,7 +885,7 @@ export default function AdminUnitProperties() {
               ].map(t => (
                 <button key={t.v} onClick={() => setCrmTab(t.v)}
                   className={`flex items-center gap-1.5 px-4 py-3 text-sm font-semibold border-b-2 transition
-                    ${crmTab === t.v ? 'text-[#484a5a] border-[#484a5a]' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
+                    ${crmTab === t.v ? 'text-tertiary border-tertiary' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>
                   <span className="material-icons-outlined text-sm">{t.icon}</span>
                   {t.l}
                 </button>
@@ -885,7 +893,7 @@ export default function AdminUnitProperties() {
               <div className="flex-1" />
               {crmTab === 'leads' && (
                 <button onClick={() => setCrmAddLead(v => !v)}
-                  className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-[#484a5a] hover:bg-slate-50 transition">
+                  className="flex items-center gap-1.5 px-4 py-3 text-sm font-semibold text-tertiary hover:bg-slate-50 transition">
                   <span className="material-icons-outlined text-sm">person_add</span>
                   Add Lead
                 </button>
@@ -937,7 +945,7 @@ export default function AdminUnitProperties() {
                         </select>
                         <div className="flex gap-2">
                           <button type="submit" disabled={crmLeadSaving}
-                            className="flex-1 py-2 rounded-xl bg-[#484a5a] text-white text-xs font-bold disabled:opacity-60">
+                            className="flex-1 py-2 rounded-xl bg-tertiary text-white text-xs font-bold disabled:opacity-60">
                             {crmLeadSaving ? 'Saving…' : 'Save'}
                           </button>
                           <button type="button" onClick={() => setCrmAddLead(false)}
@@ -948,13 +956,13 @@ export default function AdminUnitProperties() {
 
                     {crmLoading ? (
                       <div className="flex items-center justify-center flex-1 py-12">
-                        <span className="material-icons-outlined animate-spin text-[#484a5a] text-3xl">progress_activity</span>
+                        <span className="material-icons-outlined animate-spin text-tertiary text-3xl">progress_activity</span>
                       </div>
                     ) : crmLeads.length === 0 ? (
                       <div className="flex flex-col items-center justify-center flex-1 py-12 text-center px-4">
                         <span className="material-icons-outlined text-4xl text-slate-200 mb-2">group</span>
                         <p className="text-slate-400 text-sm">No leads yet for this property.</p>
-                        <button onClick={() => setCrmAddLead(true)} className="mt-3 text-xs text-[#484a5a] font-semibold hover:underline flex items-center gap-1">
+                        <button onClick={() => setCrmAddLead(true)} className="mt-3 text-xs text-tertiary font-semibold hover:underline flex items-center gap-1">
                           <span className="material-icons-outlined text-sm">add</span> Add first lead
                         </button>
                       </div>
@@ -965,7 +973,7 @@ export default function AdminUnitProperties() {
                         return (
                           <button key={lead._id} onClick={() => { setActiveLead(lead); setNoteText(''); setFollowUpDate(lead.followUpDate ? lead.followUpDate.slice(0, 10) : ''); }}
                             className={`w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition
-                              ${isActive ? 'bg-[#484a5a]/5 border-l-2 border-l-[#484a5a]' : ''}`}>
+                              ${isActive ? 'bg-tertiary/5 border-l-2 border-l-tertiary' : ''}`}>
                             <div className="flex items-center gap-2 mb-0.5">
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${meta.dot}`} />
                               <span className="font-semibold text-slate-800 text-sm truncate">{lead.name}</span>
@@ -996,7 +1004,7 @@ export default function AdminUnitProperties() {
                     <div className="flex-1 overflow-y-auto p-5 space-y-5">
                       {/* Contact */}
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#484a5a]/10 flex items-center justify-center font-bold text-[#484a5a] text-lg flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-tertiary/10 flex items-center justify-center font-bold text-tertiary text-lg flex-shrink-0">
                           {activeLead.name?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div className="flex-1">
@@ -1063,7 +1071,7 @@ export default function AdminUnitProperties() {
                               className={`${inp} flex-1`} />
                             <button disabled={updatingLead || !followUpDate}
                               onClick={() => updateLeadField(activeLead._id, { followUpDate: followUpDate || null })}
-                              className="px-3 py-2 rounded-xl bg-[#484a5a] text-white text-xs font-bold hover:bg-[#2e3044] disabled:opacity-50">
+                              className="px-3 py-2 rounded-xl bg-tertiary text-white text-xs font-bold hover:bg-[#2e3044] disabled:opacity-50">
                               Set
                             </button>
                           </div>
@@ -1077,7 +1085,7 @@ export default function AdminUnitProperties() {
                           <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
                             {[...activeLead.notes].reverse().map((n, i) => (
                               <div key={i} className="flex gap-2.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#484a5a]/40 mt-1.5 flex-shrink-0" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-tertiary/40 mt-1.5 flex-shrink-0" />
                                 <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2">
                                   <p className="text-sm text-slate-700 leading-snug">{n.text}</p>
                                   <p className="text-[10px] text-slate-400 mt-1">
@@ -1095,7 +1103,7 @@ export default function AdminUnitProperties() {
                             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), addNote(activeLead._id))}
                             placeholder="Add note… (Enter to save)" className={`${inp} flex-1`} />
                           <button onClick={() => addNote(activeLead._id)} disabled={updatingLead || !noteText.trim()}
-                            className="px-3 py-2 rounded-xl bg-[#484a5a] text-white text-xs font-bold hover:bg-[#2e3044] disabled:opacity-50">
+                            className="px-3 py-2 rounded-xl bg-tertiary text-white text-xs font-bold hover:bg-[#2e3044] disabled:opacity-50">
                             <span className="material-icons-outlined text-sm">send</span>
                           </button>
                         </div>
@@ -1191,11 +1199,11 @@ export default function AdminUnitProperties() {
                   {crmProp.description && (
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Description</p>
-                      <p className="text-sm text-slate-600 leading-relaxed">{crmProp.description}</p>
+                      <p className="text-sm text-on-surface-variant leading-relaxed">{crmProp.description}</p>
                     </div>
                   )}
                   <button onClick={() => openEdit(crmProp)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#484a5a] text-[#484a5a] text-sm font-semibold hover:bg-[#484a5a]/5 transition">
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-tertiary text-tertiary text-sm font-semibold hover:bg-tertiary/5 transition">
                     <span className="material-icons-outlined text-base">edit</span> Edit Property
                   </button>
                 </div>
@@ -1212,8 +1220,8 @@ export default function AdminUnitProperties() {
 
             {/* Sticky header */}
             <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 flex-shrink-0 bg-white rounded-t-3xl sm:rounded-t-2xl">
-              <div className="w-9 h-9 rounded-xl bg-[#484a5a]/10 flex items-center justify-center flex-shrink-0">
-                <span className="material-icons-outlined text-[#484a5a] text-lg">
+              <div className="w-9 h-9 rounded-xl bg-tertiary/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-icons-outlined text-tertiary text-lg">
                   {editId ? 'edit' : 'add_home_work'}
                 </span>
               </div>
@@ -1234,7 +1242,7 @@ export default function AdminUnitProperties() {
               <div className="p-6 space-y-7">
 
                 {msg && (
-                  <div className={`flex items-center gap-2 p-3 rounded-xl text-sm font-semibold ${msg.includes('pdat') || msg.includes('dded') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                  <div className={`flex items-center gap-2 p-3 rounded-xl text-sm font-semibold ${msg.includes('pdat') || msg.includes('dded') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                     <span className="material-icons-outlined text-base">{msg.includes('pdat') || msg.includes('dded') ? 'check_circle' : 'error_outline'}</span>
                     {msg}
                   </div>
@@ -1249,9 +1257,9 @@ export default function AdminUnitProperties() {
                         onClick={() => setForm(f => ({ ...f, propertyType: t }))}
                         className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 text-center transition
                           ${form.propertyType === t
-                            ? 'border-[#484a5a] bg-[#484a5a]/5 text-[#484a5a]'
+                            ? 'border-tertiary bg-tertiary/5 text-tertiary'
                             : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-300 hover:bg-white'}`}>
-                        <span className={`material-icons-outlined text-xl ${form.propertyType === t ? 'text-[#484a5a]' : 'text-slate-400'}`}>
+                        <span className={`material-icons-outlined text-xl ${form.propertyType === t ? 'text-tertiary' : 'text-slate-400'}`}>
                           {TYPE_ICONS[t] || 'category'}
                         </span>
                         <span className="text-[10px] font-bold capitalize leading-tight">{t.replace('_', ' ')}</span>
@@ -1364,13 +1372,13 @@ export default function AdminUnitProperties() {
                         <SectionLabel icon="star_outline" label={`Amenities · ${form.propertyType.replace('_', ' ')}`} />
                         <div className="flex items-center gap-2">
                           {selected.length > 0 && (
-                            <span className="text-xs font-bold text-[#484a5a] bg-[#484a5a]/10 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">
                               {selected.length} selected
                             </span>
                           )}
                           <button type="button"
                             onClick={() => setForm(f => ({ ...f, amenities: allSelected ? [] : [...list] }))}
-                            className="text-xs font-semibold text-slate-400 hover:text-[#484a5a] transition">
+                            className="text-xs font-semibold text-slate-400 hover:text-tertiary transition">
                             {allSelected ? 'Clear all' : 'Select all'}
                           </button>
                         </div>
@@ -1380,8 +1388,8 @@ export default function AdminUnitProperties() {
                           <button key={a} type="button" onClick={() => toggle(a)}
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
                               ${selected.includes(a)
-                                ? 'bg-[#484a5a] text-white border-[#484a5a]'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-[#484a5a]/40 hover:text-[#484a5a]'}`}>
+                                ? 'bg-tertiary text-white border-tertiary'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-tertiary/40 hover:text-tertiary'}`}>
                             {a}
                           </button>
                         ))}
@@ -1402,7 +1410,7 @@ export default function AdminUnitProperties() {
                           placeholder="95000000" className={`${inp} pl-7`} />
                       </div>
                       {form.price > 0 && (
-                        <p className="text-xs text-[#484a5a] font-semibold mt-1">{fmt(form.price)}</p>
+                        <p className="text-xs text-tertiary font-semibold mt-1">{fmt(form.price)}</p>
                       )}
                     </div>
                     <div>
@@ -1451,7 +1459,7 @@ export default function AdminUnitProperties() {
                       </div>
                     </div>
                     {(form.commissionBrokerPct !== '' || form.commissionMasterBrokerPct !== '') && (
-                      <div className="flex items-center gap-2 text-xs text-[#484a5a] font-semibold bg-[#484a5a]/5 rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2 text-xs text-tertiary font-semibold bg-tertiary/5 rounded-xl px-3 py-2">
                         <span className="material-icons-outlined text-sm">info_outline</span>
                         Total {(Number(form.commissionBrokerPct || 0) + Number(form.commissionMasterBrokerPct || 0)).toFixed(1)}%
                         &nbsp;· Broker {form.commissionBrokerPct || 0}%
@@ -1494,9 +1502,9 @@ export default function AdminUnitProperties() {
                       <label key={o.key}
                         className={`flex items-center gap-2.5 cursor-pointer px-3 py-2.5 rounded-xl border-2 transition
                           ${form.visibleTo.includes(o.key)
-                            ? 'border-[#484a5a] bg-[#484a5a]/5'
+                            ? 'border-tertiary bg-tertiary/5'
                             : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}>
-                        <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="accent-[#484a5a]" />
+                        <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="accent-tertiary" />
                         <span className={`text-xs font-semibold ${o.color} px-1.5 py-0.5 rounded-full`}>{o.label}</span>
                       </label>
                     ))}
@@ -1572,7 +1580,7 @@ export default function AdminUnitProperties() {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
-                  className="flex-[2] py-3 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
+                  className="flex-[2] py-3 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
                   {saving
                     ? <><span className="material-icons-outlined text-base animate-spin">progress_activity</span>Saving…</>
                     : <><span className="material-icons-outlined text-base">{editId ? 'save' : 'add_home_work'}</span>{editId ? 'Update Property' : 'Add Property'}</>

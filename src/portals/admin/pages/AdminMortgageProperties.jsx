@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { mortgagePropertySchema } from '../../../validation/schemas';
 import MortgageHub from '../../../components/common/MortgageHub';
 import SharePropertyModal from '../../../components/common/SharePropertyModal';
 import BulkShareModal from '../../../components/common/BulkShareModal';
@@ -7,6 +9,7 @@ import { Pagination } from '../../../components/common/Pagination';
 import { SearchFilter } from '../../../components/common/SearchFilter';
 import MediaUploader from '../../../components/common/MediaUploader';
 import BookPropertyModal from '../../../components/common/BookPropertyModal';
+import { useConfirm } from '../../../hooks/useConfirm';
 import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
 const VISIBLE_TO_OPTS = [
   { key: 'guest',     label: 'Public (Guests)' },
@@ -33,12 +36,25 @@ const EMPTY_FORM = {
   linkedBanker: '',
   commissionBrokerPct: '',
   commissionMasterBrokerPct: '',
+  commissionBankPct: '',
+  localityPrices: [],
 };
+
+// Drop blank rows and coerce the price to a number before sending to the API.
+function cleanLocalityPrices(rows) {
+  return (rows || [])
+    .filter(r => (r.area && r.area.trim()) || (r.pincode && r.pincode.trim()) || r.expectedPrice !== '')
+    .map(r => ({
+      area: r.area?.trim() || '',
+      pincode: r.pincode?.trim() || '',
+      expectedPrice: r.expectedPrice !== '' && r.expectedPrice != null ? Number(r.expectedPrice) : null,
+    }));
+}
 
 const STATUS_COLORS = {
   available: 'bg-emerald-100 text-emerald-700',
   under_auction: 'bg-amber-100 text-amber-700',
-  sold: 'bg-slate-100 text-slate-500',
+  sold: 'bg-slate-100 text-slate-600',
   withdrawn: 'bg-rose-100 text-rose-600',
 };
 
@@ -73,6 +89,7 @@ function PropertiesTab() {
   const [linkSaving, setLinkSaving]       = useState(false);
   const [linkMsg, setLinkMsg]             = useState('');
   const [bookProperty, setBookProperty]   = useState(null);
+  const { confirm, dialog } = useConfirm();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -115,6 +132,21 @@ function PropertiesTab() {
     }));
   }
 
+  // ── Extra locality/area expected prices (optional) ──────────────────────────
+  function addLocalityPrice() {
+    setForm(f => ({ ...f, localityPrices: [...(f.localityPrices || []), { area: '', pincode: '', expectedPrice: '' }] }));
+  }
+  function updateLocalityPrice(i, key, value) {
+    setForm(f => {
+      const rows = [...(f.localityPrices || [])];
+      rows[i] = { ...rows[i], [key]: value };
+      return { ...f, localityPrices: rows };
+    });
+  }
+  function removeLocalityPrice(i) {
+    setForm(f => ({ ...f, localityPrices: (f.localityPrices || []).filter((_, idx) => idx !== i) }));
+  }
+
   async function openAdd() {
     setForm({ ...EMPTY_FORM });
     setFormImages([]); setFormVideo('');
@@ -141,6 +173,11 @@ function PropertiesTab() {
       linkedBanker: p.linkedBanker?._id || '',
       commissionBrokerPct: p.commissionOverride?.brokerPct ?? '',
       commissionMasterBrokerPct: p.commissionOverride?.masterBrokerPct ?? '',
+      commissionBankPct: p.commissionOverride?.bankPct ?? '',
+      localityPrices: (p.localityPrices || []).map(r => ({
+        area: r.area || '', pincode: r.pincode || '',
+        expectedPrice: r.expectedPrice ?? '',
+      })),
     });
     setFormImages(p.images || []);
     setFormVideo(p.video || '');
@@ -158,6 +195,8 @@ function PropertiesTab() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const { errors } = validateForm(mortgagePropertySchema, form);
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     setSaving(true); setMsg('');
     try {
       const payload = {
@@ -170,12 +209,15 @@ function PropertiesTab() {
         commissionOverride: {
           brokerPct:       form.commissionBrokerPct       !== '' ? Number(form.commissionBrokerPct)       : null,
           masterBrokerPct: form.commissionMasterBrokerPct !== '' ? Number(form.commissionMasterBrokerPct) : null,
+          bankPct:         form.commissionBankPct         !== '' ? Number(form.commissionBankPct)         : null,
         },
+        localityPrices: cleanLocalityPrices(form.localityPrices),
         images: formImages,
         video: formVideo,
       };
       delete payload.commissionBrokerPct;
       delete payload.commissionMasterBrokerPct;
+      delete payload.commissionBankPct;
       if (editId) {
         await api.patch(`/mortgage-properties/${editId}`, payload);
         setMsg('Updated.');
@@ -190,7 +232,7 @@ function PropertiesTab() {
   }
 
   async function deactivate(id) {
-    if (!window.confirm('Deactivate this property?')) return;
+    if (!(await confirm('Deactivate this property?', { danger: true, confirmLabel: 'Deactivate' }))) return;
     try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); } catch { /* empty */ }
   }
 
@@ -230,7 +272,7 @@ function PropertiesTab() {
     } catch { /* empty */ }
   }
 
-  const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
+  const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
     <div className="space-y-5">
@@ -244,7 +286,7 @@ function PropertiesTab() {
           {['all', 'available', 'under_auction', 'sold', 'withdrawn'].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition capitalize
-                ${statusFilter === s ? 'bg-[#4900e5] text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-[#4900e5]'}`}>
+                ${statusFilter === s ? 'bg-primary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-primary'}`}>
               {s === 'all' ? 'All' : s.replace('_', ' ')}
             </button>
           ))}
@@ -259,7 +301,7 @@ function PropertiesTab() {
             </button>
           )}
           <button onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-[#4900e5] text-white text-sm font-semibold rounded-xl hover:bg-[#6236ff] transition">
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-container transition">
             <span className="material-icons-outlined text-base">add</span> Add Property
           </button>
         </div>
@@ -280,7 +322,7 @@ function PropertiesTab() {
                 if (e.target.checked) setSelectedIds(prev => new Set([...prev, ...properties.map(p => p._id)]));
                 else setSelectedIds(prev => { const s = new Set(prev); properties.forEach(p => s.delete(p._id)); return s; });
               }}
-              className="accent-[#4900e5]" />
+              className="accent-primary" />
             Select page ({properties.length})
           </label>
           {selectedIds.size > 0 && (
@@ -295,7 +337,7 @@ function PropertiesTab() {
             <div key={p._id}
               className={`bg-white rounded-2xl border p-5 space-y-3 transition-shadow hover:shadow-sm
                 ${!p.isActive ? 'opacity-50' : ''}
-                ${selectedIds.has(p._id) ? 'border-[#4900e5] ring-2 ring-[#4900e5]/20' : 'border-slate-100'}`}>
+                ${selectedIds.has(p._id) ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100'}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <input type="checkbox" checked={selectedIds.has(p._id)}
@@ -304,17 +346,17 @@ function PropertiesTab() {
                       e.target.checked ? s.add(p._id) : s.delete(p._id);
                       return s;
                     })}
-                    className="mt-1 accent-[#4900e5] cursor-pointer flex-shrink-0" />
+                    className="mt-1 accent-primary cursor-pointer flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-800 leading-tight">{p.title}</p>
                     <p className="text-xs text-slate-400 mt-0.5">{p.bankName || 'No bank listed'}</p>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[p.status] || 'bg-slate-100 text-slate-600'}`}>
                     {(p.status || '').replace('_', ' ')}
                   </span>
-                  <span className="px-2 py-0.5 bg-[#4900e5]/10 text-[#4900e5] rounded-full text-xs font-semibold capitalize">{mortgageTypeLabel(p)}</span>
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold capitalize">{mortgageTypeLabel(p)}</span>
                 </div>
               </div>
               <div className="text-sm text-slate-500 space-y-1">
@@ -395,7 +437,7 @@ function PropertiesTab() {
                   <span className="material-icons-outlined text-sm">account_balance</span>
                 </button>
                 <button onClick={() => openEdit(p)}
-                  className="px-3 py-2 rounded-xl border border-[#4900e5]/30 text-[#4900e5] text-xs font-semibold hover:bg-[#4900e5]/5 transition">
+                  className="px-3 py-2 rounded-xl border border-primary/30 text-primary text-xs font-semibold hover:bg-primary/5 transition">
                   <span className="material-icons-outlined text-sm">edit</span>
                 </button>
                 <button onClick={() => deactivate(p._id)}
@@ -423,6 +465,8 @@ function PropertiesTab() {
         itemsPerPage={LIMIT}
         onPageChange={p => fetchProps(p)}
       />
+
+      {dialog}
 
       {shareProperty && (
         <SharePropertyModal property={shareProperty} type="mortgage" onClose={() => setShareProperty(null)} />
@@ -466,7 +510,7 @@ function PropertiesTab() {
             <select
               value={selectedBankerId}
               onChange={e => setSelectedBankerId(e.target.value)}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30">
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
               <option value="">— No banker (unlink) —</option>
               {bankers.map(b => (
                 <option key={b._id} value={b._id}>
@@ -478,13 +522,13 @@ function PropertiesTab() {
               <p className="text-xs text-amber-600">No banker accounts found. Create one via User Management.</p>
             )}
             {linkMsg && (
-              <div className={`p-2 rounded-xl text-xs font-semibold text-center ${linkMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+              <div className={`p-2 rounded-xl text-xs font-semibold text-center ${linkMsg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                 {linkMsg}
               </div>
             )}
             <div className="flex gap-3">
               <button onClick={handleLinkBanker} disabled={linkSaving}
-                className="flex-1 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-bold hover:bg-[#6236ff] transition disabled:opacity-50">
+                className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-container transition disabled:opacity-50">
                 {linkSaving ? 'Saving…' : 'Save'}
               </button>
               <button onClick={() => setLinkTarget(null)}
@@ -510,7 +554,7 @@ function PropertiesTab() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {msg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('pdat') || msg.includes('dded') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>{msg}</div>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('pdat') || msg.includes('dded') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{msg}</div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
@@ -580,11 +624,43 @@ function PropertiesTab() {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Description</label>
                   <textarea name="description" rows={2} value={form.description} onChange={handleChange} placeholder="Additional details…" className={`${inp} resize-none`} />
                 </div>
+
+                {/* Extra expected prices by locality/area (optional) */}
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      Expected Prices by Locality / Area <span className="normal-case font-normal text-slate-300">(optional)</span>
+                    </label>
+                    <button type="button" onClick={addLocalityPrice}
+                      className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                      <span className="material-icons-outlined text-sm">add</span> Add price
+                    </button>
+                  </div>
+                  {(form.localityPrices || []).length === 0 && (
+                    <p className="text-xs text-slate-400">Add expected prices for other localities/areas of this deal.</p>
+                  )}
+                  <div className="space-y-2">
+                    {(form.localityPrices || []).map((row, i) => (
+                      <div key={i} className="flex flex-wrap items-center gap-2">
+                        <input value={row.area} onChange={e => updateLocalityPrice(i, 'area', e.target.value)}
+                          placeholder="Locality / Area" className={`${inp} flex-1 min-w-[120px]`} />
+                        <input value={row.pincode} onChange={e => updateLocalityPrice(i, 'pincode', e.target.value)}
+                          placeholder="Pincode" maxLength={6} className={`${inp} w-28`} />
+                        <input type="number" value={row.expectedPrice} onChange={e => updateLocalityPrice(i, 'expectedPrice', e.target.value)}
+                          placeholder="Expected ₹" className={`${inp} w-36`} />
+                        <button type="button" onClick={() => removeLocalityPrice(i)}
+                          className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200">
+                          <span className="material-icons-outlined text-base">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
                 <input type="checkbox" id="sellDirect" checked={form.sellDirect}
                   onChange={() => setForm(f => ({ ...f, sellDirect: !f.sellDirect }))}
-                  className="accent-[#4900e5]" />
+                  className="accent-primary" />
                 <label htmlFor="sellDirect" className="text-sm text-slate-700 cursor-pointer">
                   <span className="font-semibold">Sell Direct</span> — skip the standard broker, route straight to the pincode's Master Broker (higher default commission)
                 </label>
@@ -612,7 +688,7 @@ function PropertiesTab() {
                   Set % that goes to broker and master broker for this property. Leave blank to use global commission rates.
                   Bank-added properties default to a flat 1% / 1% override, editable here.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Broker %</label>
                     <input name="commissionBrokerPct" type="number" min="0" max="100" step="0.1"
@@ -625,14 +701,21 @@ function PropertiesTab() {
                       value={form.commissionMasterBrokerPct} onChange={handleChange}
                       placeholder="e.g. 1" className={inp} />
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Bank %</label>
+                    <input name="commissionBankPct" type="number" min="0" max="100" step="0.1"
+                      value={form.commissionBankPct} onChange={handleChange}
+                      placeholder="e.g. 0.5" className={inp} />
+                  </div>
                 </div>
+                <p className="text-xs text-slate-400">Bank % is the bank's own commission on the deal (optional).</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Visible To</label>
                 <div className="flex flex-wrap gap-3">
                   {VISIBLE_TO_OPTS.map(o => (
                     <label key={o.key} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="accent-[#4900e5]" />
+                      <input type="checkbox" checked={form.visibleTo.includes(o.key)} onChange={() => toggleVisible(o.key)} className="accent-primary" />
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${form.visibleTo.includes(o.key) ? ROLE_COLORS[o.key] : 'text-slate-500'}`}>{o.label}</span>
                     </label>
                   ))}
@@ -651,7 +734,7 @@ function PropertiesTab() {
               </div>
 
               <button type="submit" disabled={saving}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {saving ? 'Saving…' : editId ? 'Update Property' : 'Add Property'}
               </button>
             </form>
@@ -717,12 +800,12 @@ function UserAreaAccessTab() {
     setSaving(false);
   }
 
-  const inp = 'flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
+  const inp = 'flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
     <div className="space-y-5">
-      <div className="bg-[#4900e5]/5 border border-[#4900e5]/10 rounded-2xl p-4 text-sm text-slate-600">
-        <span className="font-semibold text-[#4900e5]">How it works:</span> By default, users only see mortgage properties matching their registered city/area/pincode.
+      <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-slate-600">
+        <span className="font-semibold text-primary">How it works:</span> By default, users only see mortgage properties matching their registered city/area/pincode.
         Grant additional area access here so they can also see properties from other locations.
       </div>
 
@@ -731,7 +814,7 @@ function UserAreaAccessTab() {
         {['buyer', 'broker', 'developer', 'investor'].map(role => (
           <button key={role} onClick={() => setRoleFilter(role)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition capitalize
-              ${roleFilter === role ? 'bg-[#4900e5] text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-[#4900e5]'}`}>
+              ${roleFilter === role ? 'bg-primary text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-primary'}`}>
             {role}s
           </button>
         ))}
@@ -751,9 +834,9 @@ function UserAreaAccessTab() {
             <div className="divide-y divide-slate-50 max-h-96 overflow-y-auto">
               {users.map(u => (
                 <button key={u._id} onClick={() => openUser(u)}
-                  className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition ${selected?._id === u._id ? 'bg-[#4900e5]/5' : ''}`}>
+                  className={`w-full text-left px-4 py-3 hover:bg-slate-50 transition ${selected?._id === u._id ? 'bg-primary/5' : ''}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#4900e5]/10 flex items-center justify-center text-[#4900e5] font-bold text-sm flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                       {u.name?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div className="min-w-0">
@@ -762,7 +845,7 @@ function UserAreaAccessTab() {
                     </div>
                     <div className="ml-auto flex-shrink-0">
                       {(u.additionalAreas?.length > 0) && (
-                        <span className="text-xs bg-[#4900e5]/10 text-[#4900e5] px-1.5 py-0.5 rounded-full font-semibold">
+                        <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
                           +{u.additionalAreas.length}
                         </span>
                       )}
@@ -804,8 +887,8 @@ function UserAreaAccessTab() {
                 ) : (
                   <div className="space-y-2">
                     {areas.map((a, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-[#4900e5]/5 border border-[#4900e5]/10 rounded-xl px-3 py-2">
-                        <span className="material-icons-outlined text-sm text-[#4900e5]">location_on</span>
+                      <div key={i} className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-xl px-3 py-2">
+                        <span className="material-icons-outlined text-sm text-primary">location_on</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-slate-700">
                             {a.label || [a.city, a.area, a.pincode].filter(Boolean).join(' · ')}
@@ -844,13 +927,13 @@ function UserAreaAccessTab() {
               </div>
 
               {msg && (
-                <div className={`p-2 rounded-xl text-xs font-semibold text-center ${msg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-2 rounded-xl text-xs font-semibold text-center ${msg.includes('success') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {msg}
                 </div>
               )}
 
               <button onClick={saveAreas} disabled={saving}
-                className="w-full py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-bold hover:bg-[#6236ff] transition disabled:opacity-50">
+                className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-container transition disabled:opacity-50">
                 {saving ? 'Saving…' : 'Save Area Access'}
               </button>
             </div>
@@ -911,7 +994,7 @@ function PendingReviewTab({ onApproved }) {
   return (
     <div className="space-y-4">
       {msg && (
-        <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('approved') || msg.includes('rejected') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>{msg}</div>
+        <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('approved') || msg.includes('rejected') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{msg}</div>
       )}
       {loading ? (
         <div className="text-center py-16 text-slate-400">Loading…</div>
@@ -965,7 +1048,7 @@ function PendingReviewTab({ onApproved }) {
               </div>
 
               {p.description && (
-                <p className="text-sm text-slate-500 bg-slate-50 rounded-xl p-3">{p.description}</p>
+                <p className="text-sm text-on-surface-variant bg-slate-50 rounded-xl p-3">{p.description}</p>
               )}
 
               {/* Submitted by */}
@@ -985,7 +1068,7 @@ function PendingReviewTab({ onApproved }) {
                   <span className="material-icons-outlined text-base">check_circle</span> Approve & Publish
                 </button>
                 <button onClick={() => { setRejectModal(p._id); setRejectReason(''); }} disabled={acting}
-                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-rose-300 text-rose-600 text-sm font-semibold hover:bg-rose-50 transition disabled:opacity-60">
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-rose-300 text-rose-700 text-sm font-semibold hover:bg-rose-50 transition disabled:opacity-60">
                   <span className="material-icons-outlined text-base">cancel</span> Reject
                 </button>
               </div>
@@ -1040,7 +1123,7 @@ export default function AdminMortgageProperties() {
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition relative
-              ${tab === t.key ? 'bg-white text-[#4900e5] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              ${tab === t.key ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             <span className="material-icons-outlined text-base">{t.icon}</span>
             {t.label}
             {t.badge > 0 && (
@@ -1053,7 +1136,7 @@ export default function AdminMortgageProperties() {
       </div>
 
       {tab === 'properties' && <PropertiesTab />}
-      {tab === 'preview'    && <MortgageHub portalColor="#4900e5" showRoleBadges />}
+      {tab === 'preview'    && <MortgageHub portalColor="#451886" showRoleBadges />}
       {tab === 'areas'      && <UserAreaAccessTab />}
     </div>
   );

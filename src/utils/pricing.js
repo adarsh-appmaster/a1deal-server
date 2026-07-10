@@ -8,3 +8,12 @@ export function getStartingPrice(property) {
   }
   return property?.price;
 }
+
+// Indian-notation price formatting shared by property cards/listings — Cr/L
+// above the relevant threshold, plain rupees below.
+export function formatPrice(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
+  if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+}

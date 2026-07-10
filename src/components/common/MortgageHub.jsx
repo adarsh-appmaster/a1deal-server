@@ -34,7 +34,7 @@ function propertyMatchesArea(prop, area) {
 
 const SUGGESTION_MIN_CHARS = 3;
 
-export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = false, scheduleVisitEnabled }) {
+export default function MortgageHub({ portalColor = '#451886', showRoleBadges = false, scheduleVisitEnabled }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [myAreas, setMyAreas]           = useState({ homeArea: null, additionalAreas: [] });
@@ -50,7 +50,7 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
 
   const trimmedQuery = inputVal.trim();
   const isSearchMode = trimmedQuery.length >= SUGGESTION_MIN_CHARS;
-  const properties = isSearchMode ? (searchProps || []) : localProps;
+  const properties = useMemo(() => isSearchMode ? (searchProps || []) : localProps, [isSearchMode, searchProps, localProps]);
   const suggestions = isSearchMode ? (searchProps || []).slice(0, 6) : [];
 
   useEffect(() => {
@@ -297,7 +297,7 @@ export default function MortgageHub({ portalColor = '#4900e5', showRoleBadges = 
           Search
         </button>
         {inputVal !== '' && (
-          <button type="button" onClick={clearSearch}
+          <button type="button" onClick={clearSearch} aria-label="Clear search"
             className="px-3 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm transition">
             <span className="material-icons-outlined text-sm">close</span>
           </button>

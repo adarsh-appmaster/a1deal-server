@@ -4,7 +4,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#4900e5',
+        // Brand purple (from the A1 Deal logo mark, #6628B0) — overrides
+        // Tailwind's built-in blue/sky palettes so every `blue-*` and
+        // `sky-*` utility class renders as brand purple instead of blue.
+        blue: {
+          50: '#f7f3fc',
+          100: '#e9def7',
+          200: '#d1b8ef',
+          300: '#b187e4',
+          400: '#8e51d7',
+          500: '#792fd0',
+          600: '#6628b0',
+          700: '#542191',
+          800: '#441a74',
+          900: '#331457',
+          950: '#220d3a',
+        },
+        sky: {
+          50: '#f7f3fc',
+          100: '#e9def7',
+          200: '#d1b8ef',
+          300: '#b187e4',
+          400: '#8e51d7',
+          500: '#792fd0',
+          600: '#6628b0',
+          700: '#542191',
+          800: '#441a74',
+          900: '#331457',
+          950: '#220d3a',
+        },
+        primary: '#451886',
         'primary-container': '#6236ff',
         'on-primary': '#ffffff',
         'on-primary-container': '#e3dbff',
@@ -33,6 +62,40 @@ export default {
         'on-tertiary-container': '#dddff2',
         background: '#f8f9ff',
         'on-background': '#0b1c30',
+
+        // Portal accent colors — one signature hue per portal, used for
+        // sidebar strips, active-nav pills, and dashboard hero gradients.
+        portal: {
+          buyer: '#451886',
+          broker: '#ff5a5f',
+          developer: '#6628B0',
+          investor: '#10b981',
+          admin: '#484a5a',
+          team: '#06b6d4',
+          bank: '#f59e0b',
+          master: '#d6198f',
+        },
+
+        // Property/listing category colors — consistent badge/border color
+        // per listing type across cards, filters, and section headers.
+        category: {
+          deal: '#f59e0b',
+          partner: '#6236ff',
+          auction: '#f43f5e',
+          launch: '#10b981',
+        },
+
+        // Status colors — shared across property, booking, and user status
+        // chips so the same state always reads the same color everywhere.
+        status: {
+          available: '#10b981',
+          negotiation: '#f59e0b',
+          auction: '#f97316',
+          sold: '#8b5cf6',
+          withdrawn: '#94a3b8',
+          pending: '#eab308',
+          suspended: '#f43f5e',
+        },
       },
       fontFamily: {
         montserrat: ['Montserrat', 'sans-serif'],

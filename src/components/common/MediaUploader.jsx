@@ -21,6 +21,7 @@ export default function MediaUploader({
   folder = 'a1deal/properties',
   maxImages = 10,
   showVideo = false,
+  label = 'Property Images',
 }) {
   const [uploading, setUploading] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -129,7 +130,7 @@ export default function MediaUploader({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            Property Images
+            {label}
           </label>
           {images.length > 0 && (
             <span className="text-xs text-slate-400 font-medium">{images.length}/{maxImages}</span>
@@ -143,7 +144,7 @@ export default function MediaUploader({
               <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                 <img src={url} alt={`Property photo ${idx + 1}`} className="w-full h-full object-cover" />
                 {idx === 0 && (
-                  <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold bg-[#4900e5] text-white px-1.5 py-0.5 rounded-md">
+                  <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold bg-primary text-white px-1.5 py-0.5 rounded-md">
                     Cover
                   </span>
                 )}
@@ -162,8 +163,8 @@ export default function MediaUploader({
               <button
                 type="button"
                 onClick={() => imgInputRef.current?.click()}
-                className="aspect-square rounded-xl border-2 border-dashed border-slate-200 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5
-                           flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-[#4900e5] transition"
+                className="aspect-square rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/40 hover:bg-primary/5
+                           flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-primary transition"
               >
                 <span className="material-icons-outlined text-2xl">add</span>
                 <span className="text-xs font-semibold">Add more</span>
@@ -181,21 +182,21 @@ export default function MediaUploader({
             onClick={() => !uploading && imgInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-6 text-center transition
               ${uploading ? 'cursor-not-allowed bg-slate-50 border-slate-200' :
-                dragActive ? 'cursor-pointer border-[#4900e5] bg-[#4900e5]/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5'}`}
+                dragActive ? 'cursor-pointer border-primary bg-primary/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-primary/5'}`}
           >
             {uploading ? (
               <div className="space-y-2 max-w-xs mx-auto">
                 <p className="text-sm font-semibold text-slate-600">Uploading photos…</p>
                 <div className="w-full bg-slate-200 rounded-full h-2">
-                  <div className="bg-[#4900e5] h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
                 </div>
                 <p className="text-xs text-slate-400">{progress}%</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1.5">
-                <span className="material-icons-outlined text-[#4900e5]/60 text-4xl">add_photo_alternate</span>
+                <span className="material-icons-outlined text-primary/60 text-4xl">add_photo_alternate</span>
                 <p className="text-sm font-semibold text-slate-600">
-                  <span className="text-[#4900e5]">Click to upload</span> or drag photos here
+                  <span className="text-primary">Click to upload</span> or drag photos here
                 </p>
                 <p className="text-xs text-slate-400">JPG, PNG, WEBP · up to 10 MB each · max {maxImages}</p>
               </div>
@@ -238,21 +239,21 @@ export default function MediaUploader({
               onClick={() => !uploadingVideo && vidInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-6 text-center transition
                 ${uploadingVideo ? 'cursor-not-allowed bg-slate-50 border-slate-200' :
-                  videoDragActive ? 'cursor-pointer border-[#4900e5] bg-[#4900e5]/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-[#4900e5]/40 hover:bg-[#4900e5]/5'}`}
+                  videoDragActive ? 'cursor-pointer border-primary bg-primary/5' : 'cursor-pointer border-slate-200 bg-slate-50 hover:border-primary/40 hover:bg-primary/5'}`}
             >
               {uploadingVideo ? (
                 <div className="space-y-2 max-w-xs mx-auto">
                   <p className="text-sm font-semibold text-slate-600">Uploading video…</p>
                   <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div className="bg-[#4900e5] h-2 rounded-full transition-all" style={{ width: `${videoProgress}%` }} />
+                    <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${videoProgress}%` }} />
                   </div>
                   <p className="text-xs text-slate-400">{videoProgress}%</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-1.5">
-                  <span className="material-icons-outlined text-[#4900e5]/60 text-4xl">videocam</span>
+                  <span className="material-icons-outlined text-primary/60 text-4xl">videocam</span>
                   <p className="text-sm font-semibold text-slate-600">
-                    <span className="text-[#4900e5]">Click to upload</span> or drag a video here
+                    <span className="text-primary">Click to upload</span> or drag a video here
                   </p>
                   <p className="text-xs text-slate-400">MP4, MOV, WEBM · up to 10 MB</p>
                 </div>
@@ -270,7 +271,7 @@ export default function MediaUploader({
       )}
 
       {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-600 text-xs font-semibold">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold">
           <span className="material-icons-outlined text-sm">error_outline</span>
           {error}
         </div>

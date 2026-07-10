@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import BackButton from '../../../components/common/BackButton';
 
 const BUILDERS = {
   1: {
@@ -32,6 +33,7 @@ export default function BuilderProfile() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <BackButton fallback="/buyer" label="Back" className="mb-4" />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-on-surface-variant mb-6">
         <button onClick={() => navigate('/buyer')} className="hover:text-primary">Home</button>

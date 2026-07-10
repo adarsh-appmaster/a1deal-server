@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../api/axios';
+import BackButton from '../../../components/common/BackButton';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-700',
@@ -27,6 +28,7 @@ export default function MyVisits() {
 
   return (
     <div className="max-w-container mx-auto px-6 py-8">
+      <BackButton fallback="/buyer" label="Back" className="mb-4" />
       <h1 className="font-montserrat font-bold text-2xl text-on-surface mb-1">My Site Visits</h1>
       <p className="text-sm text-on-surface-variant mb-6">Track all your scheduled property visits.</p>
 
@@ -40,7 +42,7 @@ export default function MyVisits() {
           <p className="font-semibold text-on-surface mb-1">No site visits yet</p>
           <p className="text-sm text-on-surface-variant mb-4">Browse properties and schedule a visit to see it here.</p>
           <button onClick={() => navigate('/buyer/search')}
-            className="px-5 py-2.5 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">
+            className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
             Browse Properties
           </button>
         </div>

@@ -4,12 +4,12 @@ import api from '../../../api/axios';
 const COMMISSION_COLORS = {
   paid:       'bg-emerald-100 text-emerald-700',
   processing: 'bg-amber-100 text-amber-700',
-  pending:    'bg-slate-100 text-slate-500',
+  pending:    'bg-slate-100 text-slate-600',
 };
 
 const ENQUIRY_STATUS_COLORS = {
   open:       'bg-blue-100 text-blue-700',
-  closed:     'bg-slate-100 text-slate-500',
+  closed:     'bg-slate-100 text-slate-600',
   scheduled:  'bg-violet-100 text-violet-700',
 };
 
@@ -44,6 +44,7 @@ export default function MortgageLeads() {
 
   const kpis = [
     { label: 'Total Enquiries', value: summary.totalEnquiries, icon: 'people',       color: 'text-blue-600',    bg: 'bg-blue-50' },
+    { label: 'Bank Commission', value: summary.bankCommission || '—', icon: 'account_balance', color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Commission Paid', value: summary.paid,           icon: 'check_circle',  color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Processing',      value: summary.processing,     icon: 'pending',       color: 'text-amber-600',   bg: 'bg-amber-50' },
     { label: 'Pending',         value: summary.pending,        icon: 'hourglass_top', color: 'text-slate-500',   bg: 'bg-slate-50' },
@@ -57,7 +58,7 @@ export default function MortgageLeads() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         {kpis.map(k => (
           <div key={k.label} className="card p-4">
             <div className={`w-9 h-9 rounded-lg ${k.bg} flex items-center justify-center mb-2`}>
@@ -88,6 +89,7 @@ export default function MortgageLeads() {
                   <th className="text-right px-5 py-3 hidden sm:table-cell">Booked Price</th>
                   <th className="text-center px-5 py-3">Status</th>
                   <th className="text-center px-5 py-3">Commission</th>
+                  <th className="text-center px-5 py-3">Bank Comm.</th>
                   <th className="text-right px-5 py-3">Date</th>
                   <th className="text-center px-5 py-3"></th>
                 </tr>
@@ -107,17 +109,20 @@ export default function MortgageLeads() {
                         <p className="font-bold text-on-surface">{e.bookedPrice ? fmt(e.bookedPrice) : '—'}</p>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${ENQUIRY_STATUS_COLORS[e.status] || 'bg-slate-100 text-slate-500'}`}>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${ENQUIRY_STATUS_COLORS[e.status] || 'bg-slate-100 text-slate-600'}`}>
                           {e.status || '—'}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-center">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${COMMISSION_COLORS[e.commissionStatus] || 'bg-slate-100 text-slate-500'}`}>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${COMMISSION_COLORS[e.commissionStatus] || 'bg-slate-100 text-slate-600'}`}>
                           {e.commissionStatus || 'pending'}
                         </span>
                         {e.commissionDisplay && (
                           <p className="text-[10px] text-on-surface-variant mt-0.5">{e.commissionDisplay}</p>
                         )}
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <p className="font-semibold text-indigo-600 text-xs">{e.bankCommissionDisplay || '—'}</p>
                       </td>
                       <td className="px-5 py-4 text-right text-xs text-on-surface-variant">
                         {e.createdAt ? new Date(e.createdAt).toLocaleDateString('en-IN') : '—'}
@@ -132,7 +137,7 @@ export default function MortgageLeads() {
                     </tr>
                     {expanded === e._id && (
                       <tr key={`${e._id}-detail`} className="bg-surface-container-low">
-                        <td colSpan={7} className="px-5 py-4">
+                        <td colSpan={8} className="px-5 py-4">
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                             <div>
                               <p className="text-xs text-on-surface-variant mb-1">Buyer Email</p>

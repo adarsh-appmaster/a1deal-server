@@ -16,9 +16,9 @@ const INQ_BADGE = {
   contacted: { label: 'Contacted', cls: 'bg-sky-100 text-sky-700' },
   converted: { label: 'Accepted',  cls: 'bg-emerald-100 text-emerald-700' },
   rejected:  { label: 'Rejected',  cls: 'bg-rose-100 text-rose-700' },
-  cancelled: { label: 'Cancelled', cls: 'bg-slate-100 text-slate-500' },
+  cancelled: { label: 'Cancelled', cls: 'bg-slate-100 text-slate-600' },
 };
-const INP = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white';
+const INP = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white';
 
 function fmtDate(d) {
   if (!d) return '—';
@@ -63,7 +63,7 @@ function AreasEditor({ areas, onChange }) {
   const taken     = coverage.filter(c => !c.available && !c.takenBy?.pending);
 
   function addArea(pincode) {
-    if (!tempCity.trim()) return;
+    if (!tempCity.trim() || !pincode?.trim()) return;
     const existing = areas.find(a => a.city === tempCity && a.area === tempArea && a.pincode === pincode);
     if (!existing) onChange([...areas, { city: tempCity.trim(), area: tempArea.trim(), pincode }]);
   }
@@ -104,7 +104,7 @@ function AreasEditor({ areas, onChange }) {
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Available ({available.length})</p>
                 <button type="button" onClick={() => available.forEach(c => addArea(c.pincode))}
-                  className="ml-auto text-[10px] text-[#4900e5] font-semibold hover:underline">
+                  className="ml-auto text-[10px] text-primary font-semibold hover:underline">
                   Add all
                 </button>
               </div>
@@ -116,8 +116,8 @@ function AreasEditor({ areas, onChange }) {
                       onClick={() => !alreadyAdded && addArea(c.pincode)}
                       className={`px-3 py-1 rounded-full text-xs font-semibold border-2 transition
                         ${alreadyAdded
-                          ? 'bg-[#4900e5] text-white border-[#4900e5] cursor-default'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-[#4900e5] hover:bg-[#4900e5]/5'}`}>
+                          ? 'bg-primary text-white border-primary cursor-default'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-primary hover:bg-primary/5'}`}>
                       {alreadyAdded ? '✓ ' : '+ '}{c.pincode}
                     </button>
                   );
@@ -153,15 +153,22 @@ function AreasEditor({ areas, onChange }) {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Already Taken ({taken.length})</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {taken.map(c => (
-                  <div key={c.pincode}
-                    title={`Taken by ${c.takenBy?.name || 'a master broker'}`}
-                    className="px-3 py-1 rounded-full text-xs font-semibold border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed flex items-center gap-1">
-                    <span className="material-icons-outlined text-[10px]">lock</span>
-                    {c.pincode}
-                    {c.takenBy?.name && <span className="text-[9px] text-slate-300">· {c.takenBy.name}</span>}
-                  </div>
-                ))}
+                {taken.map(c => {
+                  const conflict = c.takenBy?.conflictsWith;
+                  return (
+                    <div key={c.pincode}
+                      title={conflict
+                        ? `Taken by ${c.takenBy?.name || 'a master broker'} — but ${conflict.name} also has a converted inquiry for this pincode. Please resolve manually.`
+                        : `Taken by ${c.takenBy?.name || 'a master broker'}`}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border cursor-not-allowed flex items-center gap-1
+                        ${conflict ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>
+                      <span className="material-icons-outlined text-[10px]">{conflict ? 'error_outline' : 'lock'}</span>
+                      {c.pincode}
+                      {c.takenBy?.name && <span className={`text-[9px] ${conflict ? 'text-rose-400' : 'text-slate-300'}`}>· {c.takenBy.name}</span>}
+                      {conflict && <span className="text-[9px] text-rose-500">⚠ also claimed by {conflict.name}</span>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -178,7 +185,7 @@ function AreasEditor({ areas, onChange }) {
               }} />
             <button type="button"
               onClick={() => { addArea(manualRef.current.value.trim()); manualRef.current.value = ''; }}
-              className="px-3 py-2 rounded-xl bg-[#4900e5] text-white text-xs font-semibold whitespace-nowrap hover:bg-[#6236ff] transition">
+              className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap hover:bg-primary-container transition">
               Add
             </button>
           </div>
@@ -189,7 +196,7 @@ function AreasEditor({ areas, onChange }) {
       {areas.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {areas.map((a, i) => (
-            <span key={i} className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+            <span key={i} className="flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
               {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
               <button type="button" onClick={() => removeArea(i)} className="hover:text-rose-500 ml-0.5">×</button>
             </span>
@@ -243,6 +250,14 @@ export default function MasterBrokerRequests() {
   const [expWorking, setExpWorking]         = useState(false);
   const [expMsg, setExpMsg]                 = useState({ text: '', ok: true });
 
+  // Broker pincode requests state (standard brokers — separate from master-tier expansions)
+  const [pincodeRequests, setPincodeRequests]     = useState([]);
+  const [pincodeReqLoading, setPincodeReqLoading] = useState(false);
+  const [selPincodeReq, setSelPincodeReq]         = useState(null);
+  const [pincodeReqNote, setPincodeReqNote]       = useState('');
+  const [pincodeReqWorking, setPincodeReqWorking] = useState(false);
+  const [pincodeReqMsg, setPincodeReqMsg]         = useState({ text: '', ok: true });
+
   // Inquiries state
   const [inquiries, setInquiries]     = useState([]);
   const [inqLoading, setInqLoading]   = useState(true);
@@ -256,6 +271,13 @@ export default function MasterBrokerRequests() {
   const [inqMsg, setInqMsg]           = useState({ text: '', ok: true });
   const [reactivateNewPassword, setReactivateNewPassword] = useState(true);
 
+  // Broker partnership requests — self-registered brokers with no covering master
+  // broker (targetMasterBroker: null); admin/team is the only one who can decide these.
+  const [partnerships, setPartnerships]         = useState([]);
+  const [partnershipsLoading, setPartnershipsLoading] = useState(false);
+  const [decidingPartnershipId, setDecidingPartnershipId] = useState(null);
+  const [partnershipMsg, setPartnershipMsg]     = useState({ text: '', ok: true });
+
   const PER_PAGE = 10;
   const [loadError, setLoadError] = useState('');
 
@@ -263,6 +285,29 @@ export default function MasterBrokerRequests() {
   useEffect(() => { if (mainTab === 'inquiries') fetchInquiries(); }, [mainTab]);
   useEffect(() => { if (mainTab === 'signups') fetchSignups(); }, [mainTab]);
   useEffect(() => { if (mainTab === 'expansions') fetchExpansions(); }, [mainTab]);
+  useEffect(() => { if (mainTab === 'broker-pincodes') fetchPincodeRequests(); }, [mainTab]);
+  useEffect(() => { if (mainTab === 'partnerships') fetchPartnerships(); }, [mainTab]);
+
+  async function fetchPartnerships() {
+    setPartnershipsLoading(true);
+    try {
+      const { data } = await api.get('/master-broker/partnership-requests?unassigned=true');
+      setPartnerships(data.requests || []);
+    } catch { /* empty */ }
+    setPartnershipsLoading(false);
+  }
+
+  async function decidePartnership(id, decision) {
+    setDecidingPartnershipId(id); setPartnershipMsg({ text: '', ok: true });
+    try {
+      const { data } = await api.patch(`/master-broker/partnership-requests/${id}/decide`, { decision });
+      setPartnerships(prev => prev.map(r => r._id === id ? data.request : r));
+      setPartnershipMsg({ text: `Request ${decision}.`, ok: true });
+    } catch (err) {
+      setPartnershipMsg({ text: err.response?.data?.message || 'Failed.', ok: false });
+    }
+    setDecidingPartnershipId(null);
+  }
 
   async function fetchSignups() {
     setSignupsLoading(true);
@@ -381,6 +426,37 @@ export default function MasterBrokerRequests() {
       setExpMsg({ text: err.response?.data?.message || 'Failed.', ok: false });
     }
     setExpWorking(false);
+  }
+
+  async function fetchPincodeRequests() {
+    setPincodeReqLoading(true);
+    try {
+      const { data } = await api.get('/master-broker/pincode-requests');
+      setPincodeRequests(data.requests || []);
+    } catch { /* empty */ }
+    setPincodeReqLoading(false);
+  }
+
+  function openPincodeRequest(req) {
+    setSelPincodeReq(req);
+    setPincodeReqNote('');
+    setPincodeReqMsg({ text: '', ok: true });
+  }
+
+  async function doDecidePincodeRequest(decision) {
+    setPincodeReqWorking(true);
+    try {
+      const { data } = await api.patch(`/master-broker/pincode-requests/${selPincodeReq._id}/decide`, {
+        decision,
+        adminNote: pincodeReqNote,
+      });
+      setPincodeReqMsg({ text: `Request ${decision}.`, ok: true });
+      setPincodeRequests(prev => prev.map(r => r._id === data.request._id ? data.request : r));
+      setSelPincodeReq(data.request);
+    } catch (err) {
+      setPincodeReqMsg({ text: err.response?.data?.message || 'Failed.', ok: false });
+    }
+    setPincodeReqWorking(false);
   }
 
   // ── Application actions ───────────────────────────────────────────────────
@@ -582,13 +658,15 @@ export default function MasterBrokerRequests() {
           { key: 'applications', label: 'Applications',      icon: 'assignment',       count: requests.length },
           { key: 'inquiries',    label: 'Public Inquiries',  icon: 'contact_mail',     count: inquiries.length },
           { key: 'expansions',   label: 'Pincode Expansions', icon: 'add_location_alt', count: expansions.filter(r => r.status === 'pending').length },
+          { key: 'broker-pincodes', label: 'Broker Pincode Requests', icon: 'pin_drop', count: pincodeRequests.filter(r => r.status === 'pending').length },
+          { key: 'partnerships', label: 'Partnership Requests', icon: 'how_to_reg', count: partnerships.filter(r => r.status === 'pending').length },
         ].map(t => (
           <button key={t.key} onClick={() => setMainTab(t.key)}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 -mb-px transition whitespace-nowrap
-              ${mainTab === t.key ? 'border-[#4900e5] text-[#4900e5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              ${mainTab === t.key ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
             <span className="material-icons-outlined text-base">{t.icon}</span>
             {t.label}
-            <span className={`px-2 py-0.5 rounded-full text-xs ${mainTab === t.key ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-xs ${mainTab === t.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
               {t.count}
             </span>
           </button>
@@ -600,11 +678,11 @@ export default function MasterBrokerRequests() {
         <>
           <input value={signupSearch} onChange={e => { setSignupSearch(e.target.value); setSignupPage(1); }}
             placeholder="Search by name, email or phone…"
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white" />
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
 
           {signupsLoading ? (
             <div className="flex items-center justify-center py-16">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           ) : filteredSignups.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -642,7 +720,7 @@ export default function MasterBrokerRequests() {
                       <p className="text-xs text-slate-400">Signed up: {fmtDate(inq.createdAt)}</p>
                     </div>
                     <button onClick={() => openSignupReview(inq)}
-                      className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition flex-shrink-0">
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-container transition flex-shrink-0">
                       Review
                     </button>
                   </div>
@@ -682,11 +760,11 @@ export default function MasterBrokerRequests() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Phone</p>
-                  <a href={`tel:${selSignup.phone}`} className="text-slate-700 hover:text-[#4900e5]">{selSignup.phone || '—'}</a>
+                  <a href={`tel:${selSignup.phone}`} className="text-slate-700 hover:text-primary">{selSignup.phone || '—'}</a>
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Email</p>
-                  <a href={`mailto:${selSignup.email}`} className="text-slate-700 hover:text-[#4900e5] text-sm">{selSignup.email}</a>
+                  <a href={`mailto:${selSignup.email}`} className="text-slate-700 hover:text-primary text-sm">{selSignup.email}</a>
                 </div>
               </div>
 
@@ -698,7 +776,7 @@ export default function MasterBrokerRequests() {
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {selSignup.requestedAreas.map((a, i) => (
-                      <span key={i} className="px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                      <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                         {[a.city, a.area, a.pincode].filter(Boolean).join(' / ') || 'Zone TBD'}
                       </span>
                     ))}
@@ -717,7 +795,7 @@ export default function MasterBrokerRequests() {
               <div className="border border-slate-100 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                    ${selSignup.assignedTo ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    ${selSignup.assignedTo ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
                     {selSignup.assignedTo ? '✓' : '1'}
                   </div>
                   <p className="font-semibold text-slate-700 text-sm">Assign for Verification</p>
@@ -743,7 +821,7 @@ export default function MasterBrokerRequests() {
                     {visitors.length === 0 && <option disabled>No team members found</option>}
                   </select>
                   <button onClick={doSignupAssign} disabled={signupWorking || !signupAssignId}
-                    className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60 whitespace-nowrap">
+                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60 whitespace-nowrap">
                     Assign
                   </button>
                 </div>
@@ -753,7 +831,7 @@ export default function MasterBrokerRequests() {
               {!['converted', 'rejected', 'cancelled'].includes(selSignup.status) && (
                 <div className="border border-slate-100 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">2</div>
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">2</div>
                     <p className="font-semibold text-slate-700 text-sm">Decision</p>
                   </div>
                   <div>
@@ -782,14 +860,14 @@ export default function MasterBrokerRequests() {
                 </div>
               )}
               {selSignup.status === 'rejected' && (
-                <div className="flex items-center gap-2 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-600 font-semibold text-sm">
+                <div className="flex items-center gap-2 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 font-semibold text-sm">
                   <span className="material-icons-outlined">cancel</span> Rejected.
                 </div>
               )}
 
               {signupMsg.text && (
                 <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
-                  ${signupMsg.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-rose-50 border border-rose-200 text-rose-600'}`}>
+                  ${signupMsg.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-rose-50 border border-rose-200 text-rose-700'}`}>
                   <span className="material-icons-outlined text-sm">{signupMsg.ok ? 'check_circle' : 'error_outline'}</span>
                   {signupMsg.text}
                 </div>
@@ -814,7 +892,7 @@ export default function MasterBrokerRequests() {
             {['all','pending','under_review','approved','rejected'].map(s => (
               <button key={s} onClick={() => { setReqTab(s); setReqPage(1); }}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition capitalize
-                  ${reqTab === s ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                  ${reqTab === s ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                 {s === 'under_review' ? 'Under Review' : s === 'all' ? `All (${requests.length})` : s}
               </button>
             ))}
@@ -822,11 +900,11 @@ export default function MasterBrokerRequests() {
 
           <input value={reqSearch} onChange={e => { setReqSearch(e.target.value); setReqPage(1); }}
             placeholder="Search by name, email or phone…"
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white" />
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
 
           {reqLoading ? (
             <div className="flex items-center justify-center py-16">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           ) : filteredReqs.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -850,7 +928,7 @@ export default function MasterBrokerRequests() {
                       {r.requestedAreas?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {r.requestedAreas.map((a, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-[#4900e5]/10 text-[#4900e5] rounded-full text-xs">
+                            <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
                               {[a.city, a.area, a.pincode].filter(Boolean).join('/')}
                             </span>
                           ))}
@@ -861,17 +939,17 @@ export default function MasterBrokerRequests() {
                         {['Applied','Visit','Payment','Decision'].map((s, i) => (
                           <div key={s} className="flex items-center gap-1">
                             <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold
-                              ${step > i ? 'bg-[#4900e5] text-white' : step === i ? 'bg-[#4900e5]/20 text-[#4900e5] border border-[#4900e5]/40' : 'bg-slate-100 text-slate-400'}`}>
+                              ${step > i ? 'bg-primary text-white' : step === i ? 'bg-primary/20 text-primary border border-primary/40' : 'bg-slate-100 text-slate-400'}`}>
                               {step > i ? '✓' : i + 1}
                             </div>
-                            {i < 3 && <div className={`w-6 h-0.5 ${step > i ? 'bg-[#4900e5]' : 'bg-slate-200'}`} />}
-                            <span className={`text-[10px] ${step >= i ? 'text-[#4900e5]' : 'text-slate-300'}`}>{s}</span>
+                            {i < 3 && <div className={`w-6 h-0.5 ${step > i ? 'bg-primary' : 'bg-slate-200'}`} />}
+                            <span className={`text-[10px] ${step >= i ? 'text-primary' : 'text-slate-300'}`}>{s}</span>
                             {i < 3 && <div className="w-2" />}
                           </div>
                         ))}
                       </div>
                     </div>
-                    <button onClick={() => openManage(r)} className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-xs font-semibold hover:bg-[#6236ff] transition flex-shrink-0">
+                    <button onClick={() => openManage(r)} className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-container transition flex-shrink-0">
                       Manage
                     </button>
                   </div>
@@ -898,7 +976,7 @@ export default function MasterBrokerRequests() {
             ].map(s => (
               <button key={s.key} onClick={() => { setInqTab(s.key); setInqPage(1); }}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
-                  ${inqTab === s.key ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                  ${inqTab === s.key ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                 {s.label}
               </button>
             ))}
@@ -906,11 +984,11 @@ export default function MasterBrokerRequests() {
 
           <input value={inqSearch} onChange={e => { setInqSearch(e.target.value); setInqPage(1); }}
             placeholder="Search by name, email or phone…"
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 bg-white" />
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
 
           {inqLoading ? (
             <div className="flex items-center justify-center py-16">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#4900e5]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-primary">progress_activity</span>
             </div>
           ) : filteredInqs.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
@@ -1007,14 +1085,14 @@ export default function MasterBrokerRequests() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Coverage Areas</p>
                   {!editingAreas ? (
                     <button onClick={() => setEditingAreas(true)}
-                      className="flex items-center gap-1 text-xs text-[#4900e5] font-semibold hover:underline">
+                      className="flex items-center gap-1 text-xs text-primary font-semibold hover:underline">
                       <span className="material-icons-outlined text-sm">edit</span> Edit Areas
                     </button>
                   ) : (
                     <div className="flex gap-2">
                       <button onClick={() => setEditingAreas(false)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
                       <button onClick={doSaveAreas} disabled={working}
-                        className="text-xs font-semibold text-white bg-[#4900e5] px-3 py-1 rounded-lg hover:bg-[#6236ff] transition disabled:opacity-60">
+                        className="text-xs font-semibold text-white bg-primary px-3 py-1 rounded-lg hover:bg-primary-container transition disabled:opacity-60">
                         Save Areas
                       </button>
                     </div>
@@ -1025,7 +1103,7 @@ export default function MasterBrokerRequests() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {selected.requestedAreas?.length ? selected.requestedAreas.map((a, i) => (
-                      <span key={i} className="px-3 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                      <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                         {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
                       </span>
                     )) : <span className="text-slate-400 text-sm">No areas defined</span>}
@@ -1038,7 +1116,7 @@ export default function MasterBrokerRequests() {
                 <div className="border border-slate-100 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                      ${selected.assignedVisitor ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      ${selected.assignedVisitor ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
                       {selected.assignedVisitor ? '✓' : '1'}
                     </div>
                     <p className="font-semibold text-slate-700 text-sm">Field Visit</p>
@@ -1070,7 +1148,7 @@ export default function MasterBrokerRequests() {
                       )}
                     </select>
                     <button onClick={doAssign} disabled={working || !assignVisitorId}
-                      className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60 whitespace-nowrap">
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60 whitespace-nowrap">
                       Assign
                     </button>
                   </div>
@@ -1097,7 +1175,7 @@ export default function MasterBrokerRequests() {
                 <div className={`border rounded-2xl p-5 space-y-3 ${selected.subscriptionPaid ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100'}`}>
                   <div className="flex items-center gap-2">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                      ${selected.subscriptionPaid ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      ${selected.subscriptionPaid ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
                       {selected.subscriptionPaid ? '✓' : '2'}
                     </div>
                     <p className="font-semibold text-slate-700 text-sm">₹50,000 Programme Fee</p>
@@ -1121,7 +1199,7 @@ export default function MasterBrokerRequests() {
               {['pending', 'under_review'].includes(selected.status) && (
                 <div className="border border-slate-100 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">3</div>
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">3</div>
                     <p className="font-semibold text-slate-700 text-sm">Final Decision</p>
                     {!criteriaAllMet && (
                       <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
@@ -1257,11 +1335,11 @@ export default function MasterBrokerRequests() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Phone</p>
-                  <a href={`tel:${selInq.phone}`} className="text-slate-700 hover:text-[#4900e5]">{selInq.phone}</a>
+                  <a href={`tel:${selInq.phone}`} className="text-slate-700 hover:text-primary">{selInq.phone}</a>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Email</p>
-                  <a href={`mailto:${selInq.email}`} className="text-slate-700 hover:text-[#4900e5] text-xs truncate block">{selInq.email}</a>
+                  <a href={`mailto:${selInq.email}`} className="text-slate-700 hover:text-primary text-xs truncate block">{selInq.email}</a>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-0.5">Received</p>
@@ -1296,7 +1374,7 @@ export default function MasterBrokerRequests() {
                 <div className="border border-slate-100 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                      ${selInq.assignedTo ? 'bg-[#4900e5] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      ${selInq.assignedTo ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
                       {selInq.assignedTo ? '✓' : '1'}
                     </div>
                     <p className="font-semibold text-slate-700 text-sm">Assign for Follow-up</p>
@@ -1321,7 +1399,7 @@ export default function MasterBrokerRequests() {
                       )}
                     </select>
                     <button onClick={doAssignInquiry} disabled={inqWorking || !inqAssignId}
-                      className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60 whitespace-nowrap">
+                      className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60 whitespace-nowrap">
                       Assign
                     </button>
                   </div>
@@ -1332,7 +1410,7 @@ export default function MasterBrokerRequests() {
               {['assigned'].includes(selInq.status) && (
                 <div className="border border-slate-100 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">2</div>
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">2</div>
                     <p className="font-semibold text-slate-700 text-sm">Mark Contacted</p>
                   </div>
                   <button onClick={() => doInquiryAction('contacted')} disabled={inqWorking}
@@ -1367,7 +1445,7 @@ export default function MasterBrokerRequests() {
                         checked={reactivateNewPassword}
                         onChange={e => setReactivateNewPassword(e.target.checked)}
                       />
-                      <div className={`w-9 h-5 rounded-full transition-colors ${reactivateNewPassword ? 'bg-[#4900e5]' : 'bg-slate-300'}`} />
+                      <div className={`w-9 h-5 rounded-full transition-colors ${reactivateNewPassword ? 'bg-primary' : 'bg-slate-300'}`} />
                       <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${reactivateNewPassword ? 'translate-x-4' : 'translate-x-0'}`} />
                     </div>
                     <div>
@@ -1398,7 +1476,7 @@ export default function MasterBrokerRequests() {
               {!['converted','rejected','cancelled'].includes(selInq.status) && (
                 <div className="border border-slate-100 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
                       {selInq.status === 'contacted' ? '2' : '3'}
                     </div>
                     <p className="font-semibold text-slate-700 text-sm">Final Decision</p>
@@ -1482,7 +1560,7 @@ export default function MasterBrokerRequests() {
                 </div>
               )}
               {selInq.status === 'rejected' && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-center text-rose-600">
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-center text-rose-700">
                   <span className="material-icons-outlined text-2xl block mx-auto mb-1">cancel</span>
                   <p className="font-semibold">Rejected</p>
                   {selInq.rejectionEmailSent && (
@@ -1505,7 +1583,7 @@ export default function MasterBrokerRequests() {
               {/* Feedback message */}
               {inqMsg.text && (
                 <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
-                  ${inqMsg.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-rose-50 border border-rose-200 text-rose-600'}`}>
+                  ${inqMsg.ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-rose-50 border border-rose-200 text-rose-700'}`}>
                   <span className="material-icons-outlined text-sm">{inqMsg.ok ? 'check_circle' : 'error_outline'}</span>
                   {inqMsg.text}
                 </div>
@@ -1525,8 +1603,8 @@ export default function MasterBrokerRequests() {
       {/* ══ EXPANSIONS TAB ════════════════════════════════════════════════════ */}
       {mainTab === 'expansions' && (
         <div className="space-y-4">
-          <div className="bg-[#4900e5]/5 border border-[#4900e5]/10 rounded-2xl p-4 text-sm text-slate-600">
-            <span className="font-semibold text-[#4900e5]">Pincode Expansion Requests</span> — Master brokers submit these when they need more pincodes beyond their approved limit. Approving merges the new areas into their coverageAreas and optionally raises their limit.
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-slate-600">
+            <span className="font-semibold text-primary">Pincode Expansion Requests</span> — Master brokers submit these when they need more pincodes beyond their approved limit. Approving merges the new areas into their coverageAreas and optionally raises their limit.
           </div>
 
           {expLoading ? (
@@ -1552,7 +1630,7 @@ export default function MasterBrokerRequests() {
                     <div className="text-right text-xs text-slate-400 flex-shrink-0">
                       <p>Current: <span className="font-semibold text-slate-700">{r.broker?.coverageAreas?.length || 0} pincodes</span></p>
                       <p>Limit: <span className="font-semibold text-slate-700">{r.broker?.approvedPincodeLimit ?? '∞'}</span></p>
-                      <p>Requesting: <span className="font-semibold text-[#4900e5]">+{r.requestedAreas?.length || 0}</span></p>
+                      <p>Requesting: <span className="font-semibold text-primary">+{r.requestedAreas?.length || 0}</span></p>
                     </div>
                   </div>
                   {r.reason && (
@@ -1560,14 +1638,14 @@ export default function MasterBrokerRequests() {
                   )}
                   <div className="flex flex-wrap gap-1.5">
                     {(r.requestedAreas || []).map((a, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                         {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
                       </span>
                     ))}
                   </div>
                   {r.status === 'pending' ? (
                     <button onClick={() => openExpansion(r)}
-                      className="w-full py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition">
+                      className="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
                       Review
                     </button>
                   ) : r.adminNote && (
@@ -1607,7 +1685,7 @@ export default function MasterBrokerRequests() {
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Requested Areas (+{selExp.requestedAreas?.length})</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(selExp.requestedAreas || []).map((a, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-[#4900e5]/10 text-[#4900e5] text-xs font-semibold">
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                       {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
                     </span>
                   ))}
@@ -1618,17 +1696,17 @@ export default function MasterBrokerRequests() {
                 <input type="number" min="1" value={expNewLimit}
                   onChange={e => setExpNewLimit(e.target.value)}
                   placeholder={`Current: ${selExp.broker?.approvedPincodeLimit ?? '∞'} — leave blank to keep`}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30" />
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 <p className="text-xs text-slate-400 mt-1">After approval they'll have {(selExp.broker?.coverageAreas?.length || 0) + (selExp.requestedAreas?.length || 0)} total pincodes.</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Admin Note (optional)</label>
                 <textarea rows={2} value={expNote} onChange={e => setExpNote(e.target.value)}
                   placeholder="Reason for approval or rejection…"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 resize-none" />
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
               </div>
               {expMsg.text && (
-                <div className={`p-2 rounded-xl text-xs font-semibold text-center ${expMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-2 rounded-xl text-xs font-semibold text-center ${expMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {expMsg.text}
                 </div>
               )}
@@ -1645,7 +1723,7 @@ export default function MasterBrokerRequests() {
                 </div>
               )}
               {selExp.status !== 'pending' && (
-                <div className={`p-3 rounded-xl text-sm font-semibold text-center ${selExp.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold text-center ${selExp.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {selExp.status === 'approved' ? '✓ Approved' : '✗ Rejected'}
                   {selExp.adminNote && ` — ${selExp.adminNote}`}
                 </div>
@@ -1656,6 +1734,195 @@ export default function MasterBrokerRequests() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ BROKER PINCODE REQUESTS TAB ══════════════════════════════════════ */}
+      {mainTab === 'broker-pincodes' && (
+        <div className="space-y-4">
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-slate-600">
+            <span className="font-semibold text-primary">Broker Pincode Requests</span> — Standard brokers submit these to ask for extra operating pincodes. Approving merges the areas into their <code>additionalAreas</code> (their own operating zone — this does not grant master-broker territory or privileges).
+          </div>
+
+          {pincodeReqLoading ? (
+            <div className="text-center py-16 text-slate-400">Loading…</div>
+          ) : pincodeRequests.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">No broker pincode requests yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {pincodeRequests.map(r => (
+                <div key={r._id} className={`bg-white rounded-2xl border p-5 space-y-3 ${r.status === 'pending' ? 'border-amber-200' : 'border-slate-100'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize
+                          ${r.status === 'pending' ? 'bg-amber-100 text-amber-700' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'}`}>
+                          {r.status}
+                        </span>
+                        <span className="text-xs text-slate-400">{new Date(r.createdAt).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}</span>
+                      </div>
+                      <p className="font-semibold text-slate-800">{r.broker?.name}</p>
+                      <p className="text-xs text-slate-400">{r.broker?.email} · {r.broker?.city} {r.broker?.pincode}</p>
+                    </div>
+                    <div className="text-right text-xs text-slate-400 flex-shrink-0">
+                      <p>Current extra areas: <span className="font-semibold text-slate-700">{r.broker?.additionalAreas?.length || 0}</span></p>
+                      <p>Requesting: <span className="font-semibold text-primary">+{r.requestedAreas?.length || 0}</span></p>
+                    </div>
+                  </div>
+                  {r.reason && (
+                    <p className="text-sm text-slate-600 italic bg-slate-50 rounded-xl px-3 py-2">"{r.reason}"</p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(r.requestedAreas || []).map((a, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                        {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
+                      </span>
+                    ))}
+                  </div>
+                  {r.status === 'pending' ? (
+                    <button onClick={() => openPincodeRequest(r)}
+                      className="w-full py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
+                      Review
+                    </button>
+                  ) : r.adminNote && (
+                    <p className="text-xs text-slate-500 italic">Admin note: {r.adminNote}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Broker pincode request review modal */}
+      {selPincodeReq && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelPincodeReq(null)}>
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="font-montserrat font-bold text-slate-800">Review Pincode Request</h3>
+              <button onClick={() => setSelPincodeReq(null)}><span className="material-icons-outlined text-slate-400">close</span></button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-slate-50 rounded-xl p-4 space-y-1">
+                <p className="font-semibold text-slate-800">{selPincodeReq.broker?.name}</p>
+                <p className="text-xs text-slate-500">{selPincodeReq.broker?.email}</p>
+                <div className="flex gap-4 pt-1 text-xs">
+                  <div><span className="text-slate-400">Current extra areas:</span> <span className="font-bold text-slate-700">{selPincodeReq.broker?.additionalAreas?.length || 0}</span></div>
+                </div>
+              </div>
+              {selPincodeReq.reason && (
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Reason from Broker</p>
+                  <p className="text-sm text-slate-600 italic bg-slate-50 rounded-xl px-3 py-2">"{selPincodeReq.reason}"</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Requested Areas (+{selPincodeReq.requestedAreas?.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selPincodeReq.requestedAreas || []).map((a, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                      {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Admin Note (optional)</label>
+                <textarea rows={2} value={pincodeReqNote} onChange={e => setPincodeReqNote(e.target.value)}
+                  placeholder="Reason for approval or rejection…"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+              </div>
+              {pincodeReqMsg.text && (
+                <div className={`p-2 rounded-xl text-xs font-semibold text-center ${pincodeReqMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                  {pincodeReqMsg.text}
+                </div>
+              )}
+              {selPincodeReq.status === 'pending' ? (
+                <div className="flex gap-3">
+                  <button onClick={() => doDecidePincodeRequest('approved')} disabled={pincodeReqWorking}
+                    className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-60 flex items-center justify-center gap-1">
+                    <span className="material-icons-outlined text-base">verified</span> Approve
+                  </button>
+                  <button onClick={() => doDecidePincodeRequest('rejected')} disabled={pincodeReqWorking}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 transition disabled:opacity-60">
+                    Reject
+                  </button>
+                </div>
+              ) : (
+                <div className={`p-3 rounded-xl text-sm font-semibold text-center ${selPincodeReq.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                  {selPincodeReq.status === 'approved' ? '✓ Approved' : '✗ Rejected'}
+                  {selPincodeReq.adminNote && ` — ${selPincodeReq.adminNote}`}
+                </div>
+              )}
+              <button onClick={() => setSelPincodeReq(null)}
+                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ PARTNERSHIP REQUESTS TAB ══════════════════════════════════════════ */}
+      {mainTab === 'partnerships' && (
+        <div className="space-y-4">
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 text-sm text-slate-600">
+            <span className="font-semibold text-primary">Broker Partnership Requests</span> — self-registered brokers whose pincode isn't covered by any master broker fall to this queue. Approving unlocks their listing management; they stay independent (no master broker) either way.
+          </div>
+
+          {partnershipMsg.text && (
+            <div className={`text-xs rounded-xl px-4 py-2.5 ${partnershipMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+              {partnershipMsg.text}
+            </div>
+          )}
+
+          {partnershipsLoading ? (
+            <div className="text-center py-16 text-slate-400">Loading…</div>
+          ) : partnerships.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">No unassigned partnership requests.</div>
+          ) : (
+            <div className="space-y-3">
+              {partnerships.map(r => (
+                <div key={r._id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="font-semibold text-slate-800 text-sm">{r.broker?.name}</p>
+                      <p className="text-xs text-slate-400">{r.broker?.email}{r.broker?.phone ? ` · ${r.broker.phone}` : ''}</p>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      r.status === 'approved' ? 'bg-emerald-100 text-emerald-700'
+                        : r.status === 'rejected' ? 'bg-rose-100 text-rose-700'
+                        : 'bg-amber-100 text-amber-700'}`}>
+                      {r.status === 'approved' ? 'Approved' : r.status === 'rejected' ? 'Rejected' : 'Pending'}
+                    </span>
+                  </div>
+
+                  {[r.city, r.area, r.pincode].filter(Boolean).length > 0 && (
+                    <span className="inline-block px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                      {[r.city, r.area, r.pincode].filter(Boolean).join(' / ')}
+                    </span>
+                  )}
+
+                  {r.status === 'pending' && (
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => decidePartnership(r._id, 'rejected')}
+                        disabled={decidingPartnershipId === r._id}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition disabled:opacity-60">
+                        <span className="material-icons-outlined text-sm">cancel</span> Reject
+                      </button>
+                      <button
+                        onClick={() => decidePartnership(r._id, 'approved')}
+                        disabled={decidingPartnershipId === r._id}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition disabled:opacity-60">
+                        <span className="material-icons-outlined text-sm">verified</span> Approve
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

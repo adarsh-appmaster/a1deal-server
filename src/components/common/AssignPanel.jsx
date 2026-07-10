@@ -33,7 +33,7 @@ function PersonCard({ person, roleLabel, badge, selected, onSelect }) {
     <button type="button" onClick={() => onSelect(person._id)}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition
         ${selected
-          ? 'border-[#484a5a] bg-[#484a5a]/5 ring-1 ring-[#484a5a]/20'
+          ? 'border-tertiary bg-tertiary/5 ring-1 ring-tertiary/20'
           : 'border-slate-100 bg-slate-50 hover:border-slate-300 hover:bg-white'}`}>
       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${colorFor(person._id)}`}>
         {initials(person.name)}
@@ -51,7 +51,7 @@ function PersonCard({ person, roleLabel, badge, selected, onSelect }) {
         <span className="text-[10px] font-semibold text-slate-400 flex-shrink-0">{roleLabel}</span>
       )}
       {selected && (
-        <span className="material-icons-outlined text-[#484a5a] text-base flex-shrink-0">check_circle</span>
+        <span className="material-icons-outlined text-tertiary text-base flex-shrink-0">check_circle</span>
       )}
     </button>
   );
@@ -84,7 +84,7 @@ export default function AssignPanel({
         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">Myself</p>
         <PersonCard
           person={{ _id: 'self', name: me?.name || 'Admin', phone: 'Admin account' }}
-          badge={{ label: 'You', cls: 'bg-slate-100 text-slate-500' }}
+          badge={{ label: 'You', cls: 'bg-slate-100 text-slate-600' }}
           selected={assignTo === 'self'}
           onSelect={onAssignTo}
         />
@@ -93,7 +93,7 @@ export default function AssignPanel({
       {/* 2 — Pincode-matched broker / master broker */}
       {hasPincode && (
         <div>
-          <p className="text-[10px] font-bold text-[#484a5a]/60 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <p className="text-[10px] font-bold text-tertiary/60 uppercase tracking-wider mb-1.5 flex items-center gap-1">
             <span className="material-icons-outlined text-xs">my_location</span>
             Pincode-matched
           </p>
@@ -129,7 +129,7 @@ export default function AssignPanel({
           <>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search by name…"
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-[#484a5a]/20" />
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-tertiary/20" />
             <div className="max-h-48 overflow-y-auto space-y-1 pr-0.5">
               {filteredTeam.length === 0
                 ? <p className="text-xs text-slate-400 italic px-1">No results.</p>
@@ -139,7 +139,7 @@ export default function AssignPanel({
                       person={t}
                       badge={t.status === 'active'
                         ? { label: 'Active', cls: 'bg-emerald-100 text-emerald-700' }
-                        : { label: t.status, cls: 'bg-slate-100 text-slate-500' }}
+                        : { label: t.status, cls: 'bg-slate-100 text-slate-600' }}
                       selected={assignTo === t._id}
                       onSelect={onAssignTo}
                     />
@@ -154,11 +154,11 @@ export default function AssignPanel({
       {onNote !== undefined && (
         <input value={note || ''} onChange={e => onNote(e.target.value)}
           placeholder="Assignment note (optional)…"
-          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30" />
+          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30" />
       )}
 
       <button onClick={onAssign} disabled={!assignTo || saving}
-        className="w-full py-2.5 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
+        className="w-full py-2.5 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
         {saving
           ? <><span className="material-icons-outlined text-base animate-spin">progress_activity</span>Saving…</>
           : <><span className="material-icons-outlined text-base">person_add</span>Assign Lead</>

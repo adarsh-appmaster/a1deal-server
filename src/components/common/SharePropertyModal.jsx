@@ -9,7 +9,7 @@ const ROLE_OPTS = [
   { v: 'masterBroker', l: 'Master Brokers', color: 'bg-amber-100 text-amber-700' },
 ];
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30';
 
 function fmtPrice(n) {
   const v = Number(n);
@@ -168,7 +168,7 @@ export default function SharePropertyModal({ property, type = 'unit', onClose })
             <p className="font-montserrat font-bold text-slate-800">Share Property</p>
             <p className="text-xs text-slate-400 mt-0.5 truncate max-w-[280px]">{property.title}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition flex-shrink-0">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-700 transition flex-shrink-0">
             <span className="material-icons-outlined">close</span>
           </button>
         </div>
@@ -185,7 +185,7 @@ export default function SharePropertyModal({ property, type = 'unit', onClose })
           </button>
           <button onClick={() => setTab('email')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold border-b-2 transition
-              ${tab === 'email' ? 'border-[#484a5a] text-[#484a5a]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
+              ${tab === 'email' ? 'border-tertiary text-tertiary' : 'border-transparent text-slate-400 hover:text-slate-600'}`}>
             <span className="material-icons-outlined text-base">mail</span>
             Email Campaign
           </button>
@@ -260,7 +260,7 @@ export default function SharePropertyModal({ property, type = 'unit', onClose })
           {tab === 'email' && (
             <>
               {emailMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.includes('Queued') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.includes('Queued') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {emailMsg}
                 </div>
               )}
@@ -317,19 +317,19 @@ export default function SharePropertyModal({ property, type = 'unit', onClose })
               {/* Preview count */}
               <div className="flex items-center gap-3">
                 <button onClick={loadPreview} disabled={countLoading || toRoles.length === 0}
-                  className="flex-1 py-2 rounded-xl border border-[#484a5a]/30 text-[#484a5a] text-sm font-semibold hover:bg-[#484a5a]/5 transition disabled:opacity-40">
+                  className="flex-1 py-2 rounded-xl border border-tertiary/30 text-tertiary text-sm font-semibold hover:bg-tertiary/5 transition disabled:opacity-40">
                   {countLoading ? 'Counting…' : 'Preview Recipient Count'}
                 </button>
                 {previewCount !== null && (
-                  <div className="bg-[#484a5a]/5 rounded-xl px-4 py-2 text-center flex-shrink-0">
-                    <p className="font-bold text-[#484a5a] text-lg">{previewCount}</p>
+                  <div className="bg-tertiary/5 rounded-xl px-4 py-2 text-center flex-shrink-0">
+                    <p className="font-bold text-tertiary text-lg">{previewCount}</p>
                     <p className="text-xs text-slate-400">recipients</p>
                   </div>
                 )}
               </div>
 
               <button onClick={sendEmail} disabled={sending || toRoles.length === 0}
-                className="w-full py-3 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
+                className="w-full py-3 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
                 <span className="material-icons-outlined text-base">send</span>
                 {sending ? 'Queuing…' : 'Send Email Campaign'}
               </button>

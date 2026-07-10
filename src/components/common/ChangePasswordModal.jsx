@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
+import { validateForm } from '../../validation/validate';
+import { changePasswordSchema } from '../../validation/schemas';
 
-const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white transition';
+const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white transition';
 
 export default function ChangePasswordModal({ onClose, forced = false }) {
+  const { applyToken } = useAuth();
   const [form, setForm]       = useState({ current: '', next: '', confirm: '' });
   const [saving, setSaving]   = useState(false);
   const [done, setDone]       = useState(false);
@@ -16,15 +20,18 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setErr('');
-    if (!form.current) { setErr('Please enter your current password.'); return; }
-    if (form.next.length < 6) { setErr('New password must be at least 6 characters.'); return; }
-    if (form.next !== form.confirm) { setErr('New passwords do not match.'); return; }
+    const { errors } = validateForm(changePasswordSchema, {
+      currentPassword: form.current, newPassword: form.next, confirm: form.confirm,
+    });
+    if (errors) { setErr(errors.currentPassword || errors.newPassword || errors.confirm); return; }
     setSaving(true);
     try {
-      await api.patch('/auth/change-password', {
+      const { data } = await api.patch('/auth/change-password', {
         currentPassword: form.current,
         newPassword:     form.next,
       });
+      // Backend rotates the token on password change — adopt it so we stay logged in.
+      applyToken(data?.token);
       setDone(true);
     } catch (ex) {
       setErr(ex.response?.data?.message || 'Failed to change password.');
@@ -47,8 +54,8 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
 
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#4900e5]/10 flex items-center justify-center flex-shrink-0">
-            <span className="material-icons-outlined text-[#4900e5] text-lg">lock_reset</span>
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <span className="material-icons-outlined text-primary text-lg">lock_reset</span>
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-montserrat font-bold text-base text-slate-800">
@@ -57,7 +64,7 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
             {forced && <p className="text-xs text-amber-600">You must change your password before continuing.</p>}
           </div>
           {!forced && (
-            <button onClick={onClose}
+            <button onClick={onClose} aria-label="Close"
               className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600">
               <span className="material-icons-outlined text-lg">close</span>
             </button>
@@ -73,7 +80,7 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
               <h3 className="font-montserrat font-bold text-slate-800 mb-1">Password Updated!</h3>
               <p className="text-slate-500 text-sm mb-5">Your password has been changed successfully.</p>
               <button onClick={onClose}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition">
                 Continue
               </button>
             </div>
@@ -123,14 +130,14 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
               </div>
 
               {err && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-xs">
                   <span className="material-icons-outlined text-sm">error_outline</span>
                   {err}
                 </div>
               )}
 
               <button type="submit" disabled={saving}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {saving ? 'Saving…' : 'Change Password'}
               </button>
             </form>

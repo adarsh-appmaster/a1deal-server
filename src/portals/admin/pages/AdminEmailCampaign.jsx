@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import { SearchFilter } from '../../../components/common/SearchFilter';
 import { Pagination } from '../../../components/common/Pagination';
+import { validateForm } from '../../../validation/validate';
+import { emailCampaignSchema } from '../../../validation/schemas';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const ROLE_OPTS = [
   { v: 'buyer',         l: 'Buyers',        color: 'bg-violet-100 text-violet-700' },
@@ -13,14 +16,14 @@ const ROLE_OPTS = [
 ];
 
 const STATUS_STYLE = {
-  draft:      { label: 'Draft',      color: 'bg-slate-100 text-slate-500', icon: 'edit_note' },
+  draft:      { label: 'Draft',      color: 'bg-slate-100 text-slate-600', icon: 'edit_note' },
   queued:     { label: 'Queued',     color: 'bg-blue-100 text-blue-600',   icon: 'schedule' },
   processing: { label: 'Sending…',   color: 'bg-amber-100 text-amber-700', icon: 'sync' },
   sent:       { label: 'Sent',       color: 'bg-emerald-100 text-emerald-700', icon: 'check_circle' },
   failed:     { label: 'Failed',     color: 'bg-rose-100 text-rose-600',   icon: 'error' },
 };
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30';
 
 const EMPTY_FORM = {
   subject: '', body: '', senderName: 'A1 Deal',
@@ -48,6 +51,7 @@ export default function AdminEmailCampaign() {
   const [historySearch, setHistorySearch] = useState('');
   const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_LIMIT = 10;
+  const { confirm, dialog } = useConfirm();
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -98,6 +102,10 @@ export default function AdminEmailCampaign() {
   }
 
   async function handleSend(sendNow) {
+    const { errors } = validateForm(emailCampaignSchema, {
+      subject: form.subject, body: form.body, senderName: form.senderName,
+    });
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     if (!form.subject.trim() || !form.body.trim()) {
       setMsg('Subject and email body are required.'); return;
     }
@@ -123,12 +131,13 @@ export default function AdminEmailCampaign() {
   }
 
   async function deleteDraft(id) {
-    if (!window.confirm('Delete this draft?')) return;
+    if (!(await confirm('Delete this draft?', { danger: true, confirmLabel: 'Delete' }))) return;
     try { await api.delete(`/email-campaigns/${id}`); fetchCampaigns(); } catch { /* empty */ }
   }
 
   return (
     <div className="space-y-6">
+      {dialog}
       <div>
         <h1 className="font-montserrat font-bold text-xl text-slate-800">Email Campaigns</h1>
         <p className="text-sm text-slate-500 mt-0.5">
@@ -150,7 +159,7 @@ export default function AdminEmailCampaign() {
         {[{ k: 'compose', l: 'Compose Email', icon: 'edit' }, { k: 'history', l: 'Campaign History', icon: 'history' }].map(t => (
           <button key={t.k} onClick={() => setTab(t.k)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition
-              ${tab === t.k ? 'bg-white text-[#484a5a] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              ${tab === t.k ? 'bg-white text-tertiary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             <span className="material-icons-outlined text-base">{t.icon}</span>
             {t.l}
           </button>
@@ -162,7 +171,7 @@ export default function AdminEmailCampaign() {
           {/* Form */}
           <div className="lg:col-span-2 space-y-5">
             {msg && (
-              <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('queue') || msg.includes('saved') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+              <div className={`p-3 rounded-xl text-sm font-semibold ${msg.includes('queue') || msg.includes('saved') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                 {msg}
               </div>
             )}
@@ -209,7 +218,7 @@ export default function AdminEmailCampaign() {
                 <div className="space-y-2">
                   {ROLE_OPTS.map(r => (
                     <label key={r.v} className="flex items-center gap-3 cursor-pointer group">
-                      <input type="checkbox" checked={form.toRoles.includes(r.v)} onChange={() => toggleRole(r.v)} className="accent-[#484a5a]" />
+                      <input type="checkbox" checked={form.toRoles.includes(r.v)} onChange={() => toggleRole(r.v)} className="accent-tertiary" />
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${form.toRoles.includes(r.v) ? r.color : 'text-slate-400'}`}>{r.l}</span>
                     </label>
                   ))}
@@ -236,12 +245,12 @@ export default function AdminEmailCampaign() {
               {/* Recipient count preview */}
               <div className="border-t border-slate-100 pt-4">
                 <button type="button" onClick={loadPreviewCount} disabled={countLoading || form.toRoles.length === 0}
-                  className="w-full py-2 rounded-xl border border-[#484a5a]/30 text-[#484a5a] text-sm font-semibold hover:bg-[#484a5a]/5 transition disabled:opacity-40">
+                  className="w-full py-2 rounded-xl border border-tertiary/30 text-tertiary text-sm font-semibold hover:bg-tertiary/5 transition disabled:opacity-40">
                   {countLoading ? 'Counting…' : 'Preview Recipient Count'}
                 </button>
                 {previewCount !== null && (
-                  <div className="mt-2 text-center bg-[#484a5a]/5 rounded-xl p-3">
-                    <p className="font-montserrat font-bold text-2xl text-[#484a5a]">{previewCount}</p>
+                  <div className="mt-2 text-center bg-tertiary/5 rounded-xl p-3">
+                    <p className="font-montserrat font-bold text-2xl text-tertiary">{previewCount}</p>
                     <p className="text-xs text-slate-400">matching active users</p>
                   </div>
                 )}
@@ -251,12 +260,12 @@ export default function AdminEmailCampaign() {
             {/* Action buttons */}
             <div className="space-y-2">
               <button onClick={() => handleSend(true)} disabled={saving}
-                className="w-full py-3 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
+                className="w-full py-3 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60 flex items-center justify-center gap-2">
                 <span className="material-icons-outlined text-base">send</span>
                 {saving ? 'Sending…' : 'Send Now (Queue)'}
               </button>
               <button onClick={() => handleSend(false)} disabled={saving}
-                className="w-full py-3 rounded-xl border border-[#484a5a]/30 text-[#484a5a] font-semibold text-sm hover:bg-[#484a5a]/5 transition disabled:opacity-60 flex items-center justify-center gap-2">
+                className="w-full py-3 rounded-xl border border-tertiary/30 text-tertiary font-semibold text-sm hover:bg-tertiary/5 transition disabled:opacity-60 flex items-center justify-center gap-2">
                 <span className="material-icons-outlined text-base">save</span>
                 Save as Draft
               </button>
@@ -282,13 +291,13 @@ export default function AdminEmailCampaign() {
 
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <span className="material-icons-outlined text-3xl animate-spin text-[#484a5a]">progress_activity</span>
+              <span className="material-icons-outlined text-3xl animate-spin text-tertiary">progress_activity</span>
             </div>
           ) : campaigns.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
               <span className="material-icons-outlined text-5xl text-slate-200">mail_outline</span>
               <p className="text-slate-400 mt-3">No campaigns yet</p>
-              <button onClick={() => setTab('compose')} className="mt-4 px-4 py-2 rounded-xl bg-[#484a5a] text-white text-sm font-semibold hover:bg-[#2e3044] transition">
+              <button onClick={() => setTab('compose')} className="mt-4 px-4 py-2 rounded-xl bg-tertiary text-white text-sm font-semibold hover:bg-[#2e3044] transition">
                 Compose First Email
               </button>
             </div>
@@ -307,7 +316,7 @@ export default function AdminEmailCampaign() {
                           </span>
                           {c.toRoles?.map(r => {
                             const opt = ROLE_OPTS.find(o => o.v === r);
-                            return <span key={r} className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${opt?.color || 'bg-slate-100 text-slate-500'}`}>{opt?.l || r}</span>;
+                            return <span key={r} className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${opt?.color || 'bg-slate-100 text-slate-600'}`}>{opt?.l || r}</span>;
                           })}
                         </div>
                         <p className="font-montserrat font-bold text-slate-800">{c.subject}</p>
@@ -352,14 +361,14 @@ export default function AdminEmailCampaign() {
                     )}
 
                     {c.error && (
-                      <div className="mb-3 text-xs text-rose-600 bg-rose-50 rounded-lg p-2">{c.error}</div>
+                      <div className="mb-3 text-xs text-rose-700 bg-rose-50 rounded-lg p-2">{c.error}</div>
                     )}
 
                     <div className="flex gap-2">
                       {c.status === 'draft' && (
                         <>
                           <button onClick={() => queueDraft(c._id)}
-                            className="flex-1 py-2 rounded-xl bg-[#484a5a] text-white text-xs font-semibold hover:bg-[#2e3044] transition flex items-center justify-center gap-1">
+                            className="flex-1 py-2 rounded-xl bg-tertiary text-white text-xs font-semibold hover:bg-[#2e3044] transition flex items-center justify-center gap-1">
                             <span className="material-icons-outlined text-sm">send</span> Send Now
                           </button>
                           <button onClick={() => deleteDraft(c._id)}

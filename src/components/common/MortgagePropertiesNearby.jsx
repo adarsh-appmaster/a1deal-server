@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
 
-export default function MortgagePropertiesNearby({ portalColor = '#4900e5' }) {
+export default function MortgagePropertiesNearby({ portalColor = '#451886' }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 

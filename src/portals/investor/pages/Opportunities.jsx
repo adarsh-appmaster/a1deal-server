@@ -9,7 +9,7 @@ const OPP = [
   { id: 6, name: 'Industrial Warehousing', location: 'Bhiwandi, Mumbai', type: 'Industrial', roi: '14.2%', minInv: '₹40 L', totalSize: '₹180 Cr', filled: 91, timeline: '60 months', risk: 'Low', tag: null },
 ];
 
-const RISK_COLOR = { Low: 'text-emerald-600 bg-emerald-50', Medium: 'text-amber-600 bg-amber-50', High: 'text-rose-600 bg-rose-50' };
+const RISK_COLOR = { Low: 'text-emerald-600 bg-emerald-50', Medium: 'text-amber-600 bg-amber-50', High: 'text-rose-700 bg-rose-50' };
 const TAG_COLOR = { Hot: 'bg-rose-500 text-white', New: 'bg-blue-500 text-white', Premium: 'bg-amber-500 text-white' };
 
 export default function Opportunities() {

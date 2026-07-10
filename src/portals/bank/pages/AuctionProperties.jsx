@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { mortgagePropertySchema } from '../../../validation/schemas';
 import MediaUploader from '../../../components/common/MediaUploader';
 import { searchLocations } from '../../../data/indiaLocations';
 import { getPincodeEntryForCity, expandPincodesForCity, RAJASTHAN_CITY_NAMES } from '../../../data/rajasthanPincodes';
 import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
+import { useConfirm } from '../../../hooks/useConfirm';
 const VISIBLE_OPTS = [
   { key: 'buyer',     label: 'Buyers',     color: 'bg-violet-100 text-violet-700' },
   { key: 'broker',    label: 'Brokers',    color: 'bg-rose-100 text-rose-600' },
@@ -13,7 +16,7 @@ const VISIBLE_OPTS = [
 const STATUS_STYLE = {
   available:    { label: 'Available',     color: 'bg-emerald-100 text-emerald-700' },
   under_auction:{ label: 'Under Auction', color: 'bg-amber-100 text-amber-700' },
-  sold:         { label: 'Sold',          color: 'bg-slate-100 text-slate-500' },
+  sold:         { label: 'Sold',          color: 'bg-slate-100 text-slate-600' },
   withdrawn:    { label: 'Withdrawn',     color: 'bg-rose-100 text-rose-600' },
 };
 
@@ -23,7 +26,20 @@ const EMPTY_FORM = {
   bankName: '', auctionDate: '', contactPhone: '',
   status: 'available',
   visibleTo: ['buyer', 'broker', 'developer', 'investor'],
+  commissionBankPct: '',
+  localityPrices: [],
 };
+
+// Drop blank rows and coerce the price to a number before sending to the API.
+function cleanLocalityPrices(rows) {
+  return (rows || [])
+    .filter(r => (r.area && r.area.trim()) || (r.pincode && r.pincode.trim()) || r.expectedPrice !== '')
+    .map(r => ({
+      area: r.area?.trim() || '',
+      pincode: r.pincode?.trim() || '',
+      expectedPrice: r.expectedPrice !== '' && r.expectedPrice != null ? Number(r.expectedPrice) : null,
+    }));
+}
 
 const inp = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f4c81]/30';
 const LIMIT = 9;
@@ -49,6 +65,7 @@ export default function AuctionProperties() {
   const [formVideo, setFormVideo]   = useState('');
   const [saving, setSaving]     = useState(false);
   const [msg, setMsg]           = useState('');
+  const { confirm, dialog } = useConfirm();
 
   // City autosuggest
   const [citySuggestions, setCitySuggestions] = useState([]);
@@ -111,6 +128,11 @@ export default function AuctionProperties() {
       contactPhone: p.contactPhone || '',
       status: p.status || 'available',
       visibleTo: p.visibleTo || ['buyer', 'broker', 'developer', 'investor'],
+      commissionBankPct: p.commissionOverride?.bankPct ?? '',
+      localityPrices: (p.localityPrices || []).map(r => ({
+        area: r.area || '', pincode: r.pincode || '',
+        expectedPrice: r.expectedPrice ?? '',
+      })),
     });
     setFormImages(p.images || []);
     setFormVideo(p.video || '');
@@ -170,8 +192,25 @@ export default function AuctionProperties() {
     }));
   }
 
+  // ── Extra locality/area expected prices (optional) ──────────────────────────
+  function addLocalityPrice() {
+    setForm(f => ({ ...f, localityPrices: [...(f.localityPrices || []), { area: '', pincode: '', expectedPrice: '' }] }));
+  }
+  function updateLocalityPrice(i, key, value) {
+    setForm(f => {
+      const rows = [...(f.localityPrices || [])];
+      rows[i] = { ...rows[i], [key]: value };
+      return { ...f, localityPrices: rows };
+    });
+  }
+  function removeLocalityPrice(i) {
+    setForm(f => ({ ...f, localityPrices: (f.localityPrices || []).filter((_, idx) => idx !== i) }));
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+    const { errors } = validateForm(mortgagePropertySchema, form);
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     setSaving(true); setMsg('');
     try {
       const payload = {
@@ -180,9 +219,12 @@ export default function AuctionProperties() {
         area_sqft: form.area_sqft !== '' ? Number(form.area_sqft) : undefined,
         price: Number(form.price),
         auctionDate: form.auctionDate || undefined,
+        commissionOverride: { bankPct: form.commissionBankPct !== '' ? Number(form.commissionBankPct) : null },
+        localityPrices: cleanLocalityPrices(form.localityPrices),
         images: formImages,
         video: formVideo,
       };
+      delete payload.commissionBankPct;
       if (editId) {
         await api.patch(`/mortgage-properties/${editId}`, payload);
       } else {
@@ -195,12 +237,13 @@ export default function AuctionProperties() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Remove this property listing?')) return;
+    if (!(await confirm('Remove this property listing?', { danger: true, confirmLabel: 'Remove' }))) return;
     try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); } catch { /* empty */ }
   }
 
   return (
     <div>
+      {dialog}
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
@@ -375,7 +418,7 @@ export default function AuctionProperties() {
 
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               {msg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-600 text-sm font-semibold">{msg}</div>
+                <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-sm font-semibold">{msg}</div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -461,6 +504,13 @@ export default function AuctionProperties() {
                   <input name="bankName" value={form.bankName} onChange={handleChange} placeholder="HDFC Bank" className={inp} />
                 </div>
                 <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
+                    Bank Commission % <span className="normal-case font-normal text-slate-300">(optional)</span>
+                  </label>
+                  <input name="commissionBankPct" type="number" min="0" max="100" step="0.1"
+                    value={form.commissionBankPct} onChange={handleChange} placeholder="e.g. 0.5" className={inp} />
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Auction Date</label>
                   <input name="auctionDate" type="date" value={form.auctionDate} onChange={handleChange} className={inp} />
                 </div>
@@ -482,6 +532,38 @@ export default function AuctionProperties() {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Description</label>
                   <textarea name="description" rows={2} value={form.description} onChange={handleChange}
                     placeholder="Bank repossessed property. Reserve price below market…" className={`${inp} resize-none`} />
+                </div>
+
+                {/* Extra expected prices by locality/area (optional) */}
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      Expected Prices by Locality / Area <span className="normal-case font-normal text-slate-300">(optional)</span>
+                    </label>
+                    <button type="button" onClick={addLocalityPrice}
+                      className="flex items-center gap-1 text-xs font-semibold text-[#0f4c81] hover:underline">
+                      <span className="material-icons-outlined text-sm">add</span> Add price
+                    </button>
+                  </div>
+                  {(form.localityPrices || []).length === 0 && (
+                    <p className="text-xs text-slate-400">Add expected prices for other localities/areas of this deal.</p>
+                  )}
+                  <div className="space-y-2">
+                    {(form.localityPrices || []).map((row, i) => (
+                      <div key={i} className="flex flex-wrap items-center gap-2">
+                        <input value={row.area} onChange={e => updateLocalityPrice(i, 'area', e.target.value)}
+                          placeholder="Locality / Area" className={`${inp} flex-1 min-w-[120px]`} />
+                        <input value={row.pincode} onChange={e => updateLocalityPrice(i, 'pincode', e.target.value)}
+                          placeholder="Pincode" maxLength={6} className={`${inp} w-28`} />
+                        <input type="number" value={row.expectedPrice} onChange={e => updateLocalityPrice(i, 'expectedPrice', e.target.value)}
+                          placeholder="Expected ₹" className={`${inp} w-36`} />
+                        <button type="button" onClick={() => removeLocalityPrice(i)}
+                          className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200">
+                          <span className="material-icons-outlined text-base">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { bulkWhatsAppSchema } from '../../../validation/schemas';
 
 const WA_SVG = (
   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
@@ -18,7 +20,7 @@ const ROLE_OPTS = [
 
 const TYPE_ICONS = { tower:'domain', land:'landscape', farmland:'agriculture', building:'business', commercial:'store', villa:'cottage', other:'category' };
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white';
 
 function fmtPrice(n) {
   const v = Number(n);
@@ -89,7 +91,7 @@ function generateEmailBody(properties, role) {
   } else if (role === 'investor') {
     partnerHtml = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:20px 0"><h3 style="margin:0 0 8px;color:#166534;font-size:14px">💼 Investment Advantages</h3><ul style="margin:0;padding-left:20px;color:#15803d;font-size:13px"><li>High capital appreciation in prime location</li><li>Strong ROI & rental income potential</li><li>Clear legal title & RERA compliance</li><li>Portfolio diversification opportunity</li><li>A1 Deal post-investment management support</li></ul></div>`;
   } else if (role === 'developer') {
-    partnerHtml = `<div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:16px;margin:20px 0"><h3 style="margin:0 0 8px;color:#1e40af;font-size:14px">🏗️ Development Opportunity</h3><ul style="margin:0;padding-left:20px;color:#1d4ed8;font-size:13px"><li>JV & collaboration options available</li><li>Flexible deal structure & payment terms</li><li>A1 Deal distribution network for sales</li><li>Legal & compliance support</li></ul></div>`;
+    partnerHtml = `<div style="background:#f7f3fc;border:1px solid #d1b8ef;border-radius:8px;padding:16px;margin:20px 0"><h3 style="margin:0 0 8px;color:#441a74;font-size:14px">🏗️ Development Opportunity</h3><ul style="margin:0;padding-left:20px;color:#542191;font-size:13px"><li>JV & collaboration options available</li><li>Flexible deal structure & payment terms</li><li>A1 Deal distribution network for sales</li><li>Legal & compliance support</li></ul></div>`;
   } else {
     partnerHtml = `<div style="background:#faf5ff;border:1px solid #d8b4fe;border-radius:8px;padding:16px;margin:20px 0"><h3 style="margin:0 0 8px;color:#6b21a8;font-size:14px">🏠 Why Choose This Property</h3><ul style="margin:0;padding-left:20px;color:#7e22ce;font-size:13px"><li>Prime location with excellent connectivity</li><li>Modern amenities & quality construction</li><li>Home loan documentation ready</li><li>A1 Deal end-to-end purchase support</li></ul></div>`;
   }
@@ -139,7 +141,7 @@ function PincodeInput({ pincodes, onChange }) {
   }
   function remove(p) { onChange(pincodes.filter(x => x !== p)); }
   return (
-    <div className="w-full border border-slate-200 rounded-xl px-3 py-2 flex flex-wrap gap-1.5 min-h-[42px] focus-within:ring-2 focus-within:ring-[#484a5a]/30 bg-white">
+    <div className="w-full border border-slate-200 rounded-xl px-3 py-2 flex flex-wrap gap-1.5 min-h-[42px] focus-within:ring-2 focus-within:ring-tertiary/30 bg-white">
       {pincodes.map(p => (
         <span key={p} className="flex items-center gap-1 bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded-full">
           {p}<button type="button" onClick={() => remove(p)} className="text-slate-400 hover:text-rose-500 leading-none">×</button>
@@ -270,7 +272,8 @@ export default function AdminBulkMessage() {
   }
 
   async function sendViaApi() {
-    if (!roles.length || !message.trim()) return;
+    const { errors } = validateForm(bulkWhatsAppSchema, { message, roles });
+    if (errors) { setWaResult({ error: Object.values(errors)[0] }); return; }
     setWaSending(true); setWaResult(null);
     try {
       const { data } = await api.post('/bulk-share/whatsapp', {
@@ -360,7 +363,7 @@ export default function AdminBulkMessage() {
           {/* Roles */}
           <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-icons-outlined text-sm text-[#484a5a]">people</span>
+              <span className="material-icons-outlined text-sm text-tertiary">people</span>
               <p className="text-sm font-bold text-slate-700">Target Roles <span className="text-rose-500">*</span></p>
             </div>
             <div className="space-y-2">
@@ -382,7 +385,7 @@ export default function AdminBulkMessage() {
           {/* Location filters */}
           <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="material-icons-outlined text-sm text-[#484a5a]">location_on</span>
+              <span className="material-icons-outlined text-sm text-tertiary">location_on</span>
               <p className="text-sm font-bold text-slate-700">Location Filter <span className="text-slate-400 font-normal text-xs">(optional)</span></p>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -406,11 +409,11 @@ export default function AdminBulkMessage() {
           <div className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-icons-outlined text-sm text-[#484a5a]">domain</span>
+                <span className="material-icons-outlined text-sm text-tertiary">domain</span>
                 <p className="text-sm font-bold text-slate-700">Select Properties <span className="text-slate-400 font-normal text-xs">(to auto-generate message)</span></p>
               </div>
               {selectedProps.length > 0 && (
-                <span className="text-xs bg-[#484a5a] text-white rounded-full px-2 py-0.5 font-bold">{selectedProps.length}</span>
+                <span className="text-xs bg-tertiary text-white rounded-full px-2 py-0.5 font-bold">{selectedProps.length}</span>
               )}
             </div>
 
@@ -419,7 +422,7 @@ export default function AdminBulkMessage() {
               <span className="material-icons-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-sm">search</span>
               <input value={propSearch} onChange={e => setPropSearch(e.target.value)}
                 placeholder="Search unit properties…"
-                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 bg-white" />
+                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-tertiary/30 bg-white" />
               {propSearching && <span className="material-icons-outlined text-slate-300 absolute right-3 top-1/2 -translate-y-1/2 text-sm animate-spin">progress_activity</span>}
               {propResults.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto">
@@ -479,7 +482,7 @@ export default function AdminBulkMessage() {
                   ].map(o => (
                     <button key={o.v} onClick={() => { setMsgStyle(o.v); generateMessages(selectedProps, o.v); setTab('compose'); }}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5
-                        ${msgStyle === o.v ? 'bg-[#484a5a] text-white border-transparent' : 'border-slate-200 text-slate-600 hover:border-[#484a5a] hover:text-[#484a5a]'}`}>
+                        ${msgStyle === o.v ? 'bg-tertiary text-white border-transparent' : 'border-slate-200 text-slate-600 hover:border-tertiary hover:text-tertiary'}`}>
                       <span className="material-icons-outlined text-sm">auto_awesome</span>
                       {o.l}
                     </button>
@@ -494,7 +497,7 @@ export default function AdminBulkMessage() {
             <div className="bg-white rounded-2xl border border-slate-100 p-4">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" checked={equalDist} onChange={e => setEqualDist(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 accent-[#484a5a]" />
+                  className="mt-0.5 w-4 h-4 accent-tertiary" />
                 <div>
                   <p className="text-sm font-bold text-slate-700">Equal Distribution Mode</p>
                   <p className="text-xs text-slate-400 mt-0.5">Each role group receives different properties equally distributed — buyers get property 1, brokers get property 2, etc.</p>
@@ -505,7 +508,7 @@ export default function AdminBulkMessage() {
 
           {/* Preview contacts button */}
           <button onClick={loadContacts} disabled={loadingC || !roles.length}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-[#484a5a] text-[#484a5a] font-bold text-sm hover:bg-[#484a5a]/5 transition disabled:opacity-50">
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-tertiary text-tertiary font-bold text-sm hover:bg-tertiary/5 transition disabled:opacity-50">
             <span className="material-icons-outlined text-base">contacts</span>
             {loadingC ? 'Loading Contacts…' : `Preview Contacts${recipCount !== null ? ` (${recipCount})` : ''}`}
           </button>
@@ -518,7 +521,7 @@ export default function AdminBulkMessage() {
           {equalDist && distPlan.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-                <span className="material-icons-outlined text-[#484a5a] text-lg">balance</span>
+                <span className="material-icons-outlined text-tertiary text-lg">balance</span>
                 <div>
                   <p className="font-bold text-slate-700">Equal Distribution Plan</p>
                   <p className="text-xs text-slate-400">Each role group receives a tailored message with their assigned properties</p>
@@ -602,7 +605,7 @@ export default function AdminBulkMessage() {
                         if (selectedProps.length) setMessage(generateWaMessage(selectedProps, o.v));
                       }}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold border transition
-                          ${msgStyle === o.v ? 'bg-[#484a5a] text-white border-transparent' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
+                          ${msgStyle === o.v ? 'bg-tertiary text-white border-transparent' : 'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
                         {o.l}
                       </button>
                     ))}
@@ -628,7 +631,7 @@ export default function AdminBulkMessage() {
                         { l: 'Deal Closing',      m: '💰 *A1 Deal — Limited Time Offer*\n\nHi {{name}},\n\nWe have an exclusive deal closing opportunity for you. Price and terms are highly attractive.\n\nReach out immediately to book your slot!\n\n— A1 Deal' },
                       ].map(t => (
                         <button key={t.l} onClick={() => setMessage(t.m)}
-                          className="px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 hover:border-[#484a5a] hover:text-[#484a5a] transition">
+                          className="px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 hover:border-tertiary hover:text-tertiary transition">
                           {t.l}
                         </button>
                       ))}
@@ -637,7 +640,7 @@ export default function AdminBulkMessage() {
                 )}
 
                 {waResult && (
-                  <div className={`p-3 rounded-xl text-sm font-semibold ${waResult.error ? 'bg-rose-50 text-rose-600' : waResult.method==='api' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                  <div className={`p-3 rounded-xl text-sm font-semibold ${waResult.error ? 'bg-rose-50 text-rose-700' : waResult.method==='api' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
                     {waResult.error ? waResult.error
                       : waResult.method==='api'
                         ? `✓ Sent to ${waResult.sent}/${waResult.total} contacts via WhatsApp API.${waResult.failed>0?` (${waResult.failed} failed)`:''}`
@@ -685,7 +688,7 @@ export default function AdminBulkMessage() {
                       {[{v:'buyer',l:'Buyers'},{v:'broker',l:'Brokers'},{v:'investor',l:'Investors'},{v:'developer',l:'Developers'}].map(o => (
                         <button key={o.v} onClick={() => { setMsgStyle(o.v); setEmailBody(generateEmailBody(selectedProps, o.v)); }}
                           className={`px-3 py-1.5 rounded-full text-xs font-bold border transition
-                            ${msgStyle===o.v?'bg-[#484a5a] text-white border-transparent':'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
+                            ${msgStyle===o.v?'bg-tertiary text-white border-transparent':'border-slate-200 text-slate-500 hover:border-slate-400'}`}>
                           {o.l}
                         </button>
                       ))}
@@ -698,7 +701,7 @@ export default function AdminBulkMessage() {
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-400/40 resize-none" />
                 </div>
                 {emailMsg && (
-                  <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.toLowerCase().includes('fail')||emailMsg.toLowerCase().includes('error') ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'}`}>
+                  <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.toLowerCase().includes('fail')||emailMsg.toLowerCase().includes('error') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
                     {emailMsg}
                   </div>
                 )}
@@ -721,7 +724,7 @@ export default function AdminBulkMessage() {
               <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
                 {withPhone.map((c, i) => (
                   <div key={i} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition">
-                    <div className="w-8 h-8 rounded-full bg-[#484a5a]/10 text-[#484a5a] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-tertiary/10 text-tertiary font-bold text-sm flex items-center justify-center flex-shrink-0">
                       {c.name?.[0]?.toUpperCase()||'?'}
                     </div>
                     <div className="flex-1 min-w-0">

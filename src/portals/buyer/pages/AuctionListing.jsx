@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import BackButton from '../../../components/common/BackButton';
 
 const AUCTIONS = [
   { id: 1, name: 'Bank Recovered Villa', location: 'Andheri East, Mumbai', reserve: '₹1.8 Cr', current: '₹2.1 Cr', bids: 14, ends: new Date(Date.now() + 2*3600*1000), type: 'Villa', urgent: true },
@@ -28,6 +29,7 @@ function Countdown({ endTime }) {
 export default function AuctionListing() {
   return (
     <div className="max-w-container mx-auto px-6 py-8">
+      <BackButton fallback="/buyer" label="Back" className="mb-4" />
       <div className="flex items-center justify-between mb-2">
         <h1 className="font-montserrat font-bold text-2xl text-on-surface">Property Auctions</h1>
         <span className="portal-badge bg-rose-100 text-rose-800 text-xs">{AUCTIONS.length} Live</span>

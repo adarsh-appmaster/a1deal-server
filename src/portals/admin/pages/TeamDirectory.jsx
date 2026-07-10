@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { Joi } from '../../../validation/schemas';
+import { name as nameRule, email as emailRule, password as passwordRule, phone as phoneRule, shortText } from '../../../validation/common';
+
+const teamMemberSchema = Joi.object({
+  name: nameRule.required(),
+  email: emailRule.required(),
+  password: passwordRule.required(),
+  phone: phoneRule.allow('', null),
+  city: shortText.allow('', null),
+}).unknown(true);
 
 const STATUS_COLOR = {
   active:    'bg-emerald-100 text-emerald-700',
@@ -8,7 +19,7 @@ const STATUS_COLOR = {
 };
 
 const EMPTY_FORM = { name: '', email: '', password: '', phone: '', city: '' };
-const inp = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a]';
+const inp = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary';
 
 export default function TeamDirectory() {
   const [members, setMembers] = useState([]);
@@ -41,6 +52,8 @@ export default function TeamDirectory() {
 
   async function handleCreate(e) {
     e.preventDefault();
+    const { errors } = validateForm(teamMemberSchema, form);
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     setSaving(true); setMsg('');
     try {
       await api.post('/users', { ...form, role: 'team', status: 'active' });
@@ -78,7 +91,7 @@ export default function TeamDirectory() {
           <p className="text-sm text-slate-500 mt-0.5">{members.length} team member{members.length !== 1 ? 's' : ''}</p>
         </div>
         <button onClick={() => { setShowAdd(true); setMsg(''); setForm({ ...EMPTY_FORM }); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#484a5a] text-white font-semibold text-sm hover:bg-[#2e3044] transition">
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-tertiary text-white font-semibold text-sm hover:bg-[#2e3044] transition">
           <span className="material-icons-outlined text-sm">person_add</span>
           Add Team Member
         </button>
@@ -87,7 +100,7 @@ export default function TeamDirectory() {
       <input
         value={search} onChange={e => setSearch(e.target.value)}
         placeholder="Search by name, email or phone…"
-        className="w-full max-w-sm px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30 focus:border-[#484a5a]"
+        className="w-full max-w-sm px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:border-tertiary"
       />
 
       {error && (
@@ -123,7 +136,7 @@ export default function TeamDirectory() {
           </p>
           {!search && (
             <button onClick={() => setShowAdd(true)}
-              className="px-5 py-2.5 rounded-xl bg-[#484a5a] text-white font-semibold text-sm hover:bg-[#2e3044] transition">
+              className="px-5 py-2.5 rounded-xl bg-tertiary text-white font-semibold text-sm hover:bg-[#2e3044] transition">
               Add Team Member
             </button>
           )}
@@ -135,14 +148,14 @@ export default function TeamDirectory() {
               onClick={() => setSelected(m)}
               className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
               <div className="flex items-start gap-3 mb-3">
-                <div className="w-11 h-11 rounded-full bg-[#484a5a]/10 flex items-center justify-center text-[#484a5a] font-bold text-lg flex-shrink-0">
+                <div className="w-11 h-11 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-lg flex-shrink-0">
                   {m.name?.[0]?.toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 truncate">{m.name}</p>
                   <p className="text-xs text-slate-400 truncate">{m.email}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLOR[m.status] || 'bg-slate-100 text-slate-500'}`}>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLOR[m.status] || 'bg-slate-100 text-slate-600'}`}>
                   {m.status?.charAt(0).toUpperCase() + m.status?.slice(1)}
                 </span>
               </div>
@@ -182,12 +195,12 @@ export default function TeamDirectory() {
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-[#484a5a]/10 flex items-center justify-center text-[#484a5a] font-bold text-2xl">
+                <div className="w-14 h-14 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary font-bold text-2xl">
                   {selected.name?.[0]?.toUpperCase()}
                 </div>
                 <div>
                   <p className="font-bold text-slate-800 text-lg">{selected.name}</p>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR[selected.status] || 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR[selected.status] || 'bg-slate-100 text-slate-600'}`}>
                     {selected.status?.charAt(0).toUpperCase() + selected.status?.slice(1)}
                   </span>
                 </div>
@@ -214,7 +227,7 @@ export default function TeamDirectory() {
                 onClick={() => toggleStatus(selected)}
                 className={`w-full py-2.5 rounded-xl font-semibold text-sm transition ${
                   selected.status === 'active'
-                    ? 'border border-rose-200 text-rose-600 hover:bg-rose-50'
+                    ? 'border border-rose-200 text-rose-700 hover:bg-rose-50'
                     : 'border border-emerald-200 text-emerald-600 hover:bg-emerald-50'
                 }`}>
                 {selected.status === 'active' ? 'Suspend Member' : 'Activate Member'}
@@ -257,7 +270,7 @@ export default function TeamDirectory() {
                 </p>
               )}
               <button type="submit" disabled={saving}
-                className="w-full py-2.5 rounded-xl bg-[#484a5a] text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
+                className="w-full py-2.5 rounded-xl bg-tertiary text-white font-bold text-sm hover:bg-[#2e3044] transition disabled:opacity-60">
                 {saving ? 'Creating…' : 'Create Team Member'}
               </button>
             </form>

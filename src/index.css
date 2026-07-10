@@ -7,12 +7,27 @@
 
 @layer base {
   * { box-sizing: border-box; }
+  /* Global text scale — responsive so it reads consistently across platforms.
+     Every rem-based Tailwind text/spacing utility scales with this.
+     mobile 16px · tablet & desktop 18px. Capped at 18px so the header (and the
+     rest of the chrome) stays a sensible size on large screens.
+     text-size-adjust stops iOS/Android/Windows browsers auto-inflating text,
+     which is the usual cause of headers rendering bigger on some devices. */
+  html {
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  @media (min-width: 640px) { html { font-size: 112.5%; } }
   body {
     margin: 0;
     background-color: #f8f9ff;
     color: #0b1c30;
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Montserrat', sans-serif;
@@ -23,6 +38,7 @@
 @layer components {
   .glass-card {
     background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.6);
   }

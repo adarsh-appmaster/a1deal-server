@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import { validateForm } from '../../validation/validate';
+import { bulkWhatsAppSchema } from '../../validation/schemas';
 
 const WA_SVG = (
   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current flex-shrink-0">
@@ -103,7 +105,7 @@ function buildEmailBody(properties, type, role) {
   } else if (role === 'investor') {
     partnerHtml = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:16px 0"><h3 style="margin:0 0 8px;color:#166534;font-size:14px">💼 Investment Advantages</h3><ul style="margin:0;padding-left:20px;color:#15803d;font-size:13px"><li>High capital appreciation in prime location</li><li>Strong ROI & rental income potential</li><li>Clear legal title & RERA compliance</li><li>Portfolio diversification opportunity</li><li>A1 Deal post-investment management support</li></ul></div>`;
   } else if (role === 'developer') {
-    partnerHtml = `<div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:16px;margin:16px 0"><h3 style="margin:0 0 8px;color:#1e40af;font-size:14px">🏗️ Development Opportunity</h3><ul style="margin:0;padding-left:20px;color:#1d4ed8;font-size:13px"><li>JV & collaboration options available</li><li>Flexible deal structure & payment terms</li><li>A1 Deal distribution network for sales</li><li>Legal & compliance support</li></ul></div>`;
+    partnerHtml = `<div style="background:#f7f3fc;border:1px solid #d1b8ef;border-radius:8px;padding:16px;margin:16px 0"><h3 style="margin:0 0 8px;color:#441a74;font-size:14px">🏗️ Development Opportunity</h3><ul style="margin:0;padding-left:20px;color:#542191;font-size:13px"><li>JV & collaboration options available</li><li>Flexible deal structure & payment terms</li><li>A1 Deal distribution network for sales</li><li>Legal & compliance support</li></ul></div>`;
   } else {
     partnerHtml = `<div style="background:#faf5ff;border:1px solid #d8b4fe;border-radius:8px;padding:16px;margin:16px 0"><h3 style="margin:0 0 8px;color:#6b21a8;font-size:14px">🏠 Why Choose This Property</h3><ul style="margin:0;padding-left:20px;color:#7e22ce;font-size:13px"><li>Prime location with excellent connectivity</li><li>Modern amenities & quality construction</li><li>Home loan documentation ready</li><li>A1 Deal end-to-end purchase support</li></ul></div>`;
   }
@@ -163,7 +165,7 @@ function buildEmailBody(properties, type, role) {
   return `<p style="font-size:15px">Dear {{name}},</p><p>We have <strong>${properties.length} exclusive investment project${properties.length !== 1 ? 's' : ''}</strong> available on A1 Deal:</p>${cards}${partnerHtml}<p>Reach out for project brochures, site visits & investment reports.</p><p style="margin-top:24px">Best regards,<br><strong>A1 Deal Team</strong></p>`;
 }
 
-const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#484a5a]/30';
+const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-tertiary/30';
 
 // Pincode tag input
 function PincodeInput({ pincodes, onChange }) {
@@ -176,7 +178,7 @@ function PincodeInput({ pincodes, onChange }) {
   }
   function remove(p) { onChange(pincodes.filter(x => x !== p)); }
   return (
-    <div className="w-full border border-slate-200 rounded-xl px-3 py-2 flex flex-wrap gap-1.5 min-h-[42px] focus-within:ring-2 focus-within:ring-[#484a5a]/30">
+    <div className="w-full border border-slate-200 rounded-xl px-3 py-2 flex flex-wrap gap-1.5 min-h-[42px] focus-within:ring-2 focus-within:ring-tertiary/30">
       {pincodes.map(p => (
         <span key={p} className="flex items-center gap-1 bg-slate-100 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded-full">
           {p}
@@ -263,6 +265,8 @@ export default function BulkShareModal({ properties, type, onClose }) {
   }, [buildParams, roles.length]);
 
   async function sendViaApi() {
+    const { errors } = validateForm(bulkWhatsAppSchema, { message, roles });
+    if (errors) { setWaResult({ error: Object.values(errors)[0] }); return; }
     setWaSending(true); setWaResult(null);
     try {
       const { data } = await api.post('/bulk-share/whatsapp', {
@@ -307,7 +311,7 @@ export default function BulkShareModal({ properties, type, onClose }) {
             <h2 className="font-montserrat font-bold text-lg text-slate-800">Bulk Message</h2>
             <p className="text-xs text-slate-400 mt-0.5">{properties.length} propert{properties.length!==1?'ies':'y'} selected</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-600">
             <span className="material-icons-outlined">close</span>
           </button>
         </div>
@@ -389,7 +393,7 @@ export default function BulkShareModal({ properties, type, onClose }) {
                       setEmailBody(buildEmailBody(properties, type, o.v));
                     }}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                      ${msgStyle === o.v ? 'bg-[#484a5a] text-white border-transparent' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400'}`}>
+                      ${msgStyle === o.v ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400'}`}>
                     {o.l}
                   </button>
                 ))}
@@ -435,7 +439,7 @@ export default function BulkShareModal({ properties, type, onClose }) {
               </div>
 
               {waResult && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${waResult.error ? 'bg-rose-50 text-rose-600' : waResult.method==='api' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${waResult.error ? 'bg-rose-50 text-rose-700' : waResult.method==='api' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
                   {waResult.error
                     ? waResult.error
                     : waResult.method==='api'
@@ -518,7 +522,7 @@ export default function BulkShareModal({ properties, type, onClose }) {
               )}
 
               {emailMsg && (
-                <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.includes('queued')||emailMsg.includes('Campaign') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+                <div className={`p-3 rounded-xl text-sm font-semibold ${emailMsg.includes('queued')||emailMsg.includes('Campaign') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
                   {emailMsg}
                 </div>
               )}

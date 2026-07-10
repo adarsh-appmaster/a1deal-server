@@ -2,8 +2,10 @@ import { useState } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { STATE_LIST, getCities } from '../../data/indiaLocations';
+import { validateForm } from '../../validation/validate';
+import { enquirySchema } from '../../validation/schemas';
 
-const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30 focus:border-[#4900e5] bg-white transition';
+const INP = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white transition';
 
 const UNIT_STATUS_CLS = {
   available:         'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -44,8 +46,10 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
   async function handleSubmit(e) {
     e.preventDefault();
     setErr('');
-    if (!form.name.trim() || !form.phone.trim()) {
-      setErr('Name and phone are required.'); return;
+    const { errors } = validateForm(enquirySchema, form);
+    if (errors) {
+      setErr(errors.name || errors.phone || errors.email || errors.pincode || Object.values(errors)[0]);
+      return;
     }
     if (!form.city.trim() && !property) {
       setErr('Please select a city.'); return;
@@ -84,14 +88,14 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
   const cities = getCities(form.state);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#4900e5]/10 flex items-center justify-center">
-              <span className="material-icons-outlined text-[#4900e5] text-lg">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-icons-outlined text-primary text-lg">
                 {property ? 'home' : 'contact_support'}
               </span>
             </div>
@@ -102,7 +106,7 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
+          <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
             <span className="material-icons-outlined text-lg">close</span>
           </button>
         </div>
@@ -121,7 +125,7 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
                   : 'Our team will review your request and connect you with the right broker. You\'ll be contacted shortly.'}
               </p>
               <button onClick={onClose}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition">
                 Done
               </button>
             </div>
@@ -154,11 +158,11 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
                           onClick={() => setSelectedUnit(isSelected ? null : u)}
                           className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-left transition
                             ${isSelected
-                              ? 'bg-[#4900e5]/8 border-[#4900e5]/40 ring-1 ring-[#4900e5]/30'
+                              ? 'bg-primary/8 border-primary/40 ring-1 ring-primary/30'
                               : 'bg-white border-slate-200 hover:border-slate-300'}`}>
                           <div className="flex items-center gap-2 min-w-0">
                             <div className={`w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 transition
-                              ${isSelected ? 'bg-[#4900e5] border-[#4900e5]' : 'border-slate-300'}`}>
+                              ${isSelected ? 'bg-primary border-primary' : 'border-slate-300'}`}>
                               {isSelected && <span className="material-icons-outlined text-white text-xs">check</span>}
                             </div>
                             <div className="min-w-0">
@@ -171,7 +175,7 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {u.price > 0 && (
-                              <span className="text-xs font-bold text-[#4900e5]">{formatPrice(u.price)}</span>
+                              <span className="text-xs font-bold text-primary">{formatPrice(u.price)}</span>
                             )}
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${stCls}`}>
                               {u.status === 'available' ? 'Available' : 'Under Offer'}
@@ -182,7 +186,7 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
                     })}
                   </div>
                   {selectedUnit && (
-                    <div className="flex items-center gap-1.5 mt-2 text-xs text-[#4900e5] font-semibold">
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-primary font-semibold">
                       <span className="material-icons-outlined text-sm">check_circle</span>
                       Unit {selectedUnit.unitNumber} selected
                       <button type="button" onClick={() => setSelectedUnit(null)} className="ml-auto text-slate-400 hover:text-slate-600">
@@ -271,14 +275,14 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
               </div>
 
               {err && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-xs">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-xs">
                   <span className="material-icons-outlined text-sm">error_outline</span>
                   {err}
                 </div>
               )}
 
               <button type="submit" disabled={submitting}
-                className="w-full py-3 rounded-xl bg-[#4900e5] text-white font-bold text-sm hover:bg-[#6236ff] transition disabled:opacity-60">
+                className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition disabled:opacity-60">
                 {submitting ? 'Submitting…' : 'Submit Enquiry →'}
               </button>
             </form>

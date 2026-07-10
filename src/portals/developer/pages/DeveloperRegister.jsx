@@ -27,7 +27,7 @@ export default function DeveloperRegister() {
         <div className="flex items-center justify-between mb-6 px-2">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-1 flex-1">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i < step ? 'bg-emerald-500 text-white' : i === step ? 'bg-[#6236ff] text-white' : 'bg-white/10 text-white/40'}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i < step ? 'bg-emerald-500 text-white' : i === step ? 'bg-primary-container text-white' : 'bg-white/10 text-white/40'}`}>
                 {i < step ? <span className="material-icons-outlined text-sm">check</span> : i + 1}
               </div>
               <span className={`text-xs hidden sm:block mx-1 ${i === step ? 'text-white font-semibold' : 'text-white/40'}`}>{s}</span>

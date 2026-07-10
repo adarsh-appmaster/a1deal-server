@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV = [
   { path: '/investor', end: true, icon: 'dashboard', label: 'Portfolio' },
@@ -11,9 +13,13 @@ const NAV = [
 ];
 
 export default function InvestorLayout() {
+  const { user, patchUser } = useAuth();
   return (
     <DashboardLayout portalName="Investor Portal" portalColor="#1b5e20" navItems={NAV}>
       <Outlet />
+      {user?.mustChangePassword && (
+        <ChangePasswordModal forced onClose={() => patchUser({ mustChangePassword: false })} />
+      )}
     </DashboardLayout>
   );
 }

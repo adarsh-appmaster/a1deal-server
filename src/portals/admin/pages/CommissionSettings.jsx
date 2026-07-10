@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../../api/axios';
+import { validateForm } from '../../../validation/validate';
+import { commissionRateSchema } from '../../../validation/schemas';
+import { useConfirm } from '../../../hooks/useConfirm';
 
 const TYPE_LABELS = {
   mortgage: { label: 'Mortgage Properties', icon: 'gavel' },
@@ -7,7 +10,7 @@ const TYPE_LABELS = {
 };
 const TYPES = ['mortgage', 'unit'];
 
-const inp = 'w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
+const inp = 'w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30';
 
 function GlobalRateCard({ propertyType, rate, onSaved }) {
   const [form, setForm] = useState({
@@ -44,7 +47,7 @@ function GlobalRateCard({ propertyType, rate, onSaved }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
       <div className="flex items-center gap-2">
-        <span className="material-icons-outlined text-[#4900e5]">{meta.icon}</span>
+        <span className="material-icons-outlined text-primary">{meta.icon}</span>
         <h3 className="font-montserrat font-bold text-slate-800">{meta.label}</h3>
       </div>
 
@@ -86,7 +89,7 @@ function GlobalRateCard({ propertyType, rate, onSaved }) {
 
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving}
-          className="px-4 py-2 rounded-xl bg-[#4900e5] text-white text-sm font-semibold hover:bg-[#6236ff] transition disabled:opacity-60">
+          className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition disabled:opacity-60">
           {saving ? 'Saving…' : 'Save'}
         </button>
         {msg && <span className={`text-xs font-semibold ${msg === 'Saved.' ? 'text-emerald-600' : 'text-rose-600'}`}>{msg}</span>}
@@ -99,11 +102,20 @@ function OverridesPanel({ propertyType, overrides, onChanged }) {
   const [form, setForm] = useState({ city: '', pincode: '', brokerPercent: 1, masterBrokerPercent: 1, directMasterBrokerPercent: 2 });
   const [adding, setAdding] = useState(false);
   const [msg, setMsg] = useState('');
+  const { confirm, dialog } = useConfirm();
 
   async function addOverride() {
     if (!form.city.trim() && !form.pincode.trim()) {
       setMsg('City or pincode is required.'); return;
     }
+    const { errors } = validateForm(commissionRateSchema, {
+      propertyType,
+      city: form.city, pincode: form.pincode,
+      brokerPercent: form.brokerPercent,
+      masterBrokerPercent: form.masterBrokerPercent,
+      directMasterBrokerPercent: form.directMasterBrokerPercent,
+    });
+    if (errors) { setMsg(Object.values(errors)[0]); return; }
     setAdding(true); setMsg('');
     try {
       await api.post('/commission-rates', {
@@ -124,14 +136,15 @@ function OverridesPanel({ propertyType, overrides, onChanged }) {
   }
 
   async function removeOverride(id) {
-    if (!window.confirm('Deactivate this override rule?')) return;
+    if (!(await confirm('Deactivate this override rule?', { danger: true, confirmLabel: 'Deactivate' }))) return;
     try { await api.delete(`/commission-rates/${id}`); onChanged?.(); } catch { /* empty */ }
   }
 
-  const smallInp = 'px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-20 text-right focus:outline-none focus:ring-2 focus:ring-[#4900e5]/30';
+  const smallInp = 'px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-20 text-right focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
     <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+      {dialog}
       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">City / Pincode Overrides ({overrides.length})</p>
 
       {overrides.length > 0 && (
