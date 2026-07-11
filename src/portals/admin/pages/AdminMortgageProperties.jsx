@@ -10,6 +10,7 @@ import { SearchFilter } from '../../../components/common/SearchFilter';
 import MediaUploader from '../../../components/common/MediaUploader';
 import BookPropertyModal from '../../../components/common/BookPropertyModal';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
 const VISIBLE_TO_OPTS = [
   { key: 'guest',     label: 'Public (Guests)' },
@@ -233,7 +234,8 @@ function PropertiesTab() {
 
   async function deactivate(id) {
     if (!(await confirm('Deactivate this property?', { danger: true, confirmLabel: 'Deactivate' }))) return;
-    try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); } catch { /* empty */ }
+    try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to deactivate property.'); }
   }
 
   async function openLinkBanker(p) {
@@ -269,7 +271,7 @@ function PropertiesTab() {
     try {
       await api.patch(`/mortgage-properties/${p._id}`, { visibleTo });
       setProperties(prev => prev.map(x => x._id === p._id ? { ...x, visibleTo } : x));
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to update visibility.'); }
   }
 
   const inp = 'w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30';

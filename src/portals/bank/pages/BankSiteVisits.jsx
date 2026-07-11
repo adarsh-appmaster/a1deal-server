@@ -15,16 +15,20 @@ export default function BankSiteVisits() {
   const [loading, setLoading] = useState(true);
   const [page, setPage]       = useState(1);
   const [pages, setPages]     = useState(1);
+  const [loadError, setLoadError] = useState('');
 
   async function fetchData(p = 1) {
     setLoading(true);
+    setLoadError('');
     try {
       const { data } = await api.get(`/site-visits/banker-visits?page=${p}&limit=10`);
       setVisits(data.visits || []);
       setSummary(data.summary || { total: 0, scheduled: 0, completed: 0 });
       setPages(data.pages || 1);
       setPage(p);
-    } catch { /* empty */ }
+    } catch (err) {
+      setLoadError(err.response?.data?.message || 'Failed to load site visits.');
+    }
     setLoading(false);
   }
 
@@ -55,6 +59,15 @@ export default function BankSiteVisits() {
           </div>
         ))}
       </div>
+
+      {/* Load error banner */}
+      {loadError && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-sm">
+          <span className="material-icons-outlined text-base flex-shrink-0">error_outline</span>
+          <span className="flex-1">{loadError}</span>
+          <button onClick={() => fetchData(page)} className="text-xs font-semibold underline">Retry</button>
+        </div>
+      )}
 
       {/* List */}
       {loading ? (

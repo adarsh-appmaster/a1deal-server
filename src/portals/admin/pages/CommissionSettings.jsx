@@ -3,6 +3,7 @@ import api from '../../../api/axios';
 import { validateForm } from '../../../validation/validate';
 import { commissionRateSchema } from '../../../validation/schemas';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 
 const TYPE_LABELS = {
   mortgage: { label: 'Mortgage Properties', icon: 'gavel' },
@@ -137,7 +138,8 @@ function OverridesPanel({ propertyType, overrides, onChanged }) {
 
   async function removeOverride(id) {
     if (!(await confirm('Deactivate this override rule?', { danger: true, confirmLabel: 'Deactivate' }))) return;
-    try { await api.delete(`/commission-rates/${id}`); onChanged?.(); } catch { /* empty */ }
+    try { await api.delete(`/commission-rates/${id}`); onChanged?.(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to deactivate override.'); }
   }
 
   const smallInp = 'px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs w-20 text-right focus:outline-none focus:ring-2 focus:ring-primary/30';

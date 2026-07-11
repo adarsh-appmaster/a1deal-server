@@ -197,7 +197,7 @@ export default function ResetPasswordPage() {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Min 6 characters"
+              placeholder="Min. 8 characters, with a letter & number"
               className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
             />
             <button

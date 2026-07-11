@@ -7,6 +7,7 @@ import { searchLocations } from '../../../data/indiaLocations';
 import { getPincodeEntryForCity, expandPincodesForCity, RAJASTHAN_CITY_NAMES } from '../../../data/rajasthanPincodes';
 import { MORTGAGE_TYPES as TYPES, MORTGAGE_TYPE_LABELS as TYPE_LABELS, showMortgageField, mortgageTypeLabel } from '../../../utils/mortgagePropertyTypes';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 const VISIBLE_OPTS = [
   { key: 'buyer',     label: 'Buyers',     color: 'bg-violet-100 text-violet-700' },
   { key: 'broker',    label: 'Brokers',    color: 'bg-rose-100 text-rose-600' },
@@ -238,7 +239,8 @@ export default function AuctionProperties() {
 
   async function handleDelete(id) {
     if (!(await confirm('Remove this property listing?', { danger: true, confirmLabel: 'Remove' }))) return;
-    try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); } catch { /* empty */ }
+    try { await api.delete(`/mortgage-properties/${id}`); fetchProps(page); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to remove property listing.'); }
   }
 
   return (

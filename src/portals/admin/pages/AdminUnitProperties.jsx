@@ -9,6 +9,7 @@ import BookPropertyModal from '../../../components/common/BookPropertyModal';
 import { Pagination } from '../../../components/common/Pagination';
 import MediaUploader from '../../../components/common/MediaUploader';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 
 const PROP_TYPES = [
   'all', 'tower', 'building', 'villa', 'commercial',
@@ -293,7 +294,7 @@ export default function AdminUnitProperties() {
       const { data } = await api.patch(`/leads/${leadId}`, patch);
       setCrmLeads(l => l.map(x => x._id === leadId ? data.lead || { ...x, ...patch } : x));
       setActiveLead(l => l?._id === leadId ? (data.lead || { ...l, ...patch }) : l);
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to update lead.'); }
     setUpdatingLead(false);
   }
 
@@ -305,7 +306,7 @@ export default function AdminUnitProperties() {
       setCrmLeads(l => l.map(x => x._id === leadId ? data.lead || x : x));
       setActiveLead(data.lead || activeLead);
       setNoteText('');
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to add note.'); }
     setUpdatingLead(false);
   }
 
@@ -325,7 +326,7 @@ export default function AdminUnitProperties() {
       setLeadCounts(prev => ({ ...prev, [crmProp._id]: (prev[crmProp._id] || 0) + 1 }));
       setCrmLeadForm({ name: '', phone: '', email: '', source: 'manual', budget: '', assignedTo: '' });
       setCrmAddLead(false);
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to add lead.'); }
     setCrmLeadSaving(false);
   }
 
@@ -406,7 +407,8 @@ export default function AdminUnitProperties() {
 
   async function handleDelete(id) {
     if (!(await confirm('Deactivate this property?', { danger: true, confirmLabel: 'Deactivate' }))) return;
-    try { await api.delete(`/unit-properties/${id}`); fetchProps(page); fetchStats(); } catch { /* empty */ }
+    try { await api.delete(`/unit-properties/${id}`); fetchProps(page); fetchStats(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to deactivate property.'); }
   }
 
   async function toggleGuestVisibility(prop) {
@@ -417,7 +419,7 @@ export default function AdminUnitProperties() {
     try {
       await api.patch(`/unit-properties/${prop._id}`, { visibleTo });
       setProperties(prev => prev.map(p => p._id === prop._id ? { ...p, visibleTo } : p));
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to update visibility.'); }
   }
 
   async function handleLeadSubmit(e) {

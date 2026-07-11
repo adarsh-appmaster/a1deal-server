@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import { Pagination } from '../../../components/common/Pagination';
 import { useAuth } from '../../../context/AuthContext';
+import { toast } from '../../../components/common/Toast';
 
 const STATUS_META = {
   new:         { label: 'New',          color: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-500' },
@@ -113,7 +114,7 @@ export default function LeadManagement() {
       setSelected(data.lead);
       setLeads(prev => prev.map(l => l._id === id ? { ...l, status: data.lead.status } : l));
       fetchStats();
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to update status.'); }
     setSavingStatus(false);
   }
 
@@ -122,7 +123,7 @@ export default function LeadManagement() {
       const { data } = await api.patch(`/leads/${id}`, { assignedTo: assignedTo || null });
       setSelected(data.lead);
       setLeads(prev => prev.map(l => l._id === id ? { ...l, assignedTo: data.lead.assignedTo } : l));
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to assign lead.'); }
   }
 
   async function addNote(e) {
@@ -133,7 +134,7 @@ export default function LeadManagement() {
       const { data } = await api.patch(`/leads/${selected._id}`, { note: noteText });
       setSelected(data.lead);
       setNoteText('');
-    } catch { /* empty */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to add note.'); }
     setSavingNote(false);
   }
 
@@ -389,7 +390,7 @@ export default function LeadManagement() {
                       try {
                         const { data } = await api.patch(`/leads/${selected._id}`, { followUpDate: e.target.value || null });
                         setSelected(data.lead);
-                      } catch { /* empty */ }
+                      } catch (err) { toast.error(err.response?.data?.message || 'Failed to update follow-up date.'); }
                     }}
                     className="w-full px-3 py-2 rounded-xl border border-outline-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>

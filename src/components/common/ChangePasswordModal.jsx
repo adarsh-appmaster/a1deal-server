@@ -109,11 +109,11 @@ export default function ChangePasswordModal({ onClose, forced = false }) {
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">New Password</label>
                 <div className="relative">
                   <input type={show.next ? 'text' : 'password'} className={INP} value={form.next}
-                    onChange={e => set('next', e.target.value)} placeholder="Min 6 characters" />
+                    onChange={e => set('next', e.target.value)} placeholder="Min. 8 characters, with a letter & number" />
                   {eye('next')}
                 </div>
-                {form.next && form.next.length < 6 && (
-                  <p className="text-xs text-rose-500 mt-1">Too short — minimum 6 characters</p>
+                {form.next && form.next.length < 8 && (
+                  <p className="text-xs text-rose-500 mt-1">Too short — minimum 8 characters</p>
                 )}
               </div>
 

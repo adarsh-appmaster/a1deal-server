@@ -26,9 +26,11 @@ export default function MortgageLeads() {
   const [pages, setPages]         = useState(1);
   const [total, setTotal]         = useState(0);
   const [expanded, setExpanded]   = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   async function fetchData(p = 1) {
     setLoading(true);
+    setLoadError('');
     try {
       const { data } = await api.get(`/enquiry/banker-enquiries?page=${p}&limit=10`);
       setEnquiries(data.enquiries || []);
@@ -36,7 +38,9 @@ export default function MortgageLeads() {
       setTotal(data.total || 0);
       setPages(data.pages || 1);
       setPage(p);
-    } catch { /* empty */ }
+    } catch (err) {
+      setLoadError(err.response?.data?.message || 'Failed to load enquiries.');
+    }
     setLoading(false);
   }
 
@@ -69,6 +73,15 @@ export default function MortgageLeads() {
           </div>
         ))}
       </div>
+
+      {/* Load error banner */}
+      {loadError && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 text-sm">
+          <span className="material-icons-outlined text-base flex-shrink-0">error_outline</span>
+          <span className="flex-1">{loadError}</span>
+          <button onClick={() => fetchData(page)} className="text-xs font-semibold underline">Retry</button>
+        </div>
+      )}
 
       {/* List */}
       {loading ? (

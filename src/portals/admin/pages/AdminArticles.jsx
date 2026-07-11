@@ -5,6 +5,7 @@ import { articleSchema } from '../../../validation/schemas';
 import MediaUploader from '../../../components/common/MediaUploader';
 import { Pagination } from '../../../components/common/Pagination';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 
 const DEFAULT_CATEGORIES = [
   'Property Investment', 'Home Loans', 'Mortgage', 'Commercial Property',
@@ -153,7 +154,8 @@ export default function AdminArticles() {
 
   async function handleDelete(id) {
     if (!(await confirm('Delete this article?', { danger: true, confirmLabel: 'Delete' }))) return;
-    try { await api.delete(`/articles/${id}`); fetchArticles(page); } catch { /* empty */ }
+    try { await api.delete(`/articles/${id}`); fetchArticles(page); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to delete article.'); }
   }
 
   return (

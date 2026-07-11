@@ -5,6 +5,7 @@ import { Pagination } from '../../../components/common/Pagination';
 import { validateForm } from '../../../validation/validate';
 import { whatsappGroupSchema } from '../../../validation/schemas';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 
 const TYPE_OPTS = [
   { v: 'mortgage', l: 'Mortgage Property', icon: 'home_work', color: 'bg-amber-100 text-amber-700' },
@@ -87,7 +88,8 @@ export default function AdminWhatsAppGroups() {
 
   async function handleDelete(id) {
     if (!(await confirm('Remove this group link?', { danger: true, confirmLabel: 'Remove' }))) return;
-    try { await api.delete(`/whatsapp-groups/${id}`); fetchGroups(); } catch { /* empty */ }
+    try { await api.delete(`/whatsapp-groups/${id}`); fetchGroups(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to remove group.'); }
   }
 
   // Group by city for display - now computed above with pagination

@@ -5,6 +5,7 @@ import { timeAgo } from '../../../utils/timeAgo';
 import EmptyState from '../../../components/common/EmptyState';
 import { SkeletonRows } from '../../../components/common/Skeleton';
 import api from '../../../api/axios';
+import { toast } from '../../../components/common/Toast';
 
 // Shared inbox — any online team member can open and answer any buyer
 // support chat. No claiming/assignment for v1; whoever replies, replies.
@@ -74,7 +75,7 @@ export default function SupportChat() {
       setMessages(prev => prev.some(m => m._id === data.message._id) ? prev : [...prev, data.message]);
       setText('');
       fetchRooms();
-    } catch { /* silent */ }
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to send message.'); }
     setSending(false);
   }
 

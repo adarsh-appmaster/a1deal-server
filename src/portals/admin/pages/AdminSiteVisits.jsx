@@ -134,7 +134,9 @@ export default function AdminSiteVisits() {
     try {
       await api.delete(`/whatsapp-schedule/${id}`);
       setWaSchedules(prev => prev.map(s => s._id === id ? { ...s, status: 'cancelled' } : s));
-    } catch { /* silently */ }
+    } catch (ex) {
+      setWaMsg2(ex.response?.data?.message || 'Failed to cancel schedule.');
+    }
   }
 
   async function handleStatusUpdate() {

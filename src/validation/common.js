@@ -21,11 +21,14 @@ export const phone = Joi.string().trim().pattern(/^[+]?[\d\s-]{10,15}$/).message
   'any.required': 'Phone number is required.',
 });
 
-export const password = Joi.string().min(6).max(128).messages({
-  'string.empty': 'Password is required.',
-  'string.min': 'Password must be at least 6 characters.',
-  'any.required': 'Password is required.',
-});
+export const password = Joi.string().min(8).max(128)
+  .pattern(/^(?=.*[A-Za-z])(?=.*\d).+$/)
+  .messages({
+    'string.empty': 'Password is required.',
+    'string.min': 'Password must be at least 8 characters.',
+    'string.pattern.base': 'Password must include at least one letter and one number.',
+    'any.required': 'Password is required.',
+  });
 
 export const otp = Joi.string().trim().pattern(/^\d{6}$/).messages({
   'string.empty': 'Enter the 6-digit code.',

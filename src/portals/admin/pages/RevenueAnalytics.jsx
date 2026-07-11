@@ -59,7 +59,7 @@ export default function RevenueAnalytics() {
     <div className="space-y-6">
       <div>
         <h1 className="font-montserrat font-bold text-2xl text-on-surface">Revenue Analytics</h1>
-        <p className="text-sm text-on-surface-variant">Platform performance overview — live data</p>
+        <p className="text-sm text-on-surface-variant">Platform performance overview</p>
       </div>
 
       {/* KPI Cards */}
@@ -127,7 +127,11 @@ export default function RevenueAnalytics() {
 
           {/* Revenue Sources */}
           <div className="card p-5">
-            <h2 className="font-montserrat font-semibold text-on-surface mb-4">Revenue Sources</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="font-montserrat font-semibold text-on-surface">Revenue Sources</h2>
+              <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">Sample data</span>
+            </div>
+            <p className="text-xs text-on-surface-variant -mt-2 mb-3">Illustrative breakdown — no revenue-by-source tracking is wired up yet.</p>
             <div className="space-y-3">
               {SOURCES.map(s => (
                 <div key={s.label}>

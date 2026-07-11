@@ -197,25 +197,40 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
                 </div>
               )}
 
-              {/* Contact */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name *</label>
-                  <input className={INP} placeholder="Your name" value={form.name}
-                    onChange={e => set('name', e.target.value)} />
+              {/* Contact — locked to the registered account once logged in, so
+                  enquiries can't be submitted under a different identity. */}
+              {user ? (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                    {(form.name || form.email || 'U')[0].toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">{form.name}</p>
+                    <p className="text-xs text-slate-400">{form.phone}{form.email ? ` · ${form.email}` : ''}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Phone *</label>
-                  <input className={INP} placeholder="9876543210" type="tel" value={form.phone}
-                    onChange={e => set('phone', e.target.value)} />
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name *</label>
+                      <input className={INP} placeholder="Your name" value={form.name}
+                        onChange={e => set('name', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Phone *</label>
+                      <input className={INP} placeholder="9876543210" type="tel" value={form.phone}
+                        onChange={e => set('phone', e.target.value)} />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Email</label>
-                <input className={INP} placeholder="you@example.com" type="email" value={form.email}
-                  onChange={e => set('email', e.target.value)} />
-              </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Email</label>
+                    <input className={INP} placeholder="you@example.com" type="email" value={form.email}
+                      onChange={e => set('email', e.target.value)} />
+                  </div>
+                </>
+              )}
 
               {/* Pincode — mandatory for unit properties (broker routing uses buyer's pincode) */}
               {isUnitProperty && (

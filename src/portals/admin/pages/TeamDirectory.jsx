@@ -73,7 +73,9 @@ export default function TeamDirectory() {
       await api.patch(`/users/${m._id}/${endpoint}`);
       setMembers(prev => prev.map(x => x._id === m._id ? { ...x, status: next } : x));
       if (selected?._id === m._id) setSelected(s => ({ ...s, status: next }));
-    } catch { /* silently */ }
+    } catch (err) {
+      setError(err.response?.data?.message || `Failed to ${next === 'active' ? 'activate' : 'suspend'} team member.`);
+    }
   }
 
   const filtered = members.filter(m =>

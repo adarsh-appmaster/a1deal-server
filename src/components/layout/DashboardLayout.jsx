@@ -41,7 +41,7 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
 
   return (
     <>
-    <div className="flex h-screen bg-surface overflow-hidden">
+    <div className="flex h-screen h-dvh bg-surface overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -53,29 +53,32 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:static inset-y-0 left-0 z-40
-          w-64 flex-shrink-0 bg-inverse-surface flex flex-col
+          fixed lg:static top-0 left-0 z-50
+          w-64 h-screen h-dvh lg:h-screen flex-shrink-0 bg-inverse-surface flex flex-col
+          overflow-y-auto
           transition-transform duration-250
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10 min-h-[60px]">
+        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10 min-h-[60px] flex-shrink-0">
           <button onClick={() => navigate('/')} className="flex items-center">
             <Logo variant="compact" theme="dark" size="sm" />
           </button>
         </div>
 
         {/* Portal label */}
-        <div className="px-4 py-2 border-b border-white/10">
+        <div className="px-4 py-2 border-b border-white/10 flex-shrink-0">
           <p className="text-xs font-semibold text-white/40 uppercase tracking-widest truncate">{portalName}</p>
         </div>
 
         {/* Nav — items may carry an optional `section` label to group under a
             heading; items without one render flat, so short nav lists (most
-            portals) look exactly as before. */}
-        <nav className="flex-1 p-3 overflow-y-auto space-y-1">
+            portals) look exactly as before. Deliberately no independent scroll
+            here: letting it grow past the viewport (rather than clipping) is what
+            lets the sticky footer below stay reachable on long nav lists. */}
+        <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item, i) => (
             <div key={item.path}>
               {item.section && item.section !== navItems[i - 1]?.section && (
@@ -101,8 +104,10 @@ export default function DashboardLayout({ portalName, portalColor, navItems, chi
           ))}
         </nav>
 
-        {/* User & sign out */}
-        <div className="p-3 border-t border-white/10">
+        {/* User & sign out — sticky so it's always reachable at the bottom of
+            the sidebar's own scroll area, even when the nav list is long
+            enough to push past the viewport height. */}
+        <div className="p-3 border-t border-white/10 bg-inverse-surface sticky bottom-0 flex-shrink-0">
           {user && (
             <div className="flex items-center gap-2 px-3 py-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold flex-shrink-0">

@@ -491,7 +491,7 @@ export default function SignupPage() {
           <div className="relative">
             <input name="password" type={showPassword ? 'text' : 'password'} required value={form.password}
               onChange={e => setField('password', e.target.value)}
-              placeholder="Min. 6 characters"
+              placeholder="Min. 8 characters, with a letter & number"
               className={`${INP('password')} pr-11`} />
             <button type="button" tabIndex={-1}
               onClick={() => setShowPassword(v => !v)}

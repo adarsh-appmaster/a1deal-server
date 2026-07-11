@@ -5,6 +5,7 @@ import { Pagination } from '../../../components/common/Pagination';
 import { validateForm } from '../../../validation/validate';
 import { emailCampaignSchema } from '../../../validation/schemas';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { toast } from '../../../components/common/Toast';
 
 const ROLE_OPTS = [
   { v: 'buyer',         l: 'Buyers',        color: 'bg-violet-100 text-violet-700' },
@@ -127,12 +128,14 @@ export default function AdminEmailCampaign() {
   }
 
   async function queueDraft(id) {
-    try { await api.patch(`/email-campaigns/${id}/queue`); fetchCampaigns(); } catch { /* empty */ }
+    try { await api.patch(`/email-campaigns/${id}/queue`); fetchCampaigns(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to queue draft.'); }
   }
 
   async function deleteDraft(id) {
     if (!(await confirm('Delete this draft?', { danger: true, confirmLabel: 'Delete' }))) return;
-    try { await api.delete(`/email-campaigns/${id}`); fetchCampaigns(); } catch { /* empty */ }
+    try { await api.delete(`/email-campaigns/${id}`); fetchCampaigns(); }
+    catch (err) { toast.error(err.response?.data?.message || 'Failed to delete draft.'); }
   }
 
   return (

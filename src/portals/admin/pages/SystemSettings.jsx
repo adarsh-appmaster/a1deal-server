@@ -1,4 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../../../api/axios';
+import { toast } from '../../../components/common/Toast';
+
+function CustomerCareCard() {
+  const [phone, setPhone] = useState('');
+  const [saved, setSaved] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get('/settings').then(({ data }) => {
+      setPhone(data.supportPhone || '');
+      setSaved(data.supportPhone || '');
+    }).catch(() => toast.error('Could not load customer care number.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    if (!phone.trim()) { toast.error('Enter a phone number.'); return; }
+    setSaving(true);
+    try {
+      const { data } = await api.patch('/settings', { supportPhone: phone.trim() });
+      setSaved(data.supportPhone);
+      toast.success('Customer care number updated.');
+    } catch (ex) {
+      toast.error(ex.response?.data?.message || 'Failed to save.');
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="card p-5">
+      <h2 className="font-montserrat font-semibold text-on-surface mb-1 flex items-center gap-2">
+        <span className="material-icons-outlined text-primary-container">call</span>Customer Care
+      </h2>
+      <p className="text-xs text-on-surface-variant mb-4">
+        Shown to buyers in the support chat's "Talk to a human" screen.
+      </p>
+      {loading ? (
+        <div className="h-10 bg-surface-container rounded-xl animate-pulse" />
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            type="tel" placeholder="e.g. +91 98765 43210"
+            value={phone} onChange={e => setPhone(e.target.value)}
+            className="flex-1 px-3 py-2.5 rounded-xl border border-outline-variant text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+          <button
+            onClick={handleSave} disabled={saving || phone.trim() === saved}
+            className="btn-primary text-sm py-2.5 px-4 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SystemSettings() {
   const [settings, setSettings] = useState({
@@ -16,6 +74,8 @@ export default function SystemSettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <h1 className="font-montserrat font-bold text-2xl text-on-surface">System Settings</h1>
+
+      <CustomerCareCard />
 
       {/* Security */}
       <div className="card p-5">

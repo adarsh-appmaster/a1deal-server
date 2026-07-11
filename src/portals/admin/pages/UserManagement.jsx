@@ -75,6 +75,7 @@ export default function UserManagement() {
   const [editMsg, setEditMsg]     = useState('');
 
   const [actionMsg, setActionMsg] = useState('');
+  const [actionOk, setActionOk] = useState(true);
 
   // Create banker modal state
   const [showBankerModal, setShowBankerModal] = useState(false);
@@ -180,19 +181,29 @@ export default function UserManagement() {
     const action = u.status === 'suspended' ? 'activate' : 'suspend';
     try {
       await api.patch(`/users/${u._id}/${action}`);
+      setActionOk(true);
       setActionMsg(`User ${action}d.`);
       fetchUsers(page);
       setTimeout(() => setActionMsg(''), 2500);
-    } catch { /* empty */ }
+    } catch (err) {
+      setActionOk(false);
+      setActionMsg(err.response?.data?.message || `Failed to ${action} user.`);
+      setTimeout(() => setActionMsg(''), 3500);
+    }
   }
 
   async function handleApprove(u) {
     try {
       await api.patch(`/users/${u._id}/approve`);
+      setActionOk(true);
       setActionMsg('User approved and activated.');
       fetchUsers(page);
       setTimeout(() => setActionMsg(''), 2500);
-    } catch { /* empty */ }
+    } catch (err) {
+      setActionOk(false);
+      setActionMsg(err.response?.data?.message || 'Failed to approve user.');
+      setTimeout(() => setActionMsg(''), 3500);
+    }
   }
 
   return (
@@ -222,7 +233,7 @@ export default function UserManagement() {
       </div>
 
       {actionMsg && (
-        <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold">{actionMsg}</div>
+        <div className={`p-3 rounded-xl text-sm font-semibold ${actionOk ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{actionMsg}</div>
       )}
 
       {/* Filters */}

@@ -218,7 +218,6 @@ export default function App() {
           {/* Bank Portal */}
           <Route path="/bank" element={<PrivateRoute portalRole="bank"><BankLayout /></PrivateRoute>}>
             <Route index element={<BankDashboard />} />
-            <Route path="mortgages" element={<MortgageLeads />} />
             <Route path="enquiries" element={<MortgageLeads />} />
             <Route path="site-visits" element={<BankSiteVisits />} />
             <Route path="auctions" element={<AuctionProperties />} />
