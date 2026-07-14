@@ -132,11 +132,24 @@ export default {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        // Splash screen: logo pops in with a soft bounce on app launch.
+        splashPop: {
+          '0%':   { opacity: 0, transform: 'scale(0.82)' },
+          '60%':  { opacity: 1, transform: 'scale(1.04)' },
+          '100%': { opacity: 1, transform: 'scale(1)' },
+        },
+        // Splash screen: loading dots gently bounce.
+        splashDot: {
+          '0%, 100%': { opacity: 0.35, transform: 'translateY(0)' },
+          '50%':      { opacity: 1, transform: 'translateY(-4px)' },
+        },
       },
       animation: {
         blink: 'blink 1.2s ease-in-out infinite',
         sparkle: 'sparkle 1.4s ease-in-out infinite',
         marquee: 'marquee 28s linear infinite',
+        'splash-pop': 'splashPop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'splash-dot': 'splashDot 1s ease-in-out infinite',
       },
     },
   },

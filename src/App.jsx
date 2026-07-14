@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import PrivateRoute from './components/auth/PrivateRoute';
 import { ToastHost } from './components/common/Toast';
+import SplashScreen from './components/common/SplashScreen';
 
 // Auth pages — small, kept static
 import LoginPage from './pages/auth/LoginPage';
@@ -119,6 +120,7 @@ export default function App() {
   return (
     <AuthProvider>
       <SocketProvider>
+      <SplashScreen />
       <ToastHost />
       <BrowserRouter>
         <ScrollToTop />
