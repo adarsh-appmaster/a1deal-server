@@ -254,6 +254,9 @@ export default function MasterBrokerRequests() {
   const [pincodeRequests, setPincodeRequests]     = useState([]);
   const [pincodeReqLoading, setPincodeReqLoading] = useState(false);
   const [selPincodeReq, setSelPincodeReq]         = useState(null);
+  const [pincodeReqAreas, setPincodeReqAreas]     = useState([]); // admin-editable override
+  const [pincodeReqAddPin, setPincodeReqAddPin]   = useState('');
+  const [pincodeReqAddCity, setPincodeReqAddCity] = useState('');
   const [pincodeReqNote, setPincodeReqNote]       = useState('');
   const [pincodeReqWorking, setPincodeReqWorking] = useState(false);
   const [pincodeReqMsg, setPincodeReqMsg]         = useState({ text: '', ok: true });
@@ -440,6 +443,9 @@ export default function MasterBrokerRequests() {
   function openPincodeRequest(req) {
     setSelPincodeReq(req);
     setPincodeReqNote('');
+    setPincodeReqAreas((req.requestedAreas || []).map(a => ({ city: a.city || '', area: a.area || '', pincode: a.pincode || '' })));
+    setPincodeReqAddPin('');
+    setPincodeReqAddCity('');
     setPincodeReqMsg({ text: '', ok: true });
   }
 
@@ -449,6 +455,8 @@ export default function MasterBrokerRequests() {
       const { data } = await api.patch(`/master-broker/pincode-requests/${selPincodeReq._id}/decide`, {
         decision,
         adminNote: pincodeReqNote,
+        // Admin override: the (possibly edited) area list replaces the request on approval.
+        ...(decision === 'approved' && pincodeReqAreas.length ? { areas: pincodeReqAreas } : {}),
       });
       setPincodeReqMsg({ text: `Request ${decision}.`, ok: true });
       setPincodeRequests(prev => prev.map(r => r._id === data.request._id ? data.request : r));
@@ -1804,7 +1812,14 @@ export default function MasterBrokerRequests() {
             </div>
             <div className="px-6 py-5 space-y-4">
               <div className="bg-slate-50 rounded-xl p-4 space-y-1">
-                <p className="font-semibold text-slate-800">{selPincodeReq.broker?.name}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-800">{selPincodeReq.broker?.name}</p>
+                  {selPincodeReq.requestedByMaster && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 whitespace-nowrap">
+                      MASTER DISTRIBUTION
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500">{selPincodeReq.broker?.email}</p>
                 <div className="flex gap-4 pt-1 text-xs">
                   <div><span className="text-slate-400">Current extra areas:</span> <span className="font-bold text-slate-700">{selPincodeReq.broker?.additionalAreas?.length || 0}</span></div>
@@ -1817,14 +1832,48 @@ export default function MasterBrokerRequests() {
                 </div>
               )}
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Requested Areas (+{selPincodeReq.requestedAreas?.length})</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(selPincodeReq.requestedAreas || []).map((a, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                      {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
+                  {selPincodeReq.status === 'pending' ? `Areas to grant (${pincodeReqAreas.length}) — click × to remove, or add below` : `Requested Areas (+${selPincodeReq.requestedAreas?.length})`}
+                </p>
+                {selPincodeReq.status === 'pending' ? (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      {pincodeReqAreas.map((a, i) => (
+                        <span key={i} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                          {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
+                          <button onClick={() => setPincodeReqAreas(prev => prev.filter((_, x) => x !== i))}>
+                            <span className="material-icons-outlined text-sm">close</span>
+                          </button>
+                        </span>
+                      ))}
+                      {pincodeReqAreas.length === 0 && <span className="text-xs text-slate-400">No areas — add at least one to approve, or reject.</span>}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <input value={pincodeReqAddCity} onChange={e => setPincodeReqAddCity(e.target.value)} placeholder="City"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <input value={pincodeReqAddPin} onChange={e => setPincodeReqAddPin(e.target.value)} placeholder="Pincode" maxLength={6}
+                        className="w-24 px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                      <button
+                        onClick={() => {
+                          const pin = pincodeReqAddPin.trim();
+                          if (!/^\d{6}$/.test(pin)) return;
+                          setPincodeReqAreas(prev => [...prev, { city: pincodeReqAddCity.trim(), area: '', pincode: pin }]);
+                          setPincodeReqAddPin('');
+                        }}
+                        className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition">
+                        Add
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(selPincodeReq.requestedAreas || []).map((a, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                        {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Admin Note (optional)</label>
@@ -1839,7 +1888,7 @@ export default function MasterBrokerRequests() {
               )}
               {selPincodeReq.status === 'pending' ? (
                 <div className="flex gap-3">
-                  <button onClick={() => doDecidePincodeRequest('approved')} disabled={pincodeReqWorking}
+                  <button onClick={() => doDecidePincodeRequest('approved')} disabled={pincodeReqWorking || pincodeReqAreas.length === 0}
                     className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-60 flex items-center justify-center gap-1">
                     <span className="material-icons-outlined text-base">verified</span> Approve
                   </button>

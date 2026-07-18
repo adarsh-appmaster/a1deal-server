@@ -156,13 +156,15 @@ export default function SupportChatWidget() {
       const params = { city: searchForm.city.trim(), limit: 5 };
       if (searchForm.type !== 'all') params.type = searchForm.type;
       if (searchForm.maxBudget) params.maxPrice = searchForm.maxBudget;
-      const [units, mortgages] = await Promise.all([
+      const [units, mortgages, auctionUnits] = await Promise.all([
         api.get('/unit-properties/public', { params }),
         api.get('/mortgage-properties/public', { params: { city: params.city, limit: 5 } }),
+        api.get('/auction-unit-properties/public', { params }),
       ]);
       const tagged = [
         ...units.data.properties.map(p => ({ ...p, _model: 'UnitProperty', _badge: 'Property Partner' })),
         ...mortgages.data.properties.map(p => ({ ...p, _model: 'MortgageProperty', _badge: 'Property Deal' })),
+        ...auctionUnits.data.properties.map(p => ({ ...p, _model: 'AuctionUnitProperty', _badge: 'Auction Unit' })),
       ];
       setSearchResults(tagged);
     } catch (ex) {

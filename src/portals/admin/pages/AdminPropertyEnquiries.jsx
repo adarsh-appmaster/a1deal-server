@@ -3,6 +3,7 @@ import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import AssignPanel from '../../../components/common/AssignPanel';
 import { useConfirm } from '../../../hooks/useConfirm';
+import { resolveOwner } from '../../../utils/owner';
 
 function fmtRs(n) {
   if (!n) return '₹0';
@@ -22,6 +23,17 @@ const STATUS_LABELS = {
   new: 'New', assigned: 'Assigned', in_progress: 'In Progress', closed: 'Closed', rejected: 'Rejected',
 };
 const PURPOSE_LABELS = { buy: 'Buy', invest: 'Invest', general: 'General' };
+
+// AuctionUnitProperty behaves like UnitProperty for booking/unit-split UI and
+// buyer-pincode routing — everywhere else falls back to Mortgage-style copy.
+const isUnitLike = m => m === 'UnitProperty' || m === 'AuctionUnitProperty';
+const MODEL_LABEL = {
+  UnitProperty: 'Unit', MortgageProperty: 'Mortgage', AuctionUnitProperty: 'Auction Unit',
+};
+const MODEL_BADGE_CLS = {
+  UnitProperty: 'bg-primary/10 text-primary', MortgageProperty: 'bg-amber-100 text-amber-700',
+  AuctionUnitProperty: 'bg-violet-100 text-violet-700',
+};
 
 function fmtBudget(b) {
   if (!b || (!b.min && !b.max)) return '—';
@@ -46,6 +58,7 @@ export default function AdminPropertyEnquiries() {
   const [pincodeMatches, setPincodeMatches] = useState(null);
   const [teamMembers, setTeamMembers]   = useState([]);
   const [assignTo, setAssignTo]         = useState('');
+  const [selectedTeam, setSelectedTeam] = useState([]);
   const [assignNote, setAssignNote]     = useState('');
   const [adminNote, setAdminNote]     = useState('');
   const [newStatus, setNewStatus]     = useState('');
@@ -83,6 +96,7 @@ export default function AdminPropertyEnquiries() {
   async function openEnquiry(enq) {
     setSelected(enq);
     setAssignTo(enq.assignedTo?._id || '');
+    setSelectedTeam((enq.assignedTeam || []).map(t => t._id));
     setAssignNote(enq.assignmentNote || '');
     setAdminNote(enq.adminNote || '');
     setNewStatus(enq.status);
@@ -92,8 +106,8 @@ export default function AdminPropertyEnquiries() {
     try {
       const params = {};
       if (enq.city) params.city = enq.city;
-      // For unit property enquiries use buyer's pincode for exact broker matching
-      if (enq.propertyModel === 'UnitProperty' && enq.pincode) params.pincode = enq.pincode;
+      // For unit/auction-unit property enquiries use buyer's pincode for exact broker matching
+      if (['UnitProperty', 'AuctionUnitProperty'].includes(enq.propertyModel) && enq.pincode) params.pincode = enq.pincode;
       const { data } = await api.get('/enquiry/brokers', { params });
       setPincodeMatches(data.pincodeMatches || null);
       setTeamMembers(data.teamMembers || []);
@@ -102,12 +116,18 @@ export default function AdminPropertyEnquiries() {
     }
   }
 
+  function toggleTeamMate(id) {
+    setSelectedTeam(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
   async function handleAssign() {
     if (!assignTo) return;
     setSaving(true);
     try {
+      const isAuctionUnit = selected?.propertyModel === 'AuctionUnitProperty';
       const { data } = await api.patch(`/enquiry/${selected._id}/assign`, {
         assignedTo: assignTo, assignmentNote: assignNote, status: 'assigned',
+        ...(isAuctionUnit && { assignedTeam: selectedTeam }),
       });
       setSaveMsg('Assigned successfully.');
       setSelected(data.enquiry);
@@ -140,10 +160,11 @@ export default function AdminPropertyEnquiries() {
     setBookPrice(selected.bookedPrice != null ? String(selected.bookedPrice) : '');
     setPropertyUnits([]);
     setShowBookModal(true);
-    // Only fetch units for UnitProperty — mortgage has no unit split
-    if (selected.propertyId && selected.propertyModel === 'UnitProperty') {
+    // Only fetch units for unit-like models — mortgage has no unit split
+    if (selected.propertyId && isUnitLike(selected.propertyModel)) {
+      const endpoint = selected.propertyModel === 'AuctionUnitProperty' ? 'auction-unit-properties' : 'unit-properties';
       try {
-        const { data } = await api.get(`/unit-properties/${selected.propertyId}`);
+        const { data } = await api.get(`/${endpoint}/${selected.propertyId}`);
         const units = data.property?.unitSplit?.units || [];
         setPropertyUnits(units.filter(u => u.status === 'available' || u.status === 'under_negotiation'));
       } catch { setPropertyUnits([]); }
@@ -237,7 +258,7 @@ export default function AdminPropertyEnquiries() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  {['Enquirer', 'Location', 'Purpose / Budget', 'Status', 'Assigned To', 'Date', ''].map(h => (
+                  {['Enquirer', 'Location', 'Purpose / Budget', 'Status', 'Owner', 'Assigned To', 'Date', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -251,8 +272,14 @@ export default function AdminPropertyEnquiries() {
                       {e.propertyTitle && <p className="text-xs text-primary truncate max-w-[140px]" title={e.propertyTitle}>{e.propertyTitle}</p>}
                       {e.propertyModel && (
                         <span className={`mt-0.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded
-                          ${e.propertyModel === 'UnitProperty' ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'}`}>
-                          {e.propertyModel === 'UnitProperty' ? 'Unit' : 'Mortgage'}
+                          ${MODEL_BADGE_CLS[e.propertyModel] || 'bg-amber-100 text-amber-700'}`}>
+                          {MODEL_LABEL[e.propertyModel] || e.propertyModel}
+                        </span>
+                      )}
+                      {e.siteVisitId && (
+                        <span className="mt-0.5 ml-1 inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700"
+                          title={e.visitDate ? `Visit ${e.visitDate}${e.visitSlot ? ` ${e.visitSlot}` : ''}` : 'Site visit'}>
+                          <span className="material-icons-outlined text-[11px]">event</span>Site Visit
                         </span>
                       )}
                     </td>
@@ -270,6 +297,13 @@ export default function AdminPropertyEnquiries() {
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[e.status] || 'bg-slate-100 text-slate-600'}`}>
                         {STATUS_LABELS[e.status] || e.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => { const o = resolveOwner(e); return (
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${o.cls}`} title={o.name || ''}>
+                          {o.label}{o.name ? ` · ${o.name.split(' ')[0]}` : ''}
+                        </span>
+                      ); })()}
                     </td>
                     <td className="px-4 py-3 text-slate-600 text-xs">
                       {e.assignedTo ? (
@@ -327,7 +361,7 @@ export default function AdminPropertyEnquiries() {
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <h3 className="font-montserrat font-bold text-base text-slate-800">
-                {selected.propertyModel === 'UnitProperty' ? 'Book Unit'
+                {isUnitLike(selected.propertyModel) ? 'Book Unit'
                  : selected.propertyModel === 'MortgageProperty' ? 'Mark as Sold'
                  : 'Mark as Transferred'}
               </h3>
@@ -340,8 +374,8 @@ export default function AdminPropertyEnquiries() {
             <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
               <p className="text-xs text-slate-500">Enquiry: <span className="font-semibold text-slate-700">{selected.name}</span> — {selected.propertyTitle}</p>
 
-              {/* Unit selector — only for UnitProperty */}
-              {selected.propertyModel === 'UnitProperty' && (
+              {/* Unit selector — only for unit-like models */}
+              {isUnitLike(selected.propertyModel) && (
                 propertyUnits.length > 0 ? (
                   <div>
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Select Unit</p>
@@ -368,7 +402,7 @@ export default function AdminPropertyEnquiries() {
               )}
 
               <div className="space-y-3">
-                {selected.propertyModel === 'UnitProperty' && (
+                {isUnitLike(selected.propertyModel) && (
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit Number</label>
                     <input value={bookUnitNumber} onChange={e => setBookUnitNumber(e.target.value)}
@@ -378,7 +412,7 @@ export default function AdminPropertyEnquiries() {
                 )}
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    {selected.propertyModel === 'UnitProperty' ? 'Confirmed Sale Price (₹)' : 'Final Deal Price (₹)'}
+                    {isUnitLike(selected.propertyModel) ? 'Confirmed Sale Price (₹)' : 'Final Deal Price (₹)'}
                     <span className="text-rose-500"> *</span>
                   </label>
                   <input type="number" value={bookPrice} onChange={e => setBookPrice(e.target.value)}
@@ -413,6 +447,7 @@ export default function AdminPropertyEnquiries() {
               <button onClick={handleBook} disabled={bookSaving || !bookPrice}
                 className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-[#3700b3] transition disabled:opacity-60">
                 {bookSaving ? 'Saving…'
+                 : isUnitLike(selected.propertyModel) ? 'Confirm Booking'
                  : selected.propertyModel === 'MortgageProperty' ? 'Confirm Sale'
                  : 'Confirm Booking'}
               </button>
@@ -446,8 +481,10 @@ export default function AdminPropertyEnquiries() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {selected.propertyModel && (
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full
-                        ${selected.propertyModel === 'UnitProperty' ? 'bg-primary/10 text-primary' : 'bg-amber-100 text-amber-700'}`}>
-                        {selected.propertyModel === 'UnitProperty' ? 'Unit Property' : 'Mortgage / Bank Repo'}
+                        ${MODEL_BADGE_CLS[selected.propertyModel] || 'bg-amber-100 text-amber-700'}`}>
+                        {selected.propertyModel === 'UnitProperty' ? 'Unit Property'
+                         : selected.propertyModel === 'AuctionUnitProperty' ? 'Auction Unit Property'
+                         : 'Mortgage / Bank Repo'}
                       </span>
                     )}
                   </div>
@@ -493,9 +530,7 @@ export default function AdminPropertyEnquiries() {
                 <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 space-y-2">
                   <p className="font-bold text-slate-400 uppercase tracking-wider">Commission Routing
                     <span className="ml-2 font-normal normal-case text-slate-400">
-                      {selected.propertyModel === 'UnitProperty' ? '(buyer pincode)'
-                       : selected.propertyModel === 'MortgageProperty' ? '(property pincode)'
-                       : '(property pincode)'}
+                      {isUnitLike(selected.propertyModel) ? '(buyer pincode)' : '(property pincode)'}
                     </span>
                   </p>
                   {selected.commission.mode === 'broker_chain' ? (
@@ -534,7 +569,7 @@ export default function AdminPropertyEnquiries() {
                   ) : (
                     <button onClick={openBookModal}
                       className="mt-1 w-full py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#3700b3] transition">
-                      {selected.propertyModel === 'UnitProperty' ? 'Book Unit & Lock Commission'
+                      {isUnitLike(selected.propertyModel) ? 'Book Unit & Lock Commission'
                        : selected.propertyModel === 'MortgageProperty' ? 'Mark as Sold & Lock Commission'
                        : 'Mark as Transferred & Lock Commission'}
                     </button>
@@ -548,12 +583,15 @@ export default function AdminPropertyEnquiries() {
                   me={me}
                   assignTo={assignTo}
                   onAssignTo={setAssignTo}
-                  pincodeMatches={selected?.propertyModel === 'UnitProperty' ? pincodeMatches : null}
+                  pincodeMatches={['UnitProperty', 'AuctionUnitProperty'].includes(selected?.propertyModel) ? pincodeMatches : null}
                   teamMembers={teamMembers}
                   onAssign={handleAssign}
                   saving={saving}
                   note={assignNote}
                   onNote={setAssignNote}
+                  showTeamMates={selected?.propertyModel === 'AuctionUnitProperty'}
+                  selectedTeam={selectedTeam}
+                  onToggleTeam={toggleTeamMate}
                 />
               </div>
 

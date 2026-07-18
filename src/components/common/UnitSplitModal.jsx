@@ -337,7 +337,7 @@ function FloorWiseConfig({ subs, totalFloors, setTotalFloors, floorConfigs, setF
 }
 
 // ── Main Modal ────────────────────────────────────────────────────────────────
-export default function UnitSplitModal({ property, onClose, onUpdate }) {
+export default function UnitSplitModal({ property, onClose, onUpdate, apiBase = 'unit-properties' }) {
   const subs         = getSubs(property.propertyType);
   const suggested    = getSuggestedMode(property.propertyType);
   const initHasSplit = !!property.unitSplit?.enabled;
@@ -374,7 +374,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
         ? { splitMode: 'bhk_wise', groups: bhkGroups }
         : { splitMode: 'floor_wise', floorConfigs };
 
-      const { data } = await api.post(`/unit-properties/${property._id}/split`, payload);
+      const { data } = await api.post(`/${apiBase}/${property._id}/split`, payload);
       setUnits(data.property.unitSplit?.units || []);
       setHasSplit(true);
       onUpdate?.(data.property);
@@ -388,7 +388,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
   async function handleDeleteSplit() {
     if (!(await confirm('Remove unit split? All unit data will be lost.', { danger: true, confirmLabel: 'Remove' }))) return;
     try {
-      await api.delete(`/unit-properties/${property._id}/split`);
+      await api.delete(`/${apiBase}/${property._id}/split`);
       setHasSplit(false);
       setUnits([]);
       setTab('configure');
@@ -607,7 +607,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                             const globalIdx = units.findIndex(u => u === unit || u._id === unit._id);
                             return (
                               <UnitRow key={unit._id || i} unit={unit} idx={globalIdx}
-                                propertyId={property._id} subs={subs}
+                                propertyId={property._id} subs={subs} apiBase={apiBase}
                                 onUpdate={patch => handleUnitUpdate(globalIdx, patch)} />
                             );
                           })}
@@ -618,7 +618,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
                   <div className="space-y-2">
                     {units.map((unit, idx) => (
                       <UnitRow key={unit._id || idx} unit={unit} idx={idx}
-                        propertyId={property._id} subs={subs}
+                        propertyId={property._id} subs={subs} apiBase={apiBase}
                         onUpdate={patch => handleUnitUpdate(idx, patch)} />
                     ))}
                   </div>
@@ -648,7 +648,7 @@ export default function UnitSplitModal({ property, onClose, onUpdate }) {
 }
 
 // ── UnitRow — individual unit editor ─────────────────────────────────────────
-function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
+function UnitRow({ unit, idx, propertyId, subs, onUpdate, apiBase = 'unit-properties' }) {
   const [status,     setStatus]     = useState(unit.status     || 'available');
   const [unitType,   setUnitType]   = useState(unit.unitType   || subs[0] || '');
   const [notes,      setNotes]      = useState(unit.notes      || '');
@@ -674,7 +674,7 @@ function UnitRow({ unit, idx, propertyId, subs, onUpdate }) {
   async function handleSave() {
     setSaving(true);
     try {
-      await api.patch(`/unit-properties/${propertyId}/split/${idx}`, {
+      await api.patch(`/${apiBase}/${propertyId}/split/${idx}`, {
         status, unitType,
         notes:      notes.trim() || undefined,
         facing:     facing       || undefined,

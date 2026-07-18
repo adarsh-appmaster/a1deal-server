@@ -15,6 +15,7 @@ export default function InternalLoginPage() {
   const navigate = useNavigate();
   const { login, portalPath } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -82,15 +83,24 @@ export default function InternalLoginPage() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Password</label>
-          <input
-            name="password"
-            type="password"
-            required
-            value={form.password}
-            onChange={handleChange}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-container transition"
-          />
+          <div className="relative">
+            <input
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={form.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 pr-11 rounded-xl bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-container transition"
+            />
+            <button type="button" tabIndex={-1}
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">
+              <span className="material-icons-outlined text-lg">
+                {showPassword ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
+          </div>
         </div>
 
         <button

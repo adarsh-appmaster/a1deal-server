@@ -275,11 +275,12 @@ function PropertyLeadsModal({ listing, onClose }) {
 function AddListingModal({ myAreas, onClose, onAdded }) {
   const { user } = useAuth();
 
-  // Sub-broker = has masterBroker set; master broker = brokerTier is 'master'
-  // Both get locked chip UI (from their assigned zones); plain brokers get free-form
-  const isSubBroker  = !!user?.masterBroker;
+  // Sub-broker = has masterBroker set; master broker = brokerTier is 'master'.
+  // Listings are commission-free but pincode-gated: every broker may only list in
+  // pincodes approved for them, so all brokers get the locked chip UI built from
+  // their approved zones (home + coverage + admin/master-granted areas).
   const isMasterBroker = user?.brokerTier === 'master';
-  const useLockedZones = isSubBroker || isMasterBroker;
+  const useLockedZones = true;
 
   // Build locked zones for sub-brokers and master brokers
   const lockedZones = useMemo(() => {
@@ -295,6 +296,7 @@ function AddListingModal({ myAreas, onClose, onAdded }) {
     }
     add({ city: user?.city, area: user?.area, pincode: user?.pincode }, 'Home');
     for (const ca of (user?.coverageAreas || [])) add(ca, null);
+    for (const aa of (user?.additionalAreas || [])) add(aa, aa.label || null);
     for (const aa of (myAreas?.additionalAreas || [])) add(aa, aa.label || null);
     return list;
   }, [useLockedZones, user, myAreas]);

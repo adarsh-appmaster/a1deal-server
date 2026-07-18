@@ -3,11 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import AutoScrollRow from '../../../components/common/AutoScrollRow';
 import PropertyCard from '../../../components/common/PropertyCard';
+import ImageSlider from '../../../components/common/ImageSlider';
 import { searchLocations } from '../../../data/indiaLocations';
 import api from '../../../api/axios';
+import { useAuth } from '../../../context/AuthContext';
+
+function formatDealPrice(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1_00_00_000) return `₹${(n / 1_00_00_000).toFixed(2)} Cr`;
+  if (n >= 1_00_000)    return `₹${(n / 1_00_000).toFixed(2)} L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+}
 
 export default function BuyerHome() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -18,11 +28,16 @@ export default function BuyerHome() {
   const [mortgageProps, setMortgageProps] = useState([]);
   const [unitProps, setUnitProps] = useState([]);
   const [featuredProps, setFeaturedProps] = useState([]);
+  const [auctionUnitProps, setAuctionUnitProps] = useState([]);
+  const [dealDeskListings, setDealDeskListings] = useState([]);
+  // Co-branding strip now lives in BuyerLayout, so it shows on every buyer page.
 
   useEffect(() => {
     api.get('/mortgage-properties/public?limit=3').then(r => setMortgageProps(r.data.properties || [])).catch(() => {});
     api.get('/unit-properties/public?limit=3').then(r => setUnitProps(r.data.properties || [])).catch(() => {});
     api.get('/unit-properties/public?featured=true&limit=6').then(r => setFeaturedProps(r.data.properties || [])).catch(() => {});
+    api.get('/auction-unit-properties/public?limit=3').then(r => setAuctionUnitProps(r.data.properties || [])).catch(() => {});
+    api.get('/broker/listings/public?limit=6').then(r => setDealDeskListings(r.data.listings || [])).catch(() => {});
   }, []);
 
   // Autosuggest: fires once 3+ characters are typed, matching city/pincode/project name
@@ -226,6 +241,82 @@ export default function BuyerHome() {
         </section>
       )}
 
+      {/* Auction Unit Properties */}
+      {auctionUnitProps.length > 0 && (
+        <section className="max-w-container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="font-montserrat font-bold text-2xl text-on-surface">Auction Unit Properties</h2>
+              <p className="text-secondary text-sm mt-1">Bank-linked auction inventory with developer-style unit listings</p>
+            </div>
+            <button onClick={() => navigate('/buyer/auction-unit-properties')} className="btn-ghost text-sm py-2 px-4">View All</button>
+          </div>
+          <AutoScrollRow
+            items={auctionUnitProps}
+            cardWidth="w-80"
+            renderItem={p => (
+              <PropertyCard
+                property={p}
+                model="AuctionUnitProperty"
+                showShare
+                onEnquire={prop => setEnquireProperty({ ...prop, _model: 'AuctionUnitProperty' })}
+                onScheduleVisit={prop => navigate(`/buyer/visit/${prop._id}`, {
+                  state: { propertyTitle: prop.title, city: prop.city, area: prop.area, propertyModel: 'AuctionUnitProperty' },
+                })}
+              />
+            )}
+          />
+        </section>
+      )}
+
+      {/* Deal Desk — direct-from-broker listings */}
+      {dealDeskListings.length > 0 && (
+        <section className="max-w-container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="font-montserrat font-bold text-2xl text-on-surface flex items-center gap-2">
+                <span className="material-icons-outlined text-primary">storefront</span>Deal Desk
+              </h2>
+              <p className="font-semibold text-secondary text-sm mt-1">Properties listed directly by brokers — no platform commission</p>
+            </div>
+            <button onClick={() => navigate('/buyer/deal-desk')} className="btn-ghost text-sm py-2 px-4">View All</button>
+          </div>
+          <AutoScrollRow
+            items={dealDeskListings}
+            cardWidth="w-80"
+            renderItem={p => (
+              <div onClick={() => navigate(`/buyer/deal-desk/${p._id}`)}
+                className="bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-full">
+                <ImageSlider
+                  images={p.images || []}
+                  alt={p.title}
+                  className="h-48"
+                  placeholderIcon="home_work"
+                  overlay={
+                    <span className="absolute top-3 left-3 text-xs font-bold px-2 py-0.5 rounded-full bg-primary text-white">
+                      {p.listingType === 'lease' ? 'For Lease' : 'For Sale'}
+                    </span>
+                  }
+                />
+                <div className="p-4 space-y-1">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide truncate">
+                    {[p.propertyType, p.city, p.pincode].filter(Boolean).join(' · ')}
+                  </p>
+                  <h3 className="font-montserrat font-bold text-slate-800 truncate">{p.title}</h3>
+                  <p className="text-primary font-bold text-lg">{formatDealPrice(p.price)}</p>
+                  {p.broker?.name && (
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="material-icons-outlined text-xs text-slate-400">person</span>
+                      Listed by {p.broker.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          />
+        </section>
+      )}
+
       {/* CTA */}
       <section className="bg-gradient-to-r from-primary to-primary-container text-white py-14 px-6 text-center">
         <h2 className="font-montserrat font-bold text-3xl mb-3">Ready to Find Your Dream Home?</h2>
@@ -245,6 +336,8 @@ export default function BuyerHome() {
 
       {showEnquiry && <EnquiryModal onClose={() => setShowEnquiry(false)} />}
       {enquireProperty && <EnquiryModal property={enquireProperty} onClose={() => setEnquireProperty(null)} />}
+
+      <p className="text-center text-xs text-slate-300 py-6">Powered by A1 Deal</p>
     </div>
   );
 }

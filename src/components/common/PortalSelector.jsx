@@ -5,6 +5,9 @@ import AutoScrollRow from './AutoScrollRow';
 import PropertyCard from './PropertyCard';
 import ImageSlider from './ImageSlider';
 import MobileBottomNav from './MobileBottomNav';
+import SubscriptionPlans from './SubscriptionPlans';
+import useSubscribe from '../../hooks/useSubscribe';
+import { useAuth } from '../../context/AuthContext';
 import { searchLocations } from '../../data/indiaLocations';
 import { HOW_IT_WORKS_ART } from '../../data/howItWorksArt';
 import api from '../../api/axios';
@@ -107,21 +110,24 @@ const FEATURES = [
 
 // ── Public property fetching ──────────────────────────────────────────────────
 function usePublicProperties() {
-  const [units,     setUnits]     = useState([]);
-  const [mortgages, setMortgages] = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [units,        setUnits]        = useState([]);
+  const [mortgages,    setMortgages]    = useState([]);
+  const [auctionUnits, setAuctionUnits] = useState([]);
+  const [loading,      setLoading]      = useState(true);
 
   useEffect(() => {
     Promise.all([
       api.get('/unit-properties/public?limit=6'),
       api.get('/mortgage-properties/public?limit=6'),
-    ]).then(([u, m]) => {
-      setUnits(u.data.properties     || []);
-      setMortgages(m.data.properties || []);
+      api.get('/auction-unit-properties/public?limit=6'),
+    ]).then(([u, m, a]) => {
+      setUnits(u.data.properties        || []);
+      setMortgages(m.data.properties    || []);
+      setAuctionUnits(a.data.properties || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  return { units, mortgages, loading };
+  return { units, mortgages, auctionUnits, loading };
 }
 
 function PropertySection({ title, tagline, icon, items, model, loading, navigate }) {
@@ -252,7 +258,7 @@ function CitySearchBar({ onSearch }) {
           onChange={handleChange}
           onFocus={() => query && setOpen(true)}
           autoComplete="off"
-          className="flex-1 px-4 py-4 text-sm text-slate-700 focus:outline-none placeholder-slate-400"
+          className="flex-1 px-4 py-3 text-sm text-slate-700 focus:outline-none placeholder-slate-400"
         />
         <button type="submit"
           className="m-1.5 px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-container transition">
@@ -280,7 +286,9 @@ function CitySearchBar({ onSearch }) {
 
 export default function PortalSelector() {
   const navigate = useNavigate();
-  const { units, mortgages, loading } = usePublicProperties();
+  const { user } = useAuth();
+  const { subscribe, subscribingId, notice: subNotice, setNotice: setSubNotice } = useSubscribe();
+  const { units, mortgages, auctionUnits, loading } = usePublicProperties();
 
   function handleSearch(city) {
     navigate(`/buyer/search?q=${encodeURIComponent(city)}`);
@@ -290,18 +298,35 @@ export default function PortalSelector() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 md:px-10 py-3 md:py-4 bg-white/90 backdrop-blur border-b border-slate-100">
-        <Logo variant="full" size="xl" />
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 md:px-10 py-6 bg-white/90 backdrop-blur border-b border-slate-100">
+        <Logo variant="full" size="md" />
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-on-surface-variant">
+          <a href="#properties" className="hover:text-primary transition-colors">Properties</a>
+          {(!user || ['buyer', 'broker', 'master_broker'].includes(user.role)) && (
+            <a href="#plans" className="hover:text-primary transition-colors">Plans</a>
+          )}
+          <a href="#portals" className="hover:text-primary transition-colors">Portals</a>
+          <button onClick={() => navigate('/buyer/articles')} className="hover:text-primary transition-colors">Articles</button>
+        </nav>
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <button onClick={() => navigate('/login')}
-            className="px-4 md:px-5 py-2 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition whitespace-nowrap">
-            Sign In
-          </button>
-          <button onClick={() => navigate('/signup')}
-            className="px-4 md:px-5 py-2 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-container transition shadow-md shadow-primary/20 whitespace-nowrap">
-            <span className="hidden sm:inline">Sign Up Free</span>
-            <span className="sm:hidden">Sign Up</span>
-          </button>
+          {user ? (
+            <button onClick={() => navigate('/buyer')}
+              className="px-4 md:px-5 py-2 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-container transition shadow-md shadow-primary/20 whitespace-nowrap">
+              My Dashboard
+            </button>
+          ) : (
+            <>
+              <button onClick={() => navigate('/login')}
+                className="px-4 md:px-5 py-2 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition whitespace-nowrap">
+                Sign In
+              </button>
+              <button onClick={() => navigate('/signup')}
+                className="px-4 md:px-5 py-2 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-container transition shadow-md shadow-primary/20 whitespace-nowrap">
+                <span className="hidden sm:inline">Sign Up Free</span>
+                <span className="sm:hidden">Sign Up</span>
+              </button>
+            </>
+          )}
         </div>
       </header>
 
@@ -319,11 +344,21 @@ export default function PortalSelector() {
         </p>
 
         <CitySearchBar onSearch={handleSearch} />
+
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <a href="#plans" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-white font-semibold text-sm hover:bg-primary-container transition shadow-md shadow-primary/20">
+            <span className="material-icons-outlined text-base">workspace_premium</span>
+            Buy a Package
+          </a>
+          <button onClick={() => navigate('/signup')} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
+            Sign Up Free
+          </button>
+        </div>
       </section>
 
       {/* ── Property Listings ── */}
-      {(loading || units.length > 0 || mortgages.length > 0) && (
-        <section className="max-w-6xl mx-auto w-full px-4 pt-4 pb-16">
+      {(loading || units.length > 0 || mortgages.length > 0 || auctionUnits.length > 0) && (
+        <section id="properties" className="max-w-6xl mx-auto w-full px-4 pt-4 pb-16">
           <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Live on the Platform</p>
           <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-on-surface text-center mb-12">
             Featured Properties
@@ -346,11 +381,20 @@ export default function PortalSelector() {
             loading={loading}
             navigate={navigate}
           />
+          <PropertySection
+            title="Auction Unit Properties"
+            tagline="Bank-Linked Auction Inventory"
+            icon="gavel"
+            model="AuctionUnitProperty"
+            items={auctionUnits}
+            loading={loading}
+            navigate={navigate}
+          />
         </section>
       )}
 
       {/* ── Who are you? ── */}
-      <section className="max-w-5xl mx-auto w-full px-4 py-16">
+      <section id="portals" className="max-w-5xl mx-auto w-full px-4 py-16">
         <p className="text-center text-xs font-bold text-[#484456] uppercase tracking-widest mb-3">Join as</p>
         <h2 className="font-montserrat font-bold text-2xl md:text-3xl text-[#484456] text-center mb-10">
           What best describes you?
@@ -438,6 +482,26 @@ export default function PortalSelector() {
         </div>
       </section>
 
+      {/* ── Subscription Plans ── */}
+      <section id="plans" className="bg-surface py-16 px-4">
+        <div className="text-center mb-10">
+          <h2 className="font-montserrat font-bold text-2xl md:text-4xl text-slate-900 mb-3">Choose Your Plan</h2>
+          <p className="text-slate-500 max-w-2xl mx-auto">
+            Start free as a buyer, upgrade to broker for leads and listings, or go Master Broker to own your territory.
+          </p>
+        </div>
+        {subNotice && (
+          <div className={`max-w-2xl mx-auto mb-6 px-4 py-3 rounded-xl text-sm flex items-center justify-between gap-3 ${
+            subNotice.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-rose-50 border border-rose-200 text-rose-700'
+          }`}>
+            <span>{subNotice.msg}</span>
+            <button onClick={() => setSubNotice(null)}><span className="material-icons-outlined text-base">close</span></button>
+          </div>
+        )}
+        <SubscriptionPlans onSubscribe={subscribe} subscribingId={subscribingId} user={user} />
+        <p className="text-center text-xs text-slate-400 mt-8">Secure payments by Razorpay · GST may apply · Cancel anytime.</p>
+      </section>
+
       {/* ── CTA Banner ── */}
       <section className="bg-on-surface py-16 px-4 text-center">
         <h2 className="font-montserrat font-bold text-2xl md:text-4xl text-white mb-4">
@@ -461,8 +525,6 @@ export default function PortalSelector() {
       {/* ── Footer ── */}
       <footer className="bg-on-surface border-t border-white/10 pt-10 pb-24 md:pb-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <Logo variant="full" theme="dark" size="md" />
-
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm md:text-xs text-white/50">
             <button onClick={() => navigate('/signup')} className="py-1 hover:text-white transition">Buy Property</button>
             <button onClick={() => navigate('/signup?role=broker')} className="py-1 hover:text-white transition">Become a Broker</button>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../../api/axios';
 import { timeAgo } from '../../utils/timeAgo';
+import { useAuth } from '../../context/AuthContext';
 
 const TYPE_COLORS = {
   property_pending:      'text-amber-500',
@@ -8,10 +9,15 @@ const TYPE_COLORS = {
   property_rejected:     'text-rose-500',
   unit_property_added:   'text-tertiary',
   mortgage_property_added: 'text-blue-500',
+  auction_unit_property_added: 'text-amber-600',
+  enquiry_assigned:      'text-violet-500',
+  enquiry_booked:        'text-emerald-600',
+  commission_paid:       'text-emerald-600',
   system:                'text-slate-400',
 };
 
 export default function NotificationBell({ accentColor = '#484a5a' }) {
+  const { user } = useAuth();
   const [open, setOpen]           = useState(false);
   const [notifications, setNots]  = useState([]);
   const [unread, setUnread]       = useState(0);
@@ -64,7 +70,7 @@ export default function NotificationBell({ accentColor = '#484a5a' }) {
   }
 
   function isRead(n) {
-    return n.userId ? n.read : false; // broadcasts re-fetched as unread only
+    return n.userId ? n.read : !!(user?.id && n.readBy?.includes(user.id));
   }
 
   return (

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
 import AssignPanel from '../../../components/common/AssignPanel';
+import { resolveOwner } from '../../../utils/owner';
 
 const STATUS_COLORS = {
   scheduled: 'bg-blue-100 text-blue-700',
@@ -30,6 +31,7 @@ export default function AdminSiteVisits() {
   const [teamMembers, setTeamMembers]     = useState([]);
   const [pincodeMatches, setPincodeMatches] = useState(null);
   const [assignTo, setAssignTo]         = useState('');
+  const [selectedTeam, setSelectedTeam] = useState([]);
   const [adminNote, setAdminNote]       = useState('');
   const [newStatus, setNewStatus]       = useState('');
   const [saving, setSaving]             = useState(false);
@@ -76,6 +78,7 @@ export default function AdminSiteVisits() {
   function openVisit(v) {
     setSelected(v);
     setAssignTo(v.assignedTo?._id || '');
+    setSelectedTeam((v.assignedTeam || []).map(t => t._id));
     setAdminNote(v.adminNote || '');
     setNewStatus(v.status);
     setSaveMsg('');
@@ -86,21 +89,28 @@ export default function AdminSiteVisits() {
     api.get('/whatsapp-schedule', { params: { visitId: v._id } })
       .then(r => setWaSchedules(r.data.schedules || []))
       .catch(() => setWaSchedules([]));
-    // Load pincode-matched brokers for unit property visits
-    if (v.propertyModel === 'UnitProperty' && v.city) {
-      api.get('/enquiry/brokers', { params: { city: v.city } })
+    // Load pincode-matched broker/master so admin can re-own the lead (all models).
+    if (v.city || v.buyerPincode) {
+      api.get('/enquiry/brokers', { params: { city: v.city, pincode: v.buyerPincode || '' } })
         .then(r => setPincodeMatches(r.data.pincodeMatches || null))
         .catch(() => {});
     }
+  }
+
+  function toggleTeamMate(id) {
+    setSelectedTeam(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
   async function handleAssign() {
     if (!assignTo) return;
     setSaving(true);
     try {
-      const { data } = await api.patch(`/site-visits/${selected._id}/assign`, { assignedTo: assignTo });
-      const msg = 'Team member assigned. Lead will go to broker on OTP verification.';
-      setSaveMsg(msg);
+      const isAuctionUnit = selected?.propertyModel === 'AuctionUnitProperty';
+      const { data } = await api.patch(`/site-visits/${selected._id}/assign`, {
+        assignedTo: assignTo,
+        ...(isAuctionUnit && { assignedTeam: selectedTeam }),
+      });
+      setSaveMsg(data.message || 'Assigned.');
       setSelected(data.visit);
       setVisits(prev => prev.map(v => v._id === data.visit._id ? data.visit : v));
     } catch (ex) {
@@ -199,7 +209,7 @@ export default function AdminSiteVisits() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  {['Buyer', 'Property', 'Date / Slot', 'Status', 'Assigned To', 'Lead', ''].map(h => (
+                  {['Buyer', 'Property', 'Date / Slot', 'Status', 'Owner', 'Site Rep', 'Lead', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -222,6 +232,13 @@ export default function AdminSiteVisits() {
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[v.status] || 'bg-slate-100 text-slate-600'}`}>
                         {STATUS_LABELS[v.status] || v.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => { const o = resolveOwner(v); return (
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${o.cls}`} title={o.name || ''}>
+                          {o.label}{o.name ? ` · ${o.name.split(' ')[0]}` : ''}
+                        </span>
+                      ); })()}
                     </td>
                     <td className="px-4 py-3 text-slate-600 text-xs">
                       {v.assignedTo ? v.assignedTo.name : '—'}
@@ -315,11 +332,14 @@ export default function AdminSiteVisits() {
                   me={me}
                   assignTo={assignTo}
                   onAssignTo={setAssignTo}
-                  pincodeMatches={selected?.propertyModel === 'UnitProperty' ? pincodeMatches : null}
+                  pincodeMatches={pincodeMatches}
                   teamMembers={teamMembers}
                   onAssign={handleAssign}
                   saving={saving}
                   label="Assign Visit To"
+                  showTeamMates={selected?.propertyModel === 'AuctionUnitProperty'}
+                  selectedTeam={selectedTeam}
+                  onToggleTeam={toggleTeamMate}
                 />
               </div>
 

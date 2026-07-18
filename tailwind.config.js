@@ -132,11 +132,16 @@ export default {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        fadeInUp: {
+          from: { opacity: 0, transform: 'translateY(16px)' },
+          to:   { opacity: 1, transform: 'translateY(0)' },
+        },
       },
       animation: {
         blink: 'blink 1.2s ease-in-out infinite',
         sparkle: 'sparkle 1.4s ease-in-out infinite',
         marquee: 'marquee 28s linear infinite',
+        'fade-in-up': 'fadeInUp 0.5s ease-out both',
       },
     },
   },

@@ -15,7 +15,7 @@ export default function BrokerMortgageProperties() {
         </p>
       </div>
       <WhatsAppGroupCard type="mortgage" />
-      <MortgageHub portalColor="#ff5a5f" />
+      <MortgageHub portalColor="#ff5a5f" scheduleVisitEnabled />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import usePortalBase from '../../../hooks/usePortalBase';
 import api from '../../../api/axios';
 import { validateForm } from '../../../validation/validate';
 import { siteVisitSchema } from '../../../validation/schemas';
@@ -22,8 +23,9 @@ export default function SiteVisitFlow() {
   const { propertyId } = useParams();
   const location  = useLocation();
   const { user }  = useAuth();
+  const base      = usePortalBase();
 
-  const { propertyTitle = '', city = '', area = '', propertyModel = 'UnitProperty' } = location.state || {};
+  const { propertyTitle = '', city = '', area = '', propertyModel = 'UnitProperty', refBroker = null, pincode = '' } = location.state || {};
 
   const prefilled = {
     name: user?.name || '',
@@ -33,7 +35,7 @@ export default function SiteVisitFlow() {
   const isLoggedIn = !!(user && prefilled.name && prefilled.phone && prefilled.email);
 
   const [step, setStep] = useState(isLoggedIn ? 2 : 1);
-  const [form, setForm] = useState({ ...prefilled, date: '', slot: '' });
+  const [form, setForm] = useState({ ...prefilled, pincode: pincode || user?.pincode || '', date: '', slot: '' });
   const [visit, setVisit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState('');
@@ -60,7 +62,8 @@ export default function SiteVisitFlow() {
       const { data } = await api.post('/site-visits', {
         name: form.name, phone: form.phone, email: form.email,
         propertyId, propertyModel, propertyTitle, city, area,
-        date: form.date, slot: form.slot,
+        pincode: form.pincode, date: form.date, slot: form.slot,
+        ...(refBroker && { refBroker }),
       });
       setVisit(data.visit);
       setStep(3);
@@ -105,6 +108,7 @@ export default function SiteVisitFlow() {
               { label: 'Full Name', key: 'name', type: 'text', placeholder: 'Rajesh Kumar' },
               { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+91 98765 43210' },
               { label: 'Email Address', key: 'email', type: 'email', placeholder: 'rajesh@email.com' },
+              { label: 'Pincode (optional)', key: 'pincode', type: 'text', placeholder: '302017' },
             ].map(f => (
               <div key={f.key}>
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-1">{f.label}</label>
@@ -211,7 +215,7 @@ export default function SiteVisitFlow() {
               <div className="flex justify-between text-sm"><span className="text-on-surface-variant">Pass Code</span><span className="font-mono font-semibold text-primary-container">{visit.passCode}</span></div>
             </div>
 
-            <button onClick={() => navigate('/buyer')} className="btn-primary w-full">Back to Home</button>
+            <button onClick={() => navigate(user ? base : '/')} className="btn-primary w-full">Back to Home</button>
           </div>
         )}
       </div>

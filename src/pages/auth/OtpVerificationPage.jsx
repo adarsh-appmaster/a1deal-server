@@ -61,27 +61,9 @@ export default function OtpVerificationPage() {
     try {
       const { data } = await api.post('/auth/verify-otp', { email, otp });
       if (data.pending) {
-        // Try to post pending MB inquiry without auth (public endpoint)
-        const mbInquiry = sessionStorage.getItem('pendingMBInquiry');
-        if (mbInquiry) {
-          try { await api.post('/master-broker/inquiry', JSON.parse(mbInquiry)); } catch { /* silent */ }
-          sessionStorage.removeItem('pendingMBInquiry');
-        }
         navigate('/pending', { state: { role: data.role, email } });
       } else {
         ctxLogin({ token: data.token, user: data.user });
-        // Post pending MB inquiry now that auth token is set
-        const mbInquiry = sessionStorage.getItem('pendingMBInquiry');
-        if (mbInquiry) {
-          try { await api.post('/master-broker/inquiry', JSON.parse(mbInquiry)); } catch { /* silent */ }
-          sessionStorage.removeItem('pendingMBInquiry');
-        }
-        // Master broker signup: registered as broker but needs admin approval before
-        // accessing the portal — send to pending screen instead of broker portal.
-        if (role === 'master_broker' && data.user.role === 'broker') {
-          navigate('/pending', { state: { role: 'master_broker', email } });
-          return;
-        }
         const paths = { buyer: '/buyer', broker: '/broker', developer: '/developer', investor: '/investor' };
         navigate(paths[data.user.role] || '/');
       }

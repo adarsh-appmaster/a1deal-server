@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
+import usePortalBase from '../../../hooks/usePortalBase';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 import ImageSlider from '../../../components/common/ImageSlider';
@@ -77,6 +78,8 @@ export default function MortgagePropertyDetail() {
   const { id }    = useParams();
   const navigate  = useNavigate();
   const { user }  = useAuth();
+  const base      = usePortalBase();
+  const isBroker  = base === '/broker';
   const isGuest   = !user;
 
   const [property, setProperty]       = useState(null);
@@ -114,7 +117,7 @@ export default function MortgagePropertyDetail() {
         <span className="material-icons-outlined text-6xl text-slate-200 mb-4">account_balance</span>
         <h2 className="font-montserrat font-bold text-xl text-slate-700 mb-2">Property not found</h2>
         <p className="text-slate-500 mb-6">This listing may have been removed or is no longer available.</p>
-        <button onClick={() => navigate('/buyer/mortgage')}
+        <button onClick={() => navigate(isBroker ? '/broker/mortgage-properties' : '/buyer/mortgage')}
           className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
           Back to Property Deals
         </button>
@@ -312,15 +315,17 @@ export default function MortgagePropertyDetail() {
                 <span className="material-icons-outlined text-sm">contact_support</span>
                 Enquire About This Property
               </button>
-              <button
-                onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
-                  state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
-                })}
-                className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition flex items-center justify-center gap-2">
-                <span className="material-icons-outlined text-sm">event</span>
-                Schedule Site Visit
-              </button>
-              <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} className="w-full" />
+              {!isBroker && (
+                <button
+                  onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
+                    state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
+                  })}
+                  className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition flex items-center justify-center gap-2">
+                  <span className="material-icons-outlined text-sm">event</span>
+                  Schedule Site Visit
+                </button>
+              )}
+              <ShareWhatsappButton property={property} path={`${base}/mortgage/${property._id}`} className="w-full" />
               <p className="text-xs text-slate-400 text-center">Our team will reach out with auction details and bidding support.</p>
             </div>
 
@@ -348,20 +353,22 @@ export default function MortgagePropertyDetail() {
 
       {/* Sticky mobile CTA bar */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-3 py-2.5 flex items-center gap-2">
-        <ShareWhatsappButton property={property} path={`/buyer/mortgage/${property._id}`} iconOnly className="flex-shrink-0" />
+        <ShareWhatsappButton property={property} path={`${base}/mortgage/${property._id}`} iconOnly className="flex-shrink-0" />
         <button
           onClick={() => setShowEnquiry(true)}
           className="flex-1 py-2.5 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
           Enquire
         </button>
-        <button
-          onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
-            state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
-          })}
-          className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
-          {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
-          Schedule Visit
-        </button>
+        {!isBroker && (
+          <button
+            onClick={() => isGuest ? setShowLogin(true) : navigate(`/buyer/visit/${property._id}`, {
+              state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'MortgageProperty' },
+            })}
+            className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
+            {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
+            Schedule Visit
+          </button>
+        )}
       </div>
 
       {showLogin && <LoginPrompt onClose={() => setShowLogin(false)} />}

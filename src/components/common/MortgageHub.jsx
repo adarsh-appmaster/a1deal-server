@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import usePortalBase from '../../hooks/usePortalBase';
 import EnquiryModal from './EnquiryModal';
 import ImageSlider from './ImageSlider';
 import ShareWhatsappButton from './ShareWhatsappButton';
@@ -37,6 +38,7 @@ const SUGGESTION_MIN_CHARS = 3;
 export default function MortgageHub({ portalColor = '#451886', showRoleBadges = false, scheduleVisitEnabled }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const base = usePortalBase();
   const [myAreas, setMyAreas]           = useState({ homeArea: null, additionalAreas: [] });
   const [localProps, setLocalProps]     = useState([]);
   const [searchProps, setSearchProps]   = useState(null); // null = not in search mode
@@ -118,7 +120,7 @@ export default function MortgageHub({ portalColor = '#451886', showRoleBadges = 
 
   function pickSuggestion(p) {
     setShowSuggestions(false);
-    navigate(`/buyer/mortgage/${p._id}`);
+    navigate(`${base}/mortgage/${p._id}`);
   }
 
   // Build chip list: All + home + additional
@@ -354,7 +356,7 @@ export default function MortgageHub({ portalColor = '#451886', showRoleBadges = 
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {props.map(p => (
-                <PropertyCard key={p._id} prop={p} portalColor={portalColor} showRoleBadges={showRoleBadges}
+                <PropertyCard key={p._id} prop={p} portalColor={portalColor} showRoleBadges={showRoleBadges} base={base}
                   canScheduleVisit={scheduleVisitEnabled ?? (!user || user.role === 'buyer')} onEnquire={() => setEnquireProperty(p)} />
               ))}
             </div>
@@ -372,11 +374,11 @@ export default function MortgageHub({ portalColor = '#451886', showRoleBadges = 
   );
 }
 
-function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, onEnquire }) {
+function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, onEnquire, base = '/buyer' }) {
   const navigate = useNavigate();
   return (
     <div
-      onClick={() => navigate(`/buyer/mortgage/${p._id}`)}
+      onClick={() => navigate(`${base}/mortgage/${p._id}`)}
       className="bg-white rounded-2xl border border-slate-100 hover:shadow-lg transition-shadow overflow-hidden cursor-pointer"
     >
       {/* Thumbnail */}
@@ -445,7 +447,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
           <button
             onClick={e => {
               e.stopPropagation();
-              navigate(`/buyer/visit/${p._id}`, {
+              navigate(`${base}/visit/${p._id}`, {
                 state: { propertyTitle: p.title, city: p.city, area: p.area, propertyModel: 'MortgageProperty' },
               });
             }}
@@ -455,7 +457,7 @@ function PropertyCard({ prop: p, portalColor, showRoleBadges, canScheduleVisit, 
             Schedule Visit
           </button>
         )}
-        <ShareWhatsappButton property={p} path={`/buyer/mortgage/${p._id}`} iconOnly className="flex-shrink-0" />
+        <ShareWhatsappButton property={p} path={`${base}/mortgage/${p._id}`} iconOnly className="flex-shrink-0" />
       </div>
     </div>
   );

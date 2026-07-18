@@ -6,10 +6,11 @@ import { useConfirm } from '../../../hooks/useConfirm';
 import { toast } from '../../../components/common/Toast';
 
 const TYPE_LABELS = {
-  mortgage: { label: 'Mortgage Properties', icon: 'gavel' },
-  unit:     { label: 'Unit Properties',     icon: 'apartment' },
+  mortgage:     { label: 'Mortgage Properties',      icon: 'gavel' },
+  unit:         { label: 'Unit Properties',          icon: 'apartment' },
+  auction_unit: { label: 'Auction Unit Properties',  icon: 'gavel' },
 };
-const TYPES = ['mortgage', 'unit'];
+const TYPES = ['mortgage', 'unit', 'auction_unit'];
 
 const inp = 'w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/30';
 

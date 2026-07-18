@@ -20,9 +20,9 @@ function formatPrice(n) {
   return `₹${n.toLocaleString('en-IN')}`;
 }
 
-export default function EnquiryModal({ onClose, property = null, preselectedUnit = null }) {
+export default function EnquiryModal({ onClose, property = null, preselectedUnit = null, refBroker = null }) {
   const { user } = useAuth();
-  const isUnitProperty = property?._model === 'UnitProperty';
+  const isUnitProperty = property?._model === 'UnitProperty' || property?._model === 'AuctionUnitProperty';
   const units = property?.units || [];
   const availableUnits = units.filter(u => u.status !== 'sold');
 
@@ -77,6 +77,7 @@ export default function EnquiryModal({ onClose, property = null, preselectedUnit
           selectedUnitId:     selectedUnit._id,
           selectedUnitNumber: selectedUnit.unitNumber,
         }),
+        ...(refBroker && { refBroker }),
       });
       setDone(true);
     } catch (ex) {

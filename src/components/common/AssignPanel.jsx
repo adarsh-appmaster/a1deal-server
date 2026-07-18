@@ -12,6 +12,12 @@
  *   note            — assignment note string (optional, enquiry only)
  *   onNote          — note setter fn (optional)
  *   label           — section label string (default "Assign To")
+ *
+ *   showTeamMates   — bool, opt-in for the additional multi-select "Team Mates" section
+ *                     (Auction Unit Property records only — leave unset elsewhere)
+ *   selectedTeam    — array of selected team-mate IDs (checkbox multi-select, independent
+ *                     of the single `assignTo` selection above)
+ *   onToggleTeam    — (id) => void, toggles one id in/out of selectedTeam
  */
 import { useState } from 'react';
 
@@ -64,6 +70,9 @@ export default function AssignPanel({
   onAssign, saving,
   note, onNote,
   label = 'Assign To',
+  showTeamMates = false,
+  selectedTeam = [],
+  onToggleTeam,
 }) {
   const [search, setSearch] = useState('');
 
@@ -149,6 +158,35 @@ export default function AssignPanel({
           </>
         )}
       </div>
+
+      {/* Team Mates — Auction Unit Property only. Independent multi-select on top of the
+          single "Assign To" above; reuses the same PersonCard/pincode/team-member data. */}
+      {showTeamMates && (
+        <div>
+          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1.5">Team Mates (optional, multiple)</p>
+          <div>
+            <PersonCard
+              person={{ _id: 'self', name: me?.name || 'Admin', phone: 'Admin account' }}
+              badge={{ label: 'You', cls: 'bg-slate-100 text-slate-600' }}
+              selected={selectedTeam.includes(me?.id)}
+              onSelect={() => me?.id && onToggleTeam?.(me.id)}
+            />
+          </div>
+          {teamMembers.length > 0 && (
+            <div className="max-h-40 overflow-y-auto space-y-1 pr-0.5 mt-1.5">
+              {teamMembers.map(t => (
+                <PersonCard
+                  key={t._id}
+                  person={t}
+                  badge={{ label: 'Team', cls: 'bg-tertiary/10 text-tertiary' }}
+                  selected={selectedTeam.includes(t._id)}
+                  onSelect={() => onToggleTeam?.(t._id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Assignment note (enquiry only) */}
       {onNote !== undefined && (

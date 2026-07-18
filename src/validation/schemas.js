@@ -17,8 +17,7 @@ export const signupSchema = Joi.object({
   phone: phone.required(),
   password: password.required(),
   confirm: confirmOf('password').required(),
-  // master_broker is a frontend-only pseudo-role (submitted to API as broker + inquiry).
-  role: Joi.string().valid('buyer', 'broker', 'master_broker', 'developer', 'investor', 'bank').required(),
+  role: Joi.string().valid('buyer', 'broker', 'developer', 'investor', 'bank').required(),
   company: shortText.allow('', null),
   city: shortText.allow('', null),
   area: shortText.allow('', null),
@@ -137,6 +136,26 @@ export const unitPropertySchema = Joi.object({
   sellerEmail: email.allow('', null),
 });
 
+// ── Auction unit property (admin) — merges unit + mortgage/auction fields ──
+export const auctionUnitPropertySchema = Joi.object({
+  title: Joi.string().trim().min(2).max(200).required(),
+  description: longText.allow('', null),
+  city: shortText.required(),
+  area: shortText.allow('', null),
+  pincode: pincode.allow('', null),
+  address: longText.allow('', null),
+  propertyType: shortText.allow('', null),
+  price: nonNegative.required(),
+  areaSqft: nonNegative.allow('', null),
+  bedrooms: nonNegative.allow('', null),
+  bathrooms: nonNegative.allow('', null),
+  reraNumber: shortText.allow('', null),
+  auctionDate: Joi.date().allow('', null),
+  contactPhone: phone.allow('', null),
+  bankName: shortText.allow('', null),
+  linkedBanker: objectId.allow('', null),
+});
+
 // ── Mortgage property (bank / admin) ──────────────────────────────────────
 export const mortgagePropertySchema = Joi.object({
   title: Joi.string().trim().min(2).max(200).required(),
@@ -176,7 +195,7 @@ export const brokerListingSchema = Joi.object({
 // ── Commission rate (admin) ───────────────────────────────────────────────
 const pct = Joi.number().min(0).max(100).messages({ 'number.max': 'Must be 100 or less.' });
 export const commissionRateSchema = Joi.object({
-  propertyType: Joi.string().valid('mortgage', 'unit').required(),
+  propertyType: Joi.string().valid('mortgage', 'unit', 'auction_unit').required(),
   scope: Joi.string().valid('global', 'city', 'pincode'),
   city: shortText.allow('', null),
   pincode: pincode.allow('', null),

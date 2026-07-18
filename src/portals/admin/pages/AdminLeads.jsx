@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../../api/axios';
+import { useAuth } from '../../../context/AuthContext';
 import { Pagination } from '../../../components/common/Pagination';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { toast } from '../../../components/common/Toast';
@@ -13,7 +14,8 @@ const STATUS_META = {
   closed_lost: { label: 'Closed Lost',  color: 'bg-slate-100 text-slate-600',   dot: 'bg-slate-400' },
 };
 const STATUSES = ['all', 'new', 'contacted', 'site_visit', 'negotiating', 'closed_won', 'closed_lost'];
-const PROP_TYPES = ['all', 'unit', 'mortgage'];
+const PROP_TYPES = ['all', 'unit', 'mortgage', 'auction_unit'];
+const PROP_TYPE_LABELS = { unit: 'Unit', mortgage: 'Mortgage', auction_unit: 'Auction Unit' };
 const SOURCES = ['manual', 'whatsapp', 'email', 'website', 'referral', 'walk_in'];
 const LIMIT = 15;
 
@@ -32,6 +34,7 @@ function timeAgo(d) {
 }
 
 export default function AdminLeads() {
+  const { user: me } = useAuth();
   const [leads, setLeads]         = useState([]);
   const [stats, setStats]         = useState({});
   const [loading, setLoading]     = useState(true);
@@ -125,6 +128,17 @@ export default function AdminLeads() {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to assign lead.'); }
   }
 
+  // Team Mates — Auction Unit Property leads only, additive multi-select on top of assignedTo.
+  async function toggleLeadTeamMate(id) {
+    const current = (selected.assignedTeam || []).map(t => t._id);
+    const next = current.includes(id) ? current.filter(x => x !== id) : [...current, id];
+    try {
+      const { data } = await api.patch(`/leads/${selected._id}`, { assignedTeam: next });
+      setSelected(data.lead);
+      setLeads(prev => prev.map(l => l._id === selected._id ? { ...l, assignedTeam: data.lead.assignedTeam } : l));
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to update team mates.'); }
+  }
+
   async function addNote(e) {
     e.preventDefault();
     if (!noteText.trim()) return;
@@ -214,7 +228,7 @@ export default function AdminLeads() {
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition capitalize
                 ${typeFilter === t ? 'bg-tertiary text-white border-transparent' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}`}>
-              {t === 'all' ? 'All Types' : `${t.charAt(0).toUpperCase() + t.slice(1)} Properties`}
+              {t === 'all' ? 'All Types' : `${PROP_TYPE_LABELS[t] || t} Properties`}
             </button>
           ))}
         </div>
@@ -388,6 +402,29 @@ export default function AdminLeads() {
                     )}
                   </select>
                 </div>
+
+                {/* Team Mates — Auction Unit Property leads only */}
+                {selected.propertyModel === 'AuctionUnitProperty' && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Team Mates (optional, multiple)</p>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                      <label className="flex items-center gap-2 text-sm text-slate-700">
+                        <input type="checkbox"
+                          checked={(selected.assignedTeam || []).some(t => t._id === me?.id)}
+                          onChange={() => me?.id && toggleLeadTeamMate(me.id)} />
+                        {me?.name || 'Myself'} <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">You</span>
+                      </label>
+                      {teamMembers.map(m => (
+                        <label key={m._id} className="flex items-center gap-2 text-sm text-slate-700">
+                          <input type="checkbox"
+                            checked={(selected.assignedTeam || []).some(t => t._id === m._id)}
+                            onChange={() => toggleLeadTeamMate(m._id)} />
+                          {m.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Follow-up date */}
                 <div>

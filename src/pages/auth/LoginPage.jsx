@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import AuthShell from '../../components/common/AuthShell';
 import { useAuth } from '../../context/AuthContext';
 import { validateForm } from '../../validation/validate';
@@ -7,8 +7,10 @@ import { loginSchema } from '../../validation/schemas';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, portalPath } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login({ email: value.email, password: value.password });
-      navigate(portalPath(user.role));
+      // Resume a pending subscription (started as a guest) or honor a redirect.
+      const dest = sessionStorage.getItem('pendingPlan')
+        ? '/plans'
+        : (location.state?.from || portalPath(user.role));
+      navigate(dest);
     } catch (err) {
       const data = err.response?.data;
       if (data?.unverified) {
@@ -82,16 +88,25 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <input
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-          />
+          <div className="relative">
+            <input
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              autoComplete="current-password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+              className="w-full px-4 py-3 pr-11 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+            />
+            <button type="button" tabIndex={-1}
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+              <span className="material-icons-outlined text-lg">
+                {showPassword ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
+          </div>
           {fieldErrors.password && <p className="mt-1 text-xs text-rose-500">{fieldErrors.password}</p>}
         </div>
 

@@ -13,7 +13,6 @@ const RAJASTHAN_CITIES = INDIA_STATES['Rajasthan'] || [];
 const ROLES = [
   { value: 'buyer',         label: 'Buyer',         icon: 'home',          desc: 'Browse & purchase properties' },
   { value: 'broker',        label: 'Broker',         icon: 'handshake',     desc: 'Manage listings & leads' },
-  { value: 'master_broker', label: 'Master Broker',  icon: 'verified',      desc: 'Lead broker network in your zone', approval: true },
   { value: 'developer',     label: 'Developer',      icon: 'apartment',     desc: 'List & sell projects', approval: true },
   { value: 'bank',          label: 'Bank',           icon: 'account_balance', desc: 'List mortgage & auction properties', approval: true },
 ];
@@ -23,17 +22,20 @@ export default function SignupPage() {
   const [searchParams] = useSearchParams();
   const { register } = useAuth();
 
+  // Opened from a broker's public card (?ref=): lock the role to Buyer and prefill
+  // the card's city/pincode so the lead is attributed to that broker.
+  const fromCard = !!searchParams.get('ref');
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
     confirm: '',
-    role: searchParams.get('role') || 'buyer',
+    role: fromCard ? 'buyer' : (searchParams.get('role') || 'buyer'),
     phone: '',
     company: '',
-    city: '',
+    city: searchParams.get('city') || '',
     area: '',
-    pincode: '',
+    pincode: searchParams.get('pincode') || '',
   });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
@@ -85,30 +87,7 @@ export default function SignupPage() {
 
   const selectedRole    = ROLES.find((r) => r.value === form.role);
   const needsApproval   = selectedRole?.approval;
-  const isMasterBroker  = form.role === 'master_broker';
   const isBuyerOrBroker = ['buyer', 'broker'].includes(form.role);
-
-  // Fetch pincode coverage when city changes (master broker only)
-  useEffect(() => {
-    if (!isMasterBroker || !form.city) { setCoverage([]); setSelectedPins([]); return; }
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setCoverageLoading(true);
-      try {
-        const { data } = await api.get(`/master-broker/coverage-map?city=${encodeURIComponent(form.city)}`);
-        setCoverage(data.coverage || []);
-      } catch { setCoverage([]); }
-      setCoverageLoading(false);
-    }, 500);
-    setSelectedPins([]);
-  }, [form.city, isMasterBroker]);
-
-  function togglePin(pincode) {
-    setSelectedPins(prev => prev.includes(pincode) ? prev.filter(p => p !== pincode) : [...prev, pincode]);
-  }
-
-  const available = coverage.filter(c => c.available);
-  const taken     = coverage.filter(c => !c.available);
 
   function setField(name, value) {
     setForm(f => ({ ...f, [name]: value }));
@@ -118,10 +97,7 @@ export default function SignupPage() {
 
   function validate() {
     const { errors } = validateForm(signupSchema, form);
-    const e = errors || {};
-    // Master broker must pick a city (drives the pincode coverage picker).
-    if (isMasterBroker && !form.city) e.city = 'Please select a city';
-    return e;
+    return errors || {};
   }
 
   const handleSubmit = async (e) => {
@@ -133,30 +109,20 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const { name, email, password, phone, company, city, area } = form;
-
-      if (isMasterBroker) {
-        // Backend doesn't allow master_broker role — register as broker.
-        // Save inquiry data to sessionStorage; OTP page posts it after auth token is set.
-        await register({ name, email, password, role: 'broker', phone, company });
-        sessionStorage.setItem('pendingMBInquiry', JSON.stringify({
-          name, phone, email,
-          source: 'signup',
-          motivation: company ? `Company: ${company}` : 'Master Broker direct signup',
-          requestedAreas: selectedPins.length
-            ? selectedPins.map(p => ({ city, area: '', pincode: p }))
-            : [{ city, area: '', pincode: '' }],
-        }));
-        navigate('/verify-otp', { state: { email, role: 'master_broker' } });
-      } else {
-        const role = form.role;
-        await register({
-          name, email, password, role, phone, company,
-          city: form.city?.trim() || undefined,
-          area: form.area?.trim() || undefined,
-          pincode: form.pincode?.trim() || undefined,
-        });
-        navigate('/verify-otp', { state: { email, role } });
-      }
+      const role = form.role;
+      // Attribute a buyer who registered via a broker's card to that broker.
+      const refBroker = role === 'buyer'
+        ? (searchParams.get('ref') || sessionStorage.getItem('refBroker') || undefined)
+        : undefined;
+      await register({
+        name, email, password, role, phone, company,
+        city: form.city?.trim() || undefined,
+        area: form.area?.trim() || undefined,
+        pincode: form.pincode?.trim() || undefined,
+        ...(refBroker ? { refBroker } : {}),
+      });
+      if (refBroker) sessionStorage.removeItem('refBroker');
+      navigate('/verify-otp', { state: { email, role } });
     } catch (err) {
       setApiError(err.response?.data?.message || 'Registration failed. Try again.');
     } finally {
@@ -189,7 +155,16 @@ export default function SignupPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Role selector */}
+        {/* Role selector — locked to Buyer when signing up via a broker card */}
+        {fromCard ? (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/30 bg-primary/5">
+            <span className="material-icons-outlined text-primary">home</span>
+            <div>
+              <p className="text-sm font-semibold text-primary">Signing up as a Buyer</p>
+              <p className="text-xs text-slate-400">You'll be connected with the broker whose card you visited.</p>
+            </div>
+          </div>
+        ) : (
         <div>
           <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">I am a</label>
           <div className="grid grid-cols-2 gap-2">
@@ -219,125 +194,6 @@ export default function SignupPage() {
             </p>
           )}
         </div>
-
-        {/* ── Master Broker Coverage Zone ── */}
-        {isMasterBroker && (
-          <div className="space-y-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
-            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
-              <span className="material-icons-outlined text-sm">location_on</span>
-              Coverage Zone — Rajasthan
-            </p>
-
-            {/* State locked */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">State</label>
-              <input readOnly value="Rajasthan"
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-500 cursor-not-allowed" />
-            </div>
-
-            {/* City chip picker */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
-                City *
-                {form.city && <span className="ml-2 normal-case font-normal text-primary">({form.city})</span>}
-              </label>
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
-                {RAJASTHAN_CITIES.map(c => (
-                  <button key={c} type="button"
-                    onClick={() => setField('city', c)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
-                      ${form.city === c
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'}`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-              {errors.city && (
-                <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
-                  <span className="material-icons-outlined text-sm">error_outline</span>{errors.city}
-                </p>
-              )}
-            </div>
-
-            {/* Pincode coverage map */}
-            {form.city && (
-              <div className="rounded-xl border border-amber-100 bg-white p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Select Pincodes</p>
-                  {coverageLoading && <span className="text-xs text-primary animate-pulse">Loading…</span>}
-                </div>
-
-                {!coverageLoading && coverage.length === 0 && (
-                  <p className="text-xs text-slate-400 italic">
-                    No pincodes mapped yet for {form.city}. You can still sign up — our team will assign your zone.
-                  </p>
-                )}
-
-                {!coverageLoading && available.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Available ({available.length})</p>
-<button type="button" onClick={() =>
-  setSelectedPins(prev =>
-    available.every(c => prev.includes(c.pincode))
-      ? prev.filter(p => !available.some(a => a.pincode === p))
-      : [...new Set([...prev, ...available.map(c => c.pincode)])]
-  )
-}
-  className="ml-auto text-[10px] text-primary font-semibold hover:underline">
-  {available.every(c => selectedPins.includes(c.pincode)) ? 'Clear all' : 'Select all'}
-</button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {available.map(c => (
-                        <button type="button" key={c.pincode} onClick={() => togglePin(c.pincode)}
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all
-                            ${selectedPins.includes(c.pincode)
-                              ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-primary hover:text-primary'}`}>
-                          {selectedPins.includes(c.pincode) ? '✓ ' : ''}{c.pincode}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!coverageLoading && taken.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0" />
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Already Taken ({taken.length})</p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {taken.map(c => (
-                        <div key={c.pincode} title={`Taken by ${c.takenBy?.name || 'a master broker'}`}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed flex items-center gap-1">
-                          <span className="material-icons-outlined text-[10px]">lock</span>{c.pincode}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedPins.length > 0 && (
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <p className="text-xs font-semibold text-primary">
-                      Selected ({selectedPins.length}): {selectedPins.join(', ')}
-                    </p>
-                    <button type="button" onClick={() => setSelectedPins([])}
-                      className="text-[10px] text-slate-400 hover:text-rose-500">Clear</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <p className="text-[10px] text-amber-600">
-              You can manage more pincodes after admin approval from your dashboard.
-            </p>
-          </div>
         )}
 
         {/* Full Name */}
@@ -383,7 +239,7 @@ export default function SignupPage() {
         </div>
 
         {/* Company */}
-        {['developer', 'broker', 'investor', 'master_broker'].includes(form.role) && (
+        {['developer', 'broker', 'investor'].includes(form.role) && (
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">
               Company / Firm Name <span className="normal-case font-normal text-slate-300">(optional)</span>

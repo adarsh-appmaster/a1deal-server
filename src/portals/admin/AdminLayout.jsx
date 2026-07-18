@@ -8,9 +8,11 @@ const NAV = [
 
   { path: '/admin/pending', icon: 'pending', label: 'Pending Approvals', section: 'Approvals' },
   { path: '/admin/master-broker', icon: 'verified', label: 'Master Broker Requests', section: 'Approvals' },
+  { path: '/admin/broker-pincode-requests', icon: 'pin_drop', label: 'Broker Pincode Requests', section: 'Approvals' },
 
   { path: '/admin/mortgage-properties', icon: 'home_work', label: 'Mortgage Properties', section: 'Properties' },
   { path: '/admin/unit-properties', icon: 'apartment', label: 'Unit Properties', section: 'Properties' },
+  { path: '/admin/auction-unit-properties', icon: 'gavel', label: 'Auction Unit Properties', section: 'Properties' },
   { path: '/admin/enquiries', icon: 'contact_support', label: 'Property Enquiries', section: 'Properties' },
   { path: '/admin/site-visits', icon: 'event', label: 'Site Visits', section: 'Properties' },
 
@@ -21,6 +23,7 @@ const NAV = [
 
   { path: '/admin/commission-settings', icon: 'percent', label: 'Commission Settings', section: 'Business' },
   { path: '/admin/revenue', icon: 'analytics', label: 'Revenue Analytics', section: 'Business' },
+  { path: '/admin/transactions', icon: 'receipt_long', label: 'Transactions', section: 'Business' },
 
   { path: '/admin/bulk-message', icon: 'campaign', label: 'Bulk Message', section: 'Comms' },
   { path: '/admin/whatsapp-groups', icon: 'groups', label: 'WhatsApp Groups', section: 'Comms' },

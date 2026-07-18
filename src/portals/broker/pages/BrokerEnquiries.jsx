@@ -318,6 +318,12 @@ export default function BrokerEnquiries() {
                       Auto-routed: Master
                     </span>
                   )}
+                  {e.siteVisitId && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+                      <span className="material-icons-outlined text-[11px]">event</span>
+                      Site Visit{e.visitDate ? ` · ${e.visitDate}${e.visitSlot ? ` ${e.visitSlot}` : ''}` : ''}
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500">
                   <span className="flex items-center gap-1">

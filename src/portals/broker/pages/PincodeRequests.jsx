@@ -13,12 +13,13 @@ const STATUS = {
 
 function fmtDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function PincodeRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading]   = useState(true);
+  const [coveragePincodes, setCoveragePincodes] = useState([]);
 
   const [city, setCity]                     = useState('');
   const [cityOpen, setCityOpen]              = useState(false);
@@ -30,15 +31,45 @@ export default function PincodeRequests() {
   const [reason, setReason]                     = useState('');
   const [submitting, setSubmitting]             = useState(false);
   const [msg, setMsg]                           = useState({ text: '', ok: true });
+  const [takenMap, setTakenMap]                 = useState({});
+
+  // Edit state
+  const [editingId, setEditingId]               = useState(null);
+  const [editCity, setEditCity]                 = useState('');
+  const [editSelectedPincodes, setEditSelectedPincodes] = useState([]);
+  const [editManualPincode, setEditManualPincode]       = useState('');
+  const [editReason, setEditReason]             = useState('');
+  const [editSubmitting, setEditSubmitting]     = useState(false);
+  const [editMsg, setEditMsg]                   = useState({ text: '', ok: true });
+  const [editTakenMap, setEditTakenMap]         = useState({});
+
+  const [cancellingId, setCancellingId]         = useState(null);
 
   const filteredCities = RAJASTHAN_CITIES.filter(c =>
     c.toLowerCase().includes(citySearch.trim().toLowerCase())
   );
   const cityPincodes = expandPincodesForCity(city);
+  const editCityPincodes = expandPincodesForCity(editCity);
 
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { fetchRequests(); fetchCoverage(); }, []);
+
+  useEffect(() => {
+    if (!city || !cityPincodes.length) { setTakenMap({}); return; }
+    api.get(`/master-broker/taken-pincodes?pincodes=${cityPincodes.join(',')}`)
+      .then(({ data }) => setTakenMap(data.taken || {}))
+      .catch(() => setTakenMap({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [city]);
+
+  useEffect(() => {
+    if (!editCity || !editCityPincodes.length) { setEditTakenMap({}); return; }
+    api.get(`/master-broker/taken-pincodes?pincodes=${editCityPincodes.join(',')}`)
+      .then(({ data }) => setEditTakenMap(data.taken || {}))
+      .catch(() => setEditTakenMap({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editCity]);
 
   useEffect(() => {
     if (!cityOpen) return;
@@ -58,13 +89,22 @@ export default function PincodeRequests() {
     setLoading(false);
   }
 
+  async function fetchCoverage() {
+    try {
+      const { data } = await api.get('/broker/stats');
+      setCoveragePincodes(data.coverage?.approvedPincodes || []);
+    } catch { /* empty */ }
+  }
+
   function togglePincode(p) {
+    if (takenMap[p]) return;
     setSelectedPincodes(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
   }
 
   function addManualPincode() {
     const p = manualPincode.trim();
     if (!/^\d{6}$/.test(p)) return;
+    if (takenMap[p]) { setMsg({ text: `Pincode ${p} is already assigned to ${takenMap[p]}.`, ok: false }); return; }
     if (!selectedPincodes.includes(p)) setSelectedPincodes(prev => [...prev, p]);
     setManualPincode('');
   }
@@ -91,6 +131,69 @@ export default function PincodeRequests() {
     setSubmitting(false);
   }
 
+  // ── Edit helpers ───────────────────────────────────────────────────────────
+  function startEdit(r) {
+    setEditingId(r._id);
+    const areas = r.requestedAreas || [];
+    const editCityVal = areas[0]?.city || '';
+    setEditCity(editCityVal);
+    setEditSelectedPincodes(areas.map(a => a.pincode).filter(Boolean));
+    setEditManualPincode('');
+    setEditReason(r.reason || '');
+    setEditMsg({ text: '', ok: true });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditCity(''); setEditSelectedPincodes([]); setEditReason(''); setEditManualPincode('');
+  }
+
+  function toggleEditPincode(p) {
+    if (editTakenMap[p] && !editSelectedPincodes.includes(p)) return;
+    setEditSelectedPincodes(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  }
+
+  function addEditManualPincode() {
+    const p = editManualPincode.trim();
+    if (!/^\d{6}$/.test(p)) return;
+    if (editTakenMap[p] && !editSelectedPincodes.includes(p)) {
+      setEditMsg({ text: `Pincode ${p} is already assigned to ${editTakenMap[p]}.`, ok: false });
+      return;
+    }
+    if (!editSelectedPincodes.includes(p)) setEditSelectedPincodes(prev => [...prev, p]);
+    setEditManualPincode('');
+  }
+
+  async function handleEditSubmit(e) {
+    e.preventDefault();
+    if (!editCity.trim()) { setEditMsg({ text: 'Select a city first.', ok: false }); return; }
+    if (!editSelectedPincodes.length) { setEditMsg({ text: 'Add at least one pincode.', ok: false }); return; }
+
+    setEditSubmitting(true); setEditMsg({ text: '', ok: true });
+    try {
+      const requestedAreas = editSelectedPincodes.map(p => ({ city: editCity, area: '', pincode: p }));
+      await api.patch(`/master-broker/pincode-requests/${editingId}/edit`, { requestedAreas, reason: editReason });
+      setEditMsg({ text: 'Request updated!', ok: true });
+      setTimeout(() => { cancelEdit(); fetchRequests(); }, 800);
+    } catch (err) {
+      setEditMsg({ text: err.response?.data?.message || 'Failed to update request.', ok: false });
+    }
+    setEditSubmitting(false);
+  }
+
+  // ── Cancel helpers ─────────────────────────────────────────────────────────
+  async function handleCancel(id) {
+    if (!window.confirm('Cancel this pending request?')) return;
+    setCancellingId(id);
+    try {
+      await api.delete(`/master-broker/pincode-requests/${id}/cancel`);
+      fetchRequests();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel request.');
+    }
+    setCancellingId(null);
+  }
+
   const INP = 'w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition';
 
   return (
@@ -102,6 +205,21 @@ export default function PincodeRequests() {
           <p className="text-on-surface-variant text-sm">Ask admin to approve extra pincodes you'd like to operate in</p>
         </div>
       </div>
+
+      {/* Coverage summary */}
+      {coveragePincodes.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-100 p-4">
+          <h3 className="text-sm font-semibold text-slate-600 mb-2">
+            <span className="material-icons-outlined text-sm align-middle mr-1">verified</span>
+            Your Approved Coverage ({coveragePincodes.length} pincodes)
+          </h3>
+          <div className="flex flex-wrap gap-1.5">
+            {coveragePincodes.map(p => (
+              <span key={p} className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">{p}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Request form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
@@ -181,16 +299,22 @@ export default function PincodeRequests() {
               <p className="text-xs text-slate-400 italic">No pincodes found for {city} — add one manually above.</p>
             ) : (
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
-                {cityPincodes.map(p => (
-                  <button key={p} type="button" disabled={pendingCount > 0}
-                    onClick={() => togglePincode(p)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed
-                      ${selectedPincodes.includes(p)
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'}`}>
-                    {selectedPincodes.includes(p) ? '✓ ' : ''}{p}
-                  </button>
-                ))}
+                {cityPincodes.map(p => {
+                  const taken = takenMap[p];
+                  return (
+                    <button key={p} type="button" disabled={pendingCount > 0 || !!taken}
+                      title={taken ? `Already assigned to ${taken}` : undefined}
+                      onClick={() => togglePincode(p)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all disabled:cursor-not-allowed
+                        ${taken
+                          ? 'bg-slate-100 text-slate-300 border-slate-100 line-through'
+                          : selectedPincodes.includes(p)
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary disabled:opacity-60'}`}>
+                      {selectedPincodes.includes(p) ? '✓ ' : ''}{p}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -250,6 +374,7 @@ export default function PincodeRequests() {
           <div className="space-y-3">
             {requests.map(r => {
               const s = STATUS[r.status] || STATUS.pending;
+              const isEditing = editingId === r._id;
               return (
                 <div key={r._id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -257,36 +382,139 @@ export default function PincodeRequests() {
                       <span className={`material-icons-outlined text-lg ${s.cls.includes('amber') ? 'text-amber-600' : s.cls.includes('emerald') ? 'text-emerald-600' : 'text-rose-500'}`}>{s.icon}</span>
                       <div>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.label}</span>
-                        <p className="text-xs text-slate-400 mt-0.5">{fmtDate(r.createdAt)}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Requested {fmtDate(r.createdAt)}</p>
+                        {r.decidedAt && (
+                          <p className="text-xs text-slate-400">Decided {fmtDate(r.decidedAt)} by {r.decidedBy?.name || 'Admin'}</p>
+                        )}
+                        {r.requestedByMaster && (
+                          <p className="text-xs text-slate-400">Distributed by {r.requestedByMaster.name}</p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right text-xs text-slate-400">
                       {r.requestedAreas?.length} pincode{r.requestedAreas?.length !== 1 ? 's' : ''} requested
+                      {/* Edit/Cancel buttons for pending */}
+                      {r.status === 'pending' && !isEditing && (
+                        <div className="flex gap-1 mt-1 justify-end">
+                          <button onClick={() => startEdit(r)}
+                            className="px-2 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition">
+                            <span className="material-icons-outlined text-xs align-middle">edit</span> Edit
+                          </button>
+                          <button onClick={() => handleCancel(r._id)} disabled={cancellingId === r._id}
+                            className="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-600 hover:bg-rose-100 transition disabled:opacity-60">
+                            <span className="material-icons-outlined text-xs align-middle">close</span> {cancellingId === r._id ? 'Cancelling…' : 'Cancel'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {r.requestedAreas?.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {r.requestedAreas.map((a, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
-                          {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  {/* Inline edit form */}
+                  {isEditing ? (
+                    <form onSubmit={handleEditSubmit} className="space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">City</label>
+                          <select value={editCity} onChange={e => { setEditCity(e.target.value); setEditSelectedPincodes([]); }}
+                            className={`${INP} text-sm`}>
+                            <option value="">Select city</option>
+                            {RAJASTHAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Add pincode</label>
+                          <div className="flex gap-2">
+                            <input type="text" value={editManualPincode}
+                              onChange={e => setEditManualPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditManualPincode(); } }}
+                              placeholder="302001" maxLength={6}
+                              className={`${INP} text-sm`} />
+                            <button type="button" onClick={addEditManualPincode}
+                              className="px-3 rounded-xl border border-slate-200 text-slate-500 text-sm font-semibold hover:border-primary hover:text-primary transition">
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {editCity && editCityPincodes.length > 0 && (
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Pincodes in {editCity}</label>
+                          <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                            {editCityPincodes.map(p => {
+                              const taken = editTakenMap[p] && !editSelectedPincodes.includes(p);
+                              return (
+                                <button key={p} type="button" disabled={taken}
+                                  title={taken ? `Already assigned to ${editTakenMap[p]}` : undefined}
+                                  onClick={() => toggleEditPincode(p)}
+                                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border-2 transition-all disabled:cursor-not-allowed
+                                    ${taken
+                                      ? 'bg-slate-100 text-slate-300 border-slate-100 line-through'
+                                      : editSelectedPincodes.includes(p) ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:border-primary hover:text-primary'}`}>
+                                  {editSelectedPincodes.includes(p) ? '✓ ' : ''}{p}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {editSelectedPincodes.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {editSelectedPincodes.map(p => (
+                            <span key={p} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                              {p}
+                              <button type="button" onClick={() => setEditSelectedPincodes(prev => prev.filter(x => x !== p))} className="hover:text-rose-500">
+                                <span className="material-icons-outlined text-xs">close</span>
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Reason</label>
+                        <textarea rows={2} value={editReason} onChange={e => setEditReason(e.target.value)}
+                          placeholder="Why do you need these pincodes?"
+                          className={`${INP} text-sm resize-none`} />
+                      </div>
+                      {editMsg.text && (
+                        <p className={`text-xs ${editMsg.ok ? 'text-emerald-600' : 'text-rose-500'}`}>{editMsg.text}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button type="submit" disabled={editSubmitting}
+                          className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-container transition disabled:opacity-60">
+                          {editSubmitting ? 'Saving…' : 'Save Changes'}
+                        </button>
+                        <button type="button" onClick={cancelEdit}
+                          className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold hover:bg-slate-200 transition">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      {r.requestedAreas?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {r.requestedAreas.map((a, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                              {[a.city, a.area, a.pincode].filter(Boolean).join(' / ')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-                  {r.reason && (
-                    <p className="text-sm text-slate-600 bg-slate-50 rounded-xl px-3 py-2">
-                      <span className="text-xs font-semibold text-slate-400 block mb-0.5">Reason</span>
-                      {r.reason}
-                    </p>
-                  )}
+                      {r.reason && (
+                        <p className="text-sm text-slate-600 bg-slate-50 rounded-xl px-3 py-2">
+                          <span className="text-xs font-semibold text-slate-400 block mb-0.5">Reason</span>
+                          {r.reason}
+                        </p>
+                      )}
 
-                  {r.adminNote && (
-                    <p className={`text-sm rounded-xl px-3 py-2 ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                      <span className="text-xs font-semibold block mb-0.5">Admin Note</span>
-                      {r.adminNote}
-                    </p>
+                      {r.adminNote && (
+                        <p className={`text-sm rounded-xl px-3 py-2 ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                          <span className="text-xs font-semibold block mb-0.5">Admin Note</span>
+                          {r.adminNote}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               );

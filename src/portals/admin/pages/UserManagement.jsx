@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../../api/axios';
 import { Pagination } from '../../../components/common/Pagination';
+import BrokerCardFields from '../../../components/common/BrokerCardFields';
 import { validateForm } from '../../../validation/validate';
 import { Joi } from '../../../validation/schemas';
 import { name as nameRule, email as emailRule, password as passwordRule, phone as phoneRule, shortText, pincode as pincodeRule } from '../../../validation/common';
@@ -73,6 +74,9 @@ export default function UserManagement() {
   const [editForm, setEditForm]   = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [editMsg, setEditMsg]     = useState('');
+  const [cardForm, setCardForm]   = useState(null); // target broker's visiting card (admin edit)
+  const [scrollToCard, setScrollToCard] = useState(false);
+  const cardSectionRef = useRef(null);
 
   const [actionMsg, setActionMsg] = useState('');
   const [actionOk, setActionOk] = useState(true);
@@ -135,7 +139,7 @@ export default function UserManagement() {
     setSaving(false);
   }
 
-  function openEdit(u) {
+  function openEdit(u, { focusCard = false } = {}) {
     setEditUser(u);
     setEditForm({
       name: u.name || '', role: u.role || 'buyer',
@@ -145,13 +149,37 @@ export default function UserManagement() {
       coverageAreas: u.coverageAreas?.length ? u.coverageAreas : [],
     });
     setEditMsg('');
+    // Load the broker's visiting card so admin can edit its branding inline.
+    setCardForm(null);
+    setScrollToCard(focusCard);
+    if (u.role === 'broker') {
+      api.get(`/broker-card/admin/${u._id}`).then(r => setCardForm(r.data.card)).catch(() => {});
+    }
   }
+
+  useEffect(() => {
+    if (scrollToCard && cardForm && cardSectionRef.current) {
+      cardSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setScrollToCard(false);
+    }
+  }, [scrollToCard, cardForm]);
 
   async function handleEditSave(e) {
     e.preventDefault();
     setEditSaving(true); setEditMsg('');
     try {
       await api.put(`/users/${editUser._id}`, editForm);
+      // Persist the broker's visiting card too (admin bypasses the paid-logo gate).
+      if (editUser.role === 'broker' && cardForm) {
+        await api.patch(`/broker-card/admin/${editUser._id}`, {
+          businessName: cardForm.businessName, tagline: cardForm.tagline, about: cardForm.about,
+          photo: cardForm.photo, logo: cardForm.logo,
+          phone: cardForm.phone, whatsapp: cardForm.whatsapp, email: cardForm.email,
+          social: cardForm.social || {}, stats: cardForm.stats || {},
+          reraNumber: cardForm.reraNumber || '', officeAddress: cardForm.officeAddress || '',
+          published: cardForm.published,
+        });
+      }
       setEditMsg('Saved.');
       setTimeout(() => { setEditUser(null); fetchUsers(page); }, 800);
     } catch (err) {
@@ -331,6 +359,12 @@ export default function UserManagement() {
                           className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-primary transition">
                           <span className="material-icons-outlined text-base">edit</span>
                         </button>
+                        {u.role === 'broker' && (
+                          <button onClick={() => openEdit(u, { focusCard: true })} title="Edit visiting card (logo, description, branding)"
+                            className="p-1.5 rounded-lg hover:bg-violet-50 text-slate-400 hover:text-violet-600 transition">
+                            <span className="material-icons-outlined text-base">badge</span>
+                          </button>
+                        )}
                         {u.status === 'pending' && (
                           <button onClick={() => handleApprove(u)} title="Approve user"
                             className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition">
@@ -532,7 +566,7 @@ export default function UserManagement() {
       {/* ── Edit User Modal ─────────────────────────────── */}
       {editUser && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setEditUser(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className={`bg-white rounded-2xl w-full ${editUser.role === 'broker' ? 'max-w-2xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="font-montserrat font-bold text-lg text-slate-800">Edit User</h2>
@@ -658,6 +692,16 @@ export default function UserManagement() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ── Visiting Card (broker/master broker only) ── */}
+              {editUser?.role === 'broker' && (
+                <div ref={cardSectionRef} className="border border-slate-100 rounded-2xl p-4 space-y-3 bg-slate-50/50 scroll-mt-20">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Visiting Card</p>
+                  {cardForm
+                    ? <BrokerCardFields card={cardForm} setCard={setCardForm} adminMode />
+                    : <p className="text-xs text-slate-400 italic">Loading card…</p>}
                 </div>
               )}
 

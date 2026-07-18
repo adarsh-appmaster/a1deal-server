@@ -1,18 +1,22 @@
 import { useState } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import Logo from '../../components/common/Logo';
 import CitySwitcher from '../../components/common/CitySwitcher';
 import NotificationBell from '../../components/common/NotificationBell';
 import SupportChatWidget from '../../components/common/SupportChatWidget';
 import MobileBottomNav from '../../components/common/MobileBottomNav';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import CoBrandStrip from '../../components/common/CoBrandStrip';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BuyerLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { user, logout, patchUser } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const isHome = pathname === '/buyer' || pathname === '/buyer/';
 
   const handleLogout = () => {
     logout();
@@ -25,7 +29,7 @@ export default function BuyerLayout() {
       <header className="bg-white border-b border-outline-variant sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center">
-            <Logo variant="compact" size="md" />
+            <Logo variant="full" size="md" />
           </button>
 
           {/* Desktop nav */}
@@ -100,6 +104,7 @@ export default function BuyerLayout() {
               { to: '/buyer/search', label: 'Search' },
               { to: '/buyer/mortgage', label: 'Property Deals' },
               { to: '/buyer/unit-properties', label: 'Property Partners' },
+              { to: '/buyer/deal-desk', label: 'Deal Desk' },
               ...(user ? [{ to: '/buyer/visits', label: 'My Visits' }] : []),
             ].map(l => (
               <Link
@@ -124,6 +129,8 @@ export default function BuyerLayout() {
         <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
       )}
 
+      <CoBrandStrip variant={isHome ? 'hero' : 'strip'} />
+
       <main className="flex-1">
         <Outlet />
       </main>
@@ -131,7 +138,6 @@ export default function BuyerLayout() {
       <footer className="bg-inverse-surface text-inverse-on-surface pt-10 pb-24 md:pb-10 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <Logo variant="full" theme="dark" size="sm" />
             <div className="flex flex-wrap gap-6 text-xs text-white/50">
               <Link to="/buyer" className="hover:text-white">Home</Link>
               <Link to="/buyer/mortgage" className="hover:text-white">Property Deals</Link>
@@ -154,7 +160,7 @@ export default function BuyerLayout() {
           { path: '/buyer/unit-properties', icon: 'apartment', label: 'Partners' },
           ...(user
             ? [{ path: '/buyer/visits', icon: 'event', label: 'Visits' }]
-            : [{ path: '/login', icon: 'login', label: 'Sign In' }]),
+            : [{ path: '/buyer/deal-desk', icon: 'storefront', label: 'Deal Desk' }]),
         ]}
       />
 

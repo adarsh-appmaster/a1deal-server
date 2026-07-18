@@ -24,6 +24,9 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Portal Entry — small, kept static
 import PortalSelector from './components/common/PortalSelector';
+import PlansPage from './pages/PlansPage';
+const BrokerCardPublic = lazy(() => import('./pages/BrokerCardPublic'));
+const BrokerCardEditor = lazy(() => import('./portals/broker/pages/BrokerCardEditor'));
 import ComingSoon from './components/common/ComingSoon';
 
 // Lazy-loaded portal chunks
@@ -33,6 +36,10 @@ const PropertySearch     = lazy(() => import('./portals/buyer/pages/PropertySear
 const PropertyDetail     = lazy(() => import('./portals/buyer/pages/PropertyDetail'));
 const MortgageListing    = lazy(() => import('./portals/buyer/pages/MortgageListing'));
 const UnitPropertyListing = lazy(() => import('./portals/buyer/pages/UnitPropertyListing'));
+const AuctionUnitPropertyListing = lazy(() => import('./portals/buyer/pages/AuctionUnitPropertyListing'));
+const DealDeskListing    = lazy(() => import('./portals/buyer/pages/DealDeskListing'));
+const DealDeskDetail     = lazy(() => import('./portals/buyer/pages/DealDeskDetail'));
+const AuctionUnitPropertyDetail  = lazy(() => import('./portals/buyer/pages/AuctionUnitPropertyDetail'));
 const BuilderProfile     = lazy(() => import('./portals/buyer/pages/BuilderProfile'));
 const SiteVisitFlow      = lazy(() => import('./portals/buyer/pages/SiteVisitFlow'));
 const MyVisits           = lazy(() => import('./portals/buyer/pages/MyVisits'));
@@ -63,6 +70,10 @@ const PincodeRequests    = lazy(() => import('./portals/broker/pages/PincodeRequ
 const PropertyPartners   = lazy(() => import('./portals/broker/pages/PropertyPartners'));
 const BrokerMortgageProperties = lazy(() => import('./portals/broker/pages/BrokerMortgageProperties'));
 const BrokerEnquiries    = lazy(() => import('./portals/broker/pages/BrokerEnquiries'));
+const BrokerSubscription = lazy(() => import('./portals/broker/pages/BrokerSubscription'));
+const LetterheadPage     = lazy(() => import('./portals/broker/pages/LetterheadPage'));
+const VisitingCardPage   = lazy(() => import('./portals/broker/pages/VisitingCardPage'));
+const BrokerBlog         = lazy(() => import('./portals/broker/pages/BrokerBlog'));
 
 const AdminLayout        = lazy(() => import('./portals/admin/AdminLayout'));
 const AdminDashboard     = lazy(() => import('./portals/admin/pages/AdminDashboard'));
@@ -72,11 +83,13 @@ const AdminMortgageProperties = lazy(() => import('./portals/admin/pages/AdminMo
 const CommissionSettings = lazy(() => import('./portals/admin/pages/CommissionSettings'));
 const UserManagement     = lazy(() => import('./portals/admin/pages/UserManagement'));
 const RevenueAnalytics   = lazy(() => import('./portals/admin/pages/RevenueAnalytics'));
+const AdminSubscriptions = lazy(() => import('./portals/admin/pages/AdminSubscriptions'));
 const TeamDirectory      = lazy(() => import('./portals/admin/pages/TeamDirectory'));
 const TeamMemberProfile  = lazy(() => import('./portals/admin/pages/TeamMemberProfile'));
 const RolePermissions    = lazy(() => import('./portals/admin/pages/RolePermissions'));
 const SystemSettings     = lazy(() => import('./portals/admin/pages/SystemSettings'));
 const AdminUnitProperties = lazy(() => import('./portals/admin/pages/AdminUnitProperties'));
+const AdminAuctionUnitProperties = lazy(() => import('./portals/admin/pages/AdminAuctionUnitProperties'));
 const AdminWhatsAppGroups = lazy(() => import('./portals/admin/pages/AdminWhatsAppGroups'));
 const AdminEmailCampaign = lazy(() => import('./portals/admin/pages/AdminEmailCampaign'));
 const AdminLeads         = lazy(() => import('./portals/admin/pages/AdminLeads'));
@@ -84,6 +97,7 @@ const AdminBulkMessage   = lazy(() => import('./portals/admin/pages/AdminBulkMes
 const AdminPropertyEnquiries = lazy(() => import('./portals/admin/pages/AdminPropertyEnquiries'));
 const AdminSiteVisits    = lazy(() => import('./portals/admin/pages/AdminSiteVisits'));
 const AdminArticles      = lazy(() => import('./portals/admin/pages/AdminArticles'));
+const AdminBrokerPincodeRequests = lazy(() => import('./portals/admin/pages/AdminBrokerPincodeRequests'));
 
 const TeamLayout         = lazy(() => import('./portals/team/TeamLayout'));
 const TeamDashboard      = lazy(() => import('./portals/team/pages/TeamDashboard'));
@@ -126,6 +140,12 @@ export default function App() {
         <Routes>
           {/* Public landing */}
           <Route path="/" element={<PortalSelector />} />
+          <Route path="/plans" element={<PlansPage />} />
+          <Route path="/b/:slug" element={<BrokerCardPublic />} />
+          {/* Public broker blog post (linked from the card's Blog section). */}
+          <Route path="/blog/:slug" element={<ArticleDetail />} />
+          {/* Public site-visit flow — guests can book from a broker card (no login). */}
+          <Route path="/visit/:propertyId" element={<SiteVisitFlow />} />
 
           {/* Auth */}
           <Route path="/login" element={<LoginPage />} />
@@ -152,6 +172,10 @@ export default function App() {
             <Route path="mortgage" element={<MortgageListing />} />
             <Route path="mortgage/:id" element={<MortgagePropertyDetail />} />
             <Route path="unit-properties" element={<UnitPropertyListing />} />
+            <Route path="auction-unit-properties" element={<AuctionUnitPropertyListing />} />
+            <Route path="auction-unit-properties/:id" element={<AuctionUnitPropertyDetail />} />
+            <Route path="deal-desk" element={<DealDeskListing />} />
+            <Route path="deal-desk/:id" element={<DealDeskDetail />} />
             <Route path="visit/:propertyId" element={<PrivateRoute portalRole="buyer"><SiteVisitFlow /></PrivateRoute>} />
             <Route path="visits" element={<PrivateRoute portalRole="buyer"><MyVisits /></PrivateRoute>} />
             <Route path="articles" element={<ArticlesListing />} />
@@ -173,14 +197,22 @@ export default function App() {
           <Route path="/broker" element={<PrivateRoute portalRole="broker"><BrokerLayout /></PrivateRoute>}>
             <Route index element={<BrokerDashboard />} />
             <Route path="leads" element={<BrokerLeads />} />
-            <Route path="listings" element={<ComingSoon icon="home" title="My Listings" message="Listing management is temporarily disabled for brokers. Please check back soon." />} />
+            <Route path="listings" element={<PropertyListings />} />
             <Route path="pipeline" element={<DealPipeline />} />
             <Route path="commissions" element={<CommissionTracker />} />
             <Route path="master" element={<ComingSoon icon="verified" title="Master Broker" message="The Master Broker facility will be available soon." />} />
             <Route path="pincode-requests" element={<PincodeRequests />} />
             <Route path="property-partners" element={<PropertyPartners />} />
+            <Route path="card" element={<BrokerCardEditor />} />
+            <Route path="letterhead" element={<LetterheadPage />} />
+            <Route path="visiting-card" element={<VisitingCardPage />} />
+            <Route path="blog" element={<BrokerBlog />} />
+            <Route path="property/:id" element={<PropertyDetail />} />
             <Route path="mortgage-properties" element={<BrokerMortgageProperties />} />
+            <Route path="mortgage/:id" element={<MortgagePropertyDetail />} />
+            <Route path="visit/:propertyId" element={<SiteVisitFlow />} />
             <Route path="enquiries" element={<BrokerEnquiries />} />
+            <Route path="subscription" element={<BrokerSubscription />} />
           </Route>
 
           {/* Admin Portal */}
@@ -188,15 +220,18 @@ export default function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="pending" element={<PendingApprovals />} />
             <Route path="master-broker" element={<MasterBrokerRequests />} />
+            <Route path="broker-pincode-requests" element={<AdminBrokerPincodeRequests />} />
             <Route path="mortgage-properties" element={<AdminMortgageProperties />} />
             <Route path="commission-settings" element={<CommissionSettings />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="revenue" element={<RevenueAnalytics />} />
+            <Route path="transactions" element={<AdminSubscriptions />} />
             <Route path="team" element={<TeamDirectory />} />
             <Route path="team/:id" element={<TeamMemberProfile />} />
             <Route path="permissions" element={<RolePermissions />} />
             <Route path="settings" element={<SystemSettings />} />
             <Route path="unit-properties" element={<AdminUnitProperties />} />
+            <Route path="auction-unit-properties" element={<AdminAuctionUnitProperties />} />
             <Route path="leads" element={<AdminLeads />} />
             <Route path="bulk-message" element={<AdminBulkMessage />} />
             <Route path="whatsapp-groups" element={<AdminWhatsAppGroups />} />

@@ -44,7 +44,7 @@ export default function PropertySearch() {
   const [query, setQuery]       = useState(params.get('q') || '');
   const [tab, setTab]           = useState('all');
   const [filters, setFilters]   = useState({ type: 'all', beds: 'any', maxPrice: '' });
-  const [view, setView]         = useState('grid');
+  const [view]                  = useState('grid'); // always grid — list view removed
   const [results, setResults]   = useState([]);
   const [loading, setLoading]   = useState(false);
   const [total, setTotal]       = useState(0);
@@ -131,19 +131,6 @@ export default function PropertySearch() {
       <h3 className="font-montserrat font-semibold text-on-surface">Filters</h3>
 
       <div>
-        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-2">Property Type</label>
-        {typeOptions.map(t => (
-          <label key={t.value} className="flex items-center gap-2 py-1.5 cursor-pointer">
-            <input type="radio" name="type" value={t.value}
-              checked={filters.type === t.value}
-              onChange={() => setFilters(f => ({ ...f, type: t.value }))}
-              className="w-4 h-4 accent-primary" />
-            <span className="text-sm text-on-surface capitalize">{t.label}</span>
-          </label>
-        ))}
-      </div>
-
-      <div>
         <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-2">Min Bedrooms</label>
         <select value={filters.beds}
           onChange={e => setFilters(f => ({ ...f, beds: e.target.value }))}
@@ -165,6 +152,19 @@ export default function PropertySearch() {
           <option value="50000000">Up to ₹5 Cr</option>
           <option value="100000000">Up to ₹10 Cr</option>
         </select>
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide block mb-2">Property Type</label>
+        {typeOptions.map(t => (
+          <label key={t.value} className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input type="radio" name="type" value={t.value}
+              checked={filters.type === t.value}
+              onChange={() => setFilters(f => ({ ...f, type: t.value }))}
+              className="w-4 h-4 accent-primary" />
+            <span className="text-sm text-on-surface capitalize">{t.label}</span>
+          </label>
+        ))}
       </div>
 
       {hasFilters && (
@@ -196,16 +196,6 @@ export default function PropertySearch() {
           <span className="material-icons-outlined sm:hidden text-xl">search</span>
           <span className="hidden sm:inline">Search</span>
         </button>
-        <div className="hidden sm:flex items-center gap-2">
-          <button type="button" onClick={() => setView('grid')}
-            className={`p-2 rounded-lg ${view === 'grid' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
-            <span className="material-icons-outlined text-xl">grid_view</span>
-          </button>
-          <button type="button" onClick={() => setView('list')}
-            className={`p-2 rounded-lg ${view === 'list' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
-            <span className="material-icons-outlined text-xl">view_list</span>
-          </button>
-        </div>
       </form>
 
       {/* Property type tabs */}
@@ -228,8 +218,17 @@ export default function PropertySearch() {
 
       <div className="flex gap-6">
         {/* Filters sidebar — desktop only */}
-        <aside className="w-56 flex-shrink-0 hidden md:block">
+        <aside className="w-56 flex-shrink-0 hidden md:block space-y-4">
           {FilterPanel}
+          {/* Deal Desk shortcut */}
+          <button onClick={() => navigate('/buyer/deal-desk')}
+            className="card p-4 w-full text-left hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-icons-outlined text-primary">storefront</span>
+              <span className="font-montserrat font-bold text-on-surface">Deal Desk</span>
+            </div>
+            <p className="text-xs text-on-surface-variant">Properties listed directly by brokers — no platform commission.</p>
+          </button>
         </aside>
 
         {/* Mobile filter drawer */}

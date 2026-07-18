@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../api/axios';
 import { useAuth } from '../../../context/AuthContext';
-import usePortalBase from '../../../hooks/usePortalBase';
 import EnquiryModal from '../../../components/common/EnquiryModal';
 import ShareWhatsappButton from '../../../components/common/ShareWhatsappButton';
 import ImageSlider from '../../../components/common/ImageSlider';
@@ -125,14 +124,12 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
   const booked      = units.filter(u => u.status === 'booked').length;
   const sold        = units.filter(u => u.status === 'sold').length;
 
-  // For floor-wise: group by floor
   const floors = splitMode === 'floor_wise'
     ? [...new Set(filtered.map(u => u.floor).filter(f => f != null))].sort((a, b) => a - b)
     : null;
 
   return (
     <div className="card p-6">
-      {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <div>
           <h2 className="font-montserrat font-semibold text-on-surface">Available Units & Pricing</h2>
@@ -154,7 +151,6 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
         </div>
       </div>
 
-      {/* Type filter pills */}
       {unitTypes.length > 1 && (
         <div className="flex items-center gap-1.5 mb-4 flex-wrap">
           <span className="text-xs text-slate-400 mr-1">Type:</span>
@@ -171,7 +167,6 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
       {filtered.length === 0 ? (
         <div className="py-8 text-center text-slate-400 text-sm">No units match the current filter.</div>
       ) : floors ? (
-        // Floor-wise grouped
         <div className="space-y-5">
           {floors.map(floor => {
             const floorUnits = filtered.filter(u => u.floor === floor);
@@ -192,7 +187,6 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
           })}
         </div>
       ) : (
-        // BHK-wise flat grid
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {filtered.map((u, i) => <UnitCard key={u._id || i} unit={u} onEnquire={onEnquire} />)}
         </div>
@@ -201,7 +195,6 @@ function UnitPricingSection({ units, splitMode, onEnquire }) {
   );
 }
 
-/* ── Login prompt modal ────────────────────────────────────────────────── */
 function LoginPrompt({ onClose }) {
   const navigate = useNavigate();
   return (
@@ -216,7 +209,7 @@ function LoginPrompt({ onClose }) {
           Sign in to unlock full details
         </h3>
         <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-          Create a free account to view contact info, schedule site visits and send enquiries directly to the seller.
+          Create a free account to view contact info, schedule site visits and send enquiries directly.
         </p>
         <div className="flex gap-3">
           <button onClick={() => navigate('/signup')}
@@ -237,7 +230,6 @@ function LoginPrompt({ onClose }) {
   );
 }
 
-/* ── Blurred locked field ─────────────────────────────────────────────── */
 function LockedField({ value, placeholder, onUnlock, className = '' }) {
   return (
     <button type="button" onClick={onUnlock}
@@ -254,12 +246,10 @@ function LockedField({ value, placeholder, onUnlock, className = '' }) {
   );
 }
 
-export default function PropertyDetail() {
+export default function AuctionUnitPropertyDetail() {
   const { id }    = useParams();
   const navigate  = useNavigate();
   const { user }  = useAuth();
-  const base      = usePortalBase();
-  const isBroker  = base === '/broker';
   const isGuest   = !user;
 
   const [property, setProperty]     = useState(null);
@@ -273,7 +263,7 @@ export default function PropertyDetail() {
   useEffect(() => {
     setLoading(true);
     setShowAllPhotos(false);
-    api.get(`/unit-properties/public/${id}`)
+    api.get(`/auction-unit-properties/public/${id}`)
       .then(r => setProperty(r.data.property))
       .catch(err => { if (err.response?.status === 404) setNotFound(true); })
       .finally(() => setLoading(false));
@@ -309,12 +299,12 @@ export default function PropertyDetail() {
   if (notFound || !property) {
     return (
       <div className="max-w-container mx-auto px-6 py-16 flex flex-col items-center text-center">
-        <span className="material-icons-outlined text-6xl text-slate-200 mb-4">home_work</span>
+        <span className="material-icons-outlined text-6xl text-slate-200 mb-4">gavel</span>
         <h2 className="font-montserrat font-bold text-xl text-slate-700 mb-2">Property not found</h2>
         <p className="text-slate-500 mb-6">This listing may have been removed or is no longer available.</p>
-        <button onClick={() => navigate(isBroker ? '/broker/property-partners' : '/buyer/search')}
+        <button onClick={() => navigate('/buyer/auction-unit-properties')}
           className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-container transition">
-          {isBroker ? 'Back to Property Partners' : 'Back to Search'}
+          Back to Listings
         </button>
       </div>
     );
@@ -327,10 +317,9 @@ export default function PropertyDetail() {
       <div className="max-w-container mx-auto px-6 py-8 pb-24 sm:pb-8">
         <button onClick={() => navigate(-1)}
           className="flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary mb-6 transition-colors">
-          <span className="material-icons-outlined text-sm">arrow_back</span>Back to Search
+          <span className="material-icons-outlined text-sm">arrow_back</span>Back to Listings
         </button>
 
-        {/* Guest banner */}
         {isGuest && (
           <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/8 border border-primary/20 text-sm">
             <span className="material-icons-outlined text-primary text-base">info</span>
@@ -347,7 +336,6 @@ export default function PropertyDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Images & video */}
             <div className="card overflow-hidden p-3">
               {(property.images?.length || property.video) ? (() => {
                 const images = property.images || [];
@@ -356,7 +344,6 @@ export default function PropertyDetail() {
                 const remaining = images.length - VISIBLE_LIMIT;
                 return (
                   <>
-                    {/* Mobile: swipeable slider (video appended as last slide) */}
                     <div className="sm:hidden -m-3">
                       <ImageSlider
                         images={images}
@@ -374,7 +361,6 @@ export default function PropertyDetail() {
                       />
                     </div>
 
-                    {/* Tablet/desktop: full grid gallery, everything visible at once */}
                     <div className="relative hidden sm:block">
                       <div className={`grid grid-cols-2 gap-3 ${isGuest ? 'blur-lg scale-105' : ''}`}>
                         {property.video && (
@@ -413,12 +399,11 @@ export default function PropertyDetail() {
                 );
               })() : (
                 <div className="h-72 flex items-center justify-center bg-surface-container-high rounded-xl">
-                  <span className="material-icons-outlined text-8xl text-on-surface-variant/20">apartment</span>
+                  <span className="material-icons-outlined text-8xl text-on-surface-variant/20">gavel</span>
                 </div>
               )}
             </div>
 
-            {/* Details */}
             <div className="card p-6">
               <div className="flex items-start justify-between mb-4 gap-4">
                 <div>
@@ -431,7 +416,6 @@ export default function PropertyDetail() {
                   <p className="text-on-surface-variant flex items-center gap-1 mt-1 text-sm">
                     <span className="material-icons-outlined text-sm">location_on</span>
                     {location || '—'}
-                    {/* Pincode is locked for guests */}
                     {property.pincode && (
                       isGuest
                         ? <LockedField placeholder="— ——" onUnlock={() => setShowLogin(true)} className="ml-1" />
@@ -447,7 +431,6 @@ export default function PropertyDetail() {
                 </div>
               </div>
 
-              {/* Key stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 p-4 bg-surface-container rounded-xl">
                 {[
                   property.bedrooms  > 0 && { icon: 'bed',         label: 'Bedrooms',  val: `${property.bedrooms} BHK` },
@@ -469,22 +452,8 @@ export default function PropertyDetail() {
                   <p className="text-on-surface-variant text-sm leading-relaxed mb-6">{property.description}</p>
                 </>
               )}
-
-              {property.amenities?.length > 0 && (
-                <>
-                  <h2 className="font-montserrat font-semibold text-on-surface mb-3">Amenities</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {property.amenities.map(a => (
-                      <span key={a} className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-full">
-                        <span className="material-icons-outlined text-primary text-sm">check_circle</span>{a}
-                      </span>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
 
-            {/* ── Unit Pricing Table ── */}
             {property.unitSplit?.enabled && property.unitSplit.units?.length > 0 && (
               <UnitPricingSection
                 units={property.unitSplit.units}
@@ -496,15 +465,14 @@ export default function PropertyDetail() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* Property info */}
             <div className="card p-5">
               <h3 className="font-montserrat font-semibold text-on-surface mb-4">Property Info</h3>
               {[
-                property.ownerType   && { label: 'Owner Type',   value: property.ownerType,   locked: false },
                 property.reraNumber  && { label: 'RERA No.',     value: property.reraNumber,  locked: false },
                 property.totalUnits  && { label: 'Total Units',  value: property.totalUnits,  locked: false },
                 property.totalFloors && { label: 'Total Floors', value: property.totalFloors, locked: false },
-                property.sellerName  && { label: 'Seller',       value: property.sellerName,  locked: isGuest },
+                property.bankName    && { label: 'Bank',         value: property.bankName,    locked: false },
+                property.auctionDate && { label: 'Auction Date', value: new Date(property.auctionDate).toLocaleDateString('en-IN'), locked: false },
                 property.status      && { label: 'Status',       value: STATUS_LABEL[property.status] || property.status, locked: false },
               ].filter(Boolean).map(r => (
                 <div key={r.label} className="flex justify-between items-center py-2 border-b border-outline-variant last:border-0">
@@ -517,66 +485,47 @@ export default function PropertyDetail() {
               ))}
             </div>
 
-            {/* CTA buttons */}
             <div className="card p-5 space-y-3">
-              {!isBroker && (
-                <button
-                  onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
-                    state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'UnitProperty' },
-                  }))}
-                  className="w-full py-2.5 px-4 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-2">
-                  {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
-                  Schedule Site Visit
-                </button>
-              )}
+              <button
+                onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
+                  state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'AuctionUnitProperty' },
+                }))}
+                className="w-full py-2.5 px-4 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-2">
+                {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
+                Schedule Site Visit
+              </button>
               <button
                 onClick={() => { setEnquiryUnit(null); setShowEnquiry(true); }}
                 className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition flex items-center justify-center gap-2">
                 Enquire About This Property
               </button>
-              <ShareWhatsappButton property={property} path={`${base}/property/${id}`} className="w-full" />
-              <button onClick={() => navigate(isBroker ? '/broker/mortgage-properties' : '/buyer/mortgage')}
-                className="w-full text-center py-2.5 px-4 rounded-xl bg-surface-container text-on-surface font-semibold text-sm hover:bg-surface-container-high transition-colors">
-                Check EMI / Mortgage
-              </button>
+              <ShareWhatsappButton property={property} path={`/buyer/auction-unit-properties/${id}`} className="w-full" />
             </div>
 
             {/* Contact — locked for guests */}
             <div className="card p-5">
-              <h3 className="font-montserrat font-semibold text-on-surface mb-3">Contact Seller</h3>
+              <h3 className="font-montserrat font-semibold text-on-surface mb-3">Contact</h3>
               {isGuest ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
                     <span className="material-icons-outlined text-slate-300 text-xl">call</span>
                     <LockedField placeholder="+91 •••••  •••••" onUnlock={() => setShowLogin(true)} />
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="material-icons-outlined text-slate-300 text-xl">email</span>
-                    <LockedField placeholder="••••••@•••••.com" onUnlock={() => setShowLogin(true)} />
-                  </div>
                   <button onClick={() => setShowLogin(true)}
                     className="w-full py-2.5 rounded-xl border border-dashed border-primary/40 text-primary text-sm font-semibold hover:bg-primary/5 transition flex items-center justify-center gap-2">
                     <span className="material-icons-outlined text-sm">lock_open</span>
-                    Login to contact seller
+                    Login to contact
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {property.sellerPhone && (
-                    <a href={`tel:${property.sellerPhone}`}
+                  {property.contactPhone ? (
+                    <a href={`tel:${property.contactPhone}`}
                       className="flex items-center gap-2 text-sm text-primary font-semibold hover:underline">
                       <span className="material-icons-outlined text-base">call</span>
-                      {property.sellerPhone}
+                      {property.contactPhone}
                     </a>
-                  )}
-                  {property.sellerEmail && (
-                    <a href={`mailto:${property.sellerEmail}`}
-                      className="flex items-center gap-2 text-sm text-slate-500 hover:underline">
-                      <span className="material-icons-outlined text-base">email</span>
-                      {property.sellerEmail}
-                    </a>
-                  )}
-                  {!property.sellerPhone && !property.sellerEmail && (
+                  ) : (
                     <p className="text-xs text-slate-400">Contact details not provided</p>
                   )}
                 </div>
@@ -588,22 +537,20 @@ export default function PropertyDetail() {
 
       {/* Sticky mobile CTA bar */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] px-3 py-2.5 flex items-center gap-2">
-        <ShareWhatsappButton property={property} path={`${base}/property/${id}`} iconOnly className="flex-shrink-0" />
+        <ShareWhatsappButton property={property} path={`/buyer/auction-unit-properties/${id}`} iconOnly className="flex-shrink-0" />
         <button
           onClick={() => { setEnquiryUnit(null); setShowEnquiry(true); }}
           className="flex-1 py-2.5 rounded-xl border border-primary text-primary font-semibold text-sm hover:bg-primary/5 transition">
           Enquire
         </button>
-        {!isBroker && (
-          <button
-            onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
-              state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'UnitProperty' },
-            }))}
-            className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
-            {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
-            Schedule Visit
-          </button>
-        )}
+        <button
+          onClick={() => gatedAction(() => navigate(`/buyer/visit/${id}`, {
+            state: { propertyTitle: property.title, city: property.city, area: property.area, propertyModel: 'AuctionUnitProperty' },
+          }))}
+          className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm hover:bg-primary-container transition flex items-center justify-center gap-1.5">
+          {isGuest && <span className="material-icons-outlined text-sm">lock</span>}
+          Schedule Visit
+        </button>
       </div>
 
       {showLogin && <LoginPrompt onClose={() => setShowLogin(false)} />}
@@ -614,7 +561,7 @@ export default function PropertyDetail() {
           preselectedUnit={enquiryUnit}
           property={{
             _id:   property._id,
-            _model: 'UnitProperty',
+            _model: 'AuctionUnitProperty',
             title:  property.title,
             city:   property.city,
             area:   property.area,
